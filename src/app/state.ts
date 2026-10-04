@@ -1,5 +1,6 @@
 // Shared application state: the diver's session, the computers, and what the interface shows.
 import { createComputers, DEFAULT_COMPUTER, type DiveComputer } from '../computers';
+import { Mn90Tracker } from '../engine/mn90';
 import { DiveSession } from '../engine/session';
 import type { Environment, Scene3D } from '../ui/scene3d';
 
@@ -8,6 +9,8 @@ export const q = (sel: string) => document.querySelector(sel);
 
 export const session = new DiveSession();
 export const computers = createComputers();
+/** The diver's dives placed in the MN90 tables (dialog of app/mn90.ts). */
+export const mn90 = new Mn90Tracker();
 
 /** Phones (same query as style.css): the tabs sit in a bottom bar and open a sheet over the water column. */
 export const compactMq = window.matchMedia('(max-width: 640px), (max-height: 500px) and (orientation: landscape)');
