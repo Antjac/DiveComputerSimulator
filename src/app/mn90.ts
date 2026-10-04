@@ -21,7 +21,8 @@ import {
 } from '../engine/mn90';
 import { gasLabel } from '../engine/buhlmann';
 import { lang } from '../i18n';
-import { $, mn90, session } from './state';
+import { renderControls } from './settings';
+import { $, app, mn90, session } from './state';
 
 
 const L = {
@@ -37,7 +38,7 @@ const L = {
   t2Title: { fr: 'Tableau II : détermination de la majoration en minutes', en: 'Table II: penalty time in minutes' },
   stopsTitle: { fr: 'Tables de plongée à l’air : paliers, DTR et GPS', en: 'Air diving tables: stops, DTR and group' },
   coverTitle: { fr: 'La démarche, table par table', en: 'The method, table by table' },
-  coverHint: { fr: 'Tournez les pages (◀ ▶, ou les flèches du clavier) : chaque table utilisée, avec la ligne, la colonne et la valeur lue.', en: 'Turn the pages (◀ ▶, or the arrow keys): each table used, with the row, the column and the value read.' },
+  coverHint: { fr: 'Tournez les pages (◀ ▶, ou les flèches du clavier) : chaque table utilisée, avec la ligne, la colonne et la valeur lue. La plongée est en pause pendant la lecture et reprend à la fermeture.', en: 'Turn the pages (◀ ▶, or the arrow keys): each table used, with the row, the column and the value read. The dive is paused while you read and resumes on closing.' },
   lower: { fr: 'valeur immédiatement inférieure', en: 'next value down' },
   upper: { fr: 'valeur immédiatement supérieure', en: 'next value up' },
   howRowGps: { fr: 'Ligne : le GPS de la plongée précédente, <b>{g}</b>.', en: 'Row: the previous dive’s group, <b>{g}</b>.' },
@@ -396,6 +397,9 @@ function go(page: number): void {
   renderMn90();
 }
 
+/** The simulation was running when the tables were opened: resumed when they are closed. */
+let resumeOnClose = false;
+
 export function openMn90(): void {
   const dlg = $<HTMLDialogElement>('mn90');
   dlg.innerHTML = `
@@ -404,13 +408,19 @@ export function openMn90(): void {
       <form method="dialog"><button class="mn-x" aria-label="✕">✕</button></form>
     </header>
     <nav class="mn-index" id="mn90-index"></nav>
-    <div class="mn-book"><article class="mn-page" id="mn90-page"></article></div>
+    <div class="mn-book"><article class="mn-page" id="mn90-page" tabindex="-1"></article></div>
     <div class="mn-nav" id="mn90-nav"></div>
     <details class="mn-how"><summary>${lang() === 'fr' ? 'Règles appliquées' : 'Rules applied'}</summary><p>${tr('howTime')}</p><p>${tr('source')}</p></details>`;
   book.page = 0;
   book.scrolled = '';
+  // The dive is paused while the tables are read (as in a briefing), resumed on closing.
+  resumeOnClose = !app.paused;
+  app.paused = true;
+  renderControls();
   dlg.showModal();
   renderMn90();
+  // Focus on the page, not on ✕: Space (the pause key) must not close the tables.
+  $('mn90-page').focus({ preventScroll: true });
 }
 
 export function setupMn90(): void {
@@ -424,8 +434,19 @@ export function setupMn90(): void {
     const step = el.closest<HTMLButtonElement>('[data-mn-go]');
     if (step && !step.disabled) go(book.page + Number(step.dataset.mnGo));
   });
+  dlg.addEventListener('close', () => {
+    if (resumeOnClose && !session.emergency) app.paused = false;
+    resumeOnClose = false;
+    renderControls();
+  });
   // Arrow keys turn the pages (and must not steer the diver meanwhile).
   dlg.addEventListener('keydown', (e) => {
+    // Space (pause) and the other dive keys stay inactive while the tables are open.
+    if (['ArrowUp', 'ArrowDown', ' ', '+', '=', '-', '0', 'Enter'].includes(e.key)) {
+      if (e.key !== ' ' && e.key !== 'Enter') e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     e.preventDefault();
     e.stopPropagation();

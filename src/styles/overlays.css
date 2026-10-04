@@ -224,7 +224,7 @@
   --hl-row: rgba(40, 140, 220, 0.2); --hl-col: rgba(240, 160, 30, 0.28); --hl-cell: #1f9d5a;
   padding: 12px 14px; border-radius: 0 10px 10px 10px; background: #f8f4e8; color: var(--pg-ink);
   box-shadow: inset 10px 0 14px -12px rgba(0, 0, 0, 0.45), 0 4px 14px rgba(0, 0, 0, 0.35);
-  transform-origin: left center; min-height: 220px;
+  transform-origin: left center; min-height: 220px; outline: none;
 }
 .mn-page.turn-next { animation: mn-turn-next 0.45s ease-out; }
 .mn-page.turn-prev { animation: mn-turn-prev 0.45s ease-out; transform-origin: right center; }
