@@ -448,6 +448,8 @@ export abstract class DiveComputer {
     const sacBar = sacBarPerMin(s.rmv, s.tank.volume);
     if (s.inDive && s.outOfGas) alarms.push('OUT_OF_GAS');
     else if (s.inDive && ai && s.tankPressure < this.reservePressure()) alarms.push('LOW_GAS');
+    // Simulator notice (not shown by the computer): a stage tank ran empty, the diver is back on another tank.
+    if (s.inDive && s.clock - s.stageEmptyAt < 30) alarms.push('STAGE_EMPTY');
 
     return {
       inDive: s.inDive,
