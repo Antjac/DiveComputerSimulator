@@ -293,6 +293,8 @@ export class DiveSession {
     }
 
     const minutes = dt / 60;
+    // Nothing comes out of an empty stage tank: the diver is already back on another one.
+    if (Math.max(prevDepth, this.depth) > 0.5) this.leaveEmptyStage();
     this.tissues.exposeLinear(depthToPressure(prevDepth), depthToPressure(this.depth), this.gas, minutes);
     this.oxygen.expose(this.ppO2, minutes);
     this.breathe(prevDepth, minutes, dt);
@@ -392,15 +394,9 @@ export class DiveSession {
       this.gasUsed += liters;
       if (stage) stage.pressure = Math.max(0, stage.pressure - liters / stage.tank.volume);
       else this.tankPressure = Math.max(0, this.tankPressure - liters / this.tank.volume);
-      // An empty stage tank: the diver goes back to the main tank (or another tank still holding gas),
-      // as taught; the computers see the gas breathed change.
-      if (stage && this.outOfGas) {
-        const other = [0, ...this.decoGases.map((_, i) => i + 1)].find((i) => this.gasPressure(i) > 0);
-        if (other !== undefined) {
-          this.switchGas(other);
-          this.diveAlarms.add('STAGE_EMPTY');
-        }
-      }
+    }
+    if (inWater) {
+      this.leaveEmptyStage();
       // Out of gas in the water (no tank left with gas): always stops the simulation.
       if (this.outOfGas) this.raise({ reasons: ['OUT_OF_AIR'], clock: this.clock, depth: this.depth });
     }
@@ -419,6 +415,22 @@ export class DiveSession {
     for (const d of this.decoGases) d.pressure = d.tank.fill;
     this.pressureHistory = [];
   }
+
+  /**
+   * An empty stage tank (just emptied, or switched to once empty): the diver goes back to the main tank
+   * (or another tank still holding gas), as taught; the computers see the gas breathed change.
+   */
+  private leaveEmptyStage(): void {
+    if (this.breathing === 0 || !this.outOfGas) return;
+    const other = [0, ...this.decoGases.map((_, i) => i + 1)].find((i) => this.gasPressure(i) > 0);
+    if (other === undefined) return;
+    this.switchGas(other);
+    this.diveAlarms.add('STAGE_EMPTY');
+    this.stageEmptyAt = this.clock;
+  }
+
+  /** Clock (s) when the diver last left an empty stage tank (the notice under the computer). */
+  stageEmptyAt = -Infinity;
 
   /** The tank breathed is empty. */
   get outOfGas(): boolean {
@@ -449,6 +461,7 @@ export class DiveSession {
     this.usedGases = new Set([this.breathing]);
     this.rapid = null;
     this.diveAlarms.clear();
+    this.stageEmptyAt = -Infinity;
     this.listeners.forEach((l) => l('start'));
   }
 
@@ -505,6 +518,7 @@ export class DiveSession {
     this.profile = [];
     this.log = [];
     this.diveAlarms.clear();
+    this.stageEmptyAt = -Infinity;
     this.track = [];
     this.rapid = null;
     this.emergency = null;
