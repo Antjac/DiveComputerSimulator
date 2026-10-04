@@ -16,4 +16,6 @@
   .tour-open { width: 34px; padding-left: 0; padding-right: 0; font-size: 13px; }
   .tour-open span:first-child { display: none; }
   .tour-open .icon { display: inline; font: 700 15px Georgia, serif; }
+  /* MN90 tables: compact, the computer list keeps most of the row. */
+  #mn90-open { flex: none; padding-left: 6px; padding-right: 6px; font-size: 12px; }
 }

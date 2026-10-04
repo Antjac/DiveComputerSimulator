@@ -21,6 +21,9 @@ npm run exercises  # joue chaque exercice de l'onglet Exercices sur chaque ordin
 ## Architecture en bref
 
 - `src/engine/buhlmann.ts` : ZHL-16C + GF (méthode d'Erik Baker), `planAscent`, `ceilingDepth`, `updateAnchor`, `ndl`.
+- `src/engine/mn90.ts` : tables MN90 FFESSM (livret de juillet 2005 : paliers, tableaux I et II) et
+  `Mn90Tracker`, qui place les plongées du plongeur dans les tables (lecture seule de la session) ;
+  fenêtre « livre » dans `src/app/mn90.ts`.
 - `src/engine/session.ts` : état **physique** du plongeur (profondeur, tissus, gaz, blocs). Les
   ordinateurs le lisent, ne le modifient jamais, à une exception près : le changement de gaz fait
   avec les boutons de l'ordinateur affiché (`s.switchGas`), qui vaut pour tous les ordinateurs

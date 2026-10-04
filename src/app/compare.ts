@@ -1,10 +1,12 @@
 // Compare tab: every computer's reading of the same dive; a click on a row shows that computer.
 import type { ComputerView, DiveComputer } from '../computers/base';
+import { MN90, lineStops, resultLine } from '../engine/mn90';
 import { t } from '../i18n';
+import { openMn90 } from './mn90';
 import { savePrefs } from './prefs';
 import { refresh } from './render';
 import { renderControls } from './settings';
-import { $, app, computers } from './state';
+import { $, app, computers, mn90 } from './state';
 
 export function renderCompare(views: (readonly [DiveComputer, ComputerView])[]): void {
   const head = `<thead><tr><th>${t('computer')}</th><th>${t('algorithm')}</th><th>GF</th><th>${t('ndl')}</th><th>${t('stop')}</th><th>${t('tts')}</th><th>${t('gasTime')}</th></tr></thead>`;
@@ -19,11 +21,43 @@ export function renderCompare(views: (readonly [DiveComputer, ComputerView])[]):
         <td class="num">${cv.tank.gasTime !== null ? `${cv.tank.gasTime} <span class="muted">${c.gasTimeName}</span>` : '—'}</td></tr>`;
     })
     .join('');
-  $('compare-table').innerHTML = head + `<tbody>${rows}</tbody>`;
+  $('compare-table').innerHTML = head + `<tbody>${rows}${mn90Row()}</tbody>`;
+}
+
+/** The MN90 tables' reading of the same dive, if the diver left the bottom now (app/mn90.ts). Depths
+ *  in metres, as in the tables. */
+function mn90Row(): string {
+  const d = mn90.last;
+  const r = d && d.end === null ? mn90.current() : null;
+  const line = r ? resultLine(r) : null;
+  let ndl = '—';
+  let stop = '—';
+  let dtr = '—';
+  let gps = '';
+  if (r && !line) stop = t('mn90Out');
+  if (r && line) {
+    const stops = lineStops(line);
+    dtr = String(line[2]);
+    gps = ` <span class="muted">· GPS ${line[1]}</span>`;
+    if (stops.length) stop = `${stops[0][0]} m · ${stops[0][1]}'`;
+    else {
+      // No-stop time: the last line without a stop at that depth, minus the time already counted.
+      const lines = MN90[r.depth!];
+      const k = lines.findIndex((l) => l.length > 3);
+      const left = (k < 0 ? lines[lines.length - 1][0] : lines[k - 1][0]) - r.minutes;
+      ndl = left > 99 ? '>99' : String(Math.max(0, left));
+    }
+  }
+  return `<tr class="mn90-row" data-mn90 title="${t('mn90Row')}">
+    <td>${t('mn90Name')}${gps}</td>
+    <td><span class="badge small exact">✓</span> ${t('mn90Algo')}</td>
+    <td class="num">—</td><td class="num">${ndl}</td><td class="num ${line && line.length > 3 ? 'deco' : ''}">${stop}</td>
+    <td class="num">${dtr}</td><td class="num">—</td></tr>`;
 }
 
 export function setupCompare(): void {
   $('compare-table').addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('[data-mn90]')) return openMn90();
     const row = (e.target as HTMLElement).closest<HTMLElement>('[data-id]');
     if (!row) return;
     app.active = computers.find((c) => c.id === row.dataset.id) ?? app.active;

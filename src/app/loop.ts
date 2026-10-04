@@ -3,7 +3,7 @@
 // requestAnimationFrame.
 import { placeBoatBubble } from './boat';
 import { refresh, scene } from './render';
-import { app, compactMq, computers, session } from './state';
+import { app, compactMq, computers, mn90, session } from './state';
 
 /** Simulated seconds not drawn yet (the scenes animate the diver over them). */
 let pendingSimDt = 0;
@@ -15,6 +15,7 @@ export function advance(seconds: number, maxStep = 1): void {
     const dt = Math.min(maxStep, left);
     session.step(dt);
     for (const c of computers) c.tick(session, dt);
+    mn90.tick(session, dt);
     left -= dt;
     if (session.emergency) break; // rescue alert: the simulation stops here
   }

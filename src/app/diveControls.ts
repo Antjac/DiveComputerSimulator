@@ -9,7 +9,7 @@ import { savePrefs } from './prefs';
 import { refresh } from './render';
 import { resetRescue } from './rescue';
 import { renderControls } from './settings';
-import { $, app, computers, session } from './state';
+import { $, app, computers, mn90, session } from './state';
 
 let hintShown = false;
 
@@ -45,6 +45,7 @@ export async function setView(v: '2d' | '3d'): Promise<void> {
 /** Full reset: fresh tissues and logbook, computers unlocked. */
 export function resetAll(): void {
   session.reset();
+  mn90.reset();
   resetRescue();
   for (const c of computers) {
     c.locked = false;

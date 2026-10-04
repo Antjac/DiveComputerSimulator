@@ -29,7 +29,7 @@ export interface SettingDef {
 
 export type AlarmCode =
   | 'ASCENT' | 'ASCENT_WARN' | 'CEILING' | 'PPO2_HIGH' | 'CNS'
-  | 'NDL_LOW' | 'DECO' | 'LOCKED' | 'LOW_GAS' | 'OUT_OF_GAS';
+  | 'NDL_LOW' | 'DECO' | 'LOCKED' | 'LOW_GAS' | 'OUT_OF_GAS' | 'STAGE_EMPTY';
 
 export type Bi = { fr: string; en: string };
 

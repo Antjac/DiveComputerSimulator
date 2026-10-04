@@ -441,14 +441,19 @@ export class ShearwaterPerdix extends PerdixRules {
     return planAscent(t, v.depth, s.gas, this.decoParams(s), this.anchor).tts;
   }
 
-  /** GTR display: "---" on the surface (and in deco, GTR being limited to no-deco), "wait" for the first 2 minutes. */
   /** §10.3 low pressure warnings: yellow below the reserve pressure, red below the critical pressure (§12.3). */
   private pressureClass(v: ComputerView): string {
     return v.tank.pressure < this.criticalPressure() ? 'red' : v.tank.pressure < v.tank.reserve ? 'yellow' : '';
   }
 
+  /**
+   * §10.3 GTR display: "When on the surface, the GTR displays "---". GTR is not shown when decompression
+   * stops are needed, and will display "deco"", "wait" for the first minutes (2 minutes assumed).
+   */
   private gtrText(v: ComputerView): string {
-    if (!v.inDive || v.inDeco || v.tank.gasTime === null) return '---';
+    if (!v.inDive) return '---';
+    if (v.inDeco) return 'deco';
+    if (v.tank.gasTime === null) return '---';
     if (v.diveTime < 120) return 'wait';
     return String(Math.min(99, v.tank.gasTime));
   }
@@ -490,7 +495,7 @@ export class ShearwaterPerdix extends PerdixRules {
       }
       case 'ai': {
         const sac = imperial() ? `${Math.round(v.tank.sacBar * 14.5038)}<small class="pd-blue">psi/m</small>` : `${v.tank.sacBar.toFixed(1)}<small class="pd-blue">bar/m</small>`;
-        return cell(`T1 ${pressUnit()}`, pressText(v.tank.pressure), this.pressureClass(v)) + cell('GTR', this.gtrText(v)) + cell('SAC', v.inDive && v.diveTime >= 120 ? sac : '---');
+        return cell(`T1 ${pressUnit()}`, pressText(v.tank.pressure), this.pressureClass(v)) + cell('GTR', this.gtrText(v)) + cell('SAC', v.inDive && v.diveTime >= 120 ? sac : v.inDive ? 'wait' : '---'); // §10.3: "The SAC display will show “wait” during this time"
       }
       case 'mod':
         // §8.5: "When the Max Depth setting is the controlling factor, the MOD is displayed grayed-out."

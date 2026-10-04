@@ -9,6 +9,7 @@ import { depthLabel, depthUnit, depthVal, rateLabel } from '../units';
 import { updateAlertSounds } from './alertSounds';
 import { updateBoat } from './boat';
 import { renderCompare } from './compare';
+import { renderMn90 } from './mn90';
 import { updateExercise } from './exercises';
 import { decorateButtons, fitDevice } from './device';
 import { renderRescue } from './rescue';
@@ -91,6 +92,7 @@ export function refresh(full = false): void {
   }
 
   renderRescue();
+  renderMn90();
   updateBoat();
   updateExercise(v);
 
