@@ -331,6 +331,8 @@ const dict = {
     en: 'Replay this tour at any time with this button. The “About” button, top right, details the simulated models and their limits. Reminder: educational tool, never for planning a real dive.',
   },
   about: { fr: 'À propos', en: 'About' },
+  mn90Btn: { fr: 'MN90', en: 'MN90' },
+  mn90Open: { fr: 'Tables MN90 : où vous en êtes dans la table (plongées successives et consécutives comprises)', en: 'MN90 tables: where you stand in the table (repetitive and consecutive dives included)' },
   soundOn: { fr: 'Sons des alarmes activés (cliquer pour couper)', en: 'Alarm sounds on (click to mute)' },
   tipsOn: { fr: 'Infobulles des boutons activées (cliquer pour les masquer)', en: 'Button tooltips on (click to hide them)' },
   tipsOff: { fr: 'Infobulles des boutons masquées (cliquer pour les afficher)', en: 'Button tooltips off (click to show them)' },
