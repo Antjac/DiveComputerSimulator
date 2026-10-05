@@ -329,10 +329,11 @@ export class SuuntoNautic extends NauticRules {
         return cell(cls, `<div class="nt-big nt-stopv">${stopHtml(this.continuous ? v.ceiling : v.stopDepth, true)}</div><div class="nt-lbl">CEILING</div>`);
       }
       // §8.3 stepped profile: next stop depth and its time; "a timer starts showing the needed length of
-      // the decompression stop" once in the decompression window.
+      // the decompression stop" once in the decompression window. §4.5: "a stop timer counting down the
+      // required stop time in minutes and seconds" (the §4.5 and §9.2 figures show minutes only, e.g. "4'").
       const inWin = !level && v.depth <= v.stopDepth + this.stopWindow;
       const badge = level === 'red' ? 'red' : level === 'yellow' ? 'yellow' : inWin ? 'pale' : '';
-      return cell('', `<div class="nt-big nt-stopd">${stopHtml(v.stopDepth, false)}</div><div class="nt-big nt-stopt ${badge ? `nt-pill ${badge}` : ''}">${Math.ceil(v.stopTimeSec / 60)}'</div><div class="nt-lbl">STOP</div>`);
+      return cell('', `<div class="nt-big nt-stopd">${stopHtml(v.stopDepth, false)}</div><div class="nt-big nt-stopt ${badge ? `nt-pill ${badge}` : ''}">${minSec(v.stopTimeSec)}</div><div class="nt-lbl">STOP</div>`);
     }
     if (!this.hasSafetyStop) return cell('', '');
     const st = v.safety.state;

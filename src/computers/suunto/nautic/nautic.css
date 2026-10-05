@@ -34,7 +34,7 @@
 .nt-c-asc { left: 234px; top: 0; width: 46px; height: 88px; }
 .nt-c-time { left: 0; top: 90px; width: 166px; height: 72px; flex-direction: column; }
 .nt-c-deco { left: 168px; top: 90px; width: 112px; height: 72px; justify-content: space-between; padding: 0 6px 0 8px; }
-.nt-c-stop { left: 0; top: 164px; width: 280px; height: 68px; justify-content: flex-start; gap: 14px; padding-left: 14px; }
+.nt-c-stop { left: 0; top: 164px; width: 280px; height: 68px; justify-content: flex-start; gap: 10px; padding-left: 12px; }
 .nt-c-sw1 { left: 284px; top: 0; width: 156px; height: 88px; }
 .nt-c-sw2 { left: 284px; top: 90px; width: 156px; height: 72px; }
 .nt-large { left: 284px; top: 0; width: 156px; height: 162px; }
@@ -80,8 +80,9 @@
 
 /* Stop area. */
 .nt-stopv { font-size: 50px; }
-.nt-stopd { font-size: 50px; min-width: 60px; }
-.nt-stopt { font-size: 50px; }
+.nt-stopd { font-size: 46px; min-width: 56px; }
+.nt-stopt { font-size: 44px; }
+.nt-stopt.nt-pill { padding: 0 9px; }
 .nt-pill { padding: 0 12px; border-radius: 12px; color: #000; }
 .nt-pill.pale { background: var(--nt-pale); } .nt-pill.yellow { background: var(--nt-yellow); } .nt-pill.red { background: var(--nt-red); color: #fff; }
 .nt-done { font-size: 22px; font-weight: 600; color: #000; width: 100%; text-align: center; }
