@@ -14,11 +14,12 @@ import { ScubaproLuna } from './scubapro/luna';
 import { ShearwaterPerdix } from './shearwater/perdix';
 import { ShearwaterPeregrine } from './shearwater/peregrine';
 import { SuuntoD5 } from './suunto/d5';
+import { SuuntoNautic } from './suunto/nautic';
 import { SuuntoZoopNovo } from './suunto/zoopnovo';
 
 /** Every simulated computer, in alphabetical order of name (the order of the lists and tables). */
 export function createComputers(): DiveComputer[] {
-  const all = [new ShearwaterPerdix(), new ShearwaterPeregrine(), new GarminDescent(), new SuuntoD5(), new MaresPuck(), new MaresQuadCi(), new MaresQuadAir(), new MaresGenius(), new ScubaproG2(), new ScubaproLuna(), new CressiGoa(), new CressiDonatello(), new SuuntoZoopNovo(), new AqualungI330r(), new AqualungI770r(), new AzothOdyssey()];
+  const all = [new ShearwaterPerdix(), new ShearwaterPeregrine(), new GarminDescent(), new SuuntoD5(), new MaresPuck(), new MaresQuadCi(), new MaresQuadAir(), new MaresGenius(), new ScubaproG2(), new ScubaproLuna(), new CressiGoa(), new CressiDonatello(), new SuuntoZoopNovo(), new SuuntoNautic(), new AqualungI330r(), new AqualungI770r(), new AzothOdyssey()];
   return all.sort((a, b) => a.name.localeCompare(b.name));
 }
 
