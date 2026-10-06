@@ -9,15 +9,26 @@ import { renderControls } from './settings';
 import { $, app, computers, mn90 } from './state';
 
 export function renderCompare(views: (readonly [DiveComputer, ComputerView])[]): void {
+  const note = $('compare-note');
+  if (note.dataset.lang !== t('compareNote')) {
+    note.innerHTML = t('compareNote');
+    note.dataset.lang = t('compareNote');
+  }
   const head = `<thead><tr><th>${t('computer')}</th><th>${t('algorithm')}</th><th>GF</th><th>${t('ndl')}</th><th>${t('stop')}</th><th>${t('tts')}</th><th>${t('gasTime')}</th></tr></thead>`;
   const rows = views
     .map(([c, cv]) => {
       const s = c.summary(cv);
+      // ≈ models: the NDL is fitted to the published tables, but their deco stops and TTS would only be
+      // extrapolated — shown on hover, flagged as unverified, never as a figure in the table.
+      const guess = !c.exact && cv.inDeco && !cv.locked;
+      const tip = guess ? ` title="${t('extrapolated')} — ${s.stop} · ${t('tts')} ${s.tts}"` : '';
+      const stop = guess ? `<span class="extrapolated">${t('stopRequired')}</span>` : s.stop;
+      const tts = guess ? '<span class="muted">—</span>' : s.tts;
       return `<tr data-id="${c.id}" class="${c === app.active ? 'active' : ''}">
         <td>${c.name}</td>
         <td><span class="badge small ${c.exact ? 'exact' : 'approx'}">${c.exact ? '✓' : '≈'}</span> ${c.algorithm}</td>
         <td class="num">${c.exact ? `${cv.gfLow}/${cv.gfHigh}` : `≈${cv.gfLow}/${cv.gfHigh}`}</td>
-        <td class="num">${s.ndl}</td><td class="num ${cv.inDeco ? 'deco' : ''}">${s.stop}</td><td class="num">${s.tts}</td>
+        <td class="num">${s.ndl}</td><td class="num ${cv.inDeco ? 'deco' : ''}"${tip}>${stop}</td><td class="num"${tip}>${tts}</td>
         <td class="num">${cv.tank.gasTime !== null ? `${cv.tank.gasTime} <span class="muted">${c.gasTimeName}</span>` : '—'}</td></tr>`;
     })
     .join('');
