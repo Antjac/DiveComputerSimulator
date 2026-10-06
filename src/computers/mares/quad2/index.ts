@@ -10,6 +10,15 @@ import { Quad2Rules } from './rules';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
+/**
+ * Pictograms printed on the case beside the buttons (product photos on mares.com): a stopwatch by
+ * ENTER (TL-SP resets it), a round symbol by GF-LOG (TR, TR-LP: backlight; drawn as a bulb, deduced)
+ * and the Bluetooth symbol by GAS-PLAN (BR-LP starts Bluetooth from POST DIVE, §1.5).
+ */
+const ICON_WATCH = '<svg viewBox="0 0 16 16"><circle cx="8" cy="9" r="5.5"/><path d="M8 9V6M6.5 2h3"/></svg>';
+const ICON_LIGHT = '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7"/><path d="M6 11h4M6.3 9.5C5 8.5 5 5 8 5s3 3.5 1.7 4.5"/></svg>';
+const ICON_BT = '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="7"/><path d="M5.5 5.5l5 5L8 13V3l2.5 2.5-5 5"/></svg>';
+
 /** §8: TR-SP sequence of the field to the right of the depth (figure of §1.5: temperature first). */
 type TopField = 'temp' | 'max' | 'avg' | 'mod' | 'deep' | 'tts' | 'ceil';
 /**
@@ -221,6 +230,13 @@ export class MaresQuad2 extends Quad2Rules {
     el.innerHTML = `
       <div class="dev q2">
         <div class="q2-case">
+          <span class="q2-pr tl"><b>ENTER</b><i class="q2-ico">${ICON_WATCH}</i></span>
+          <span class="q2-pr tr"><small>UP</small><b>GF-LOG</b><i class="q2-ico">${ICON_LIGHT}</i></span>
+          <span class="q2-pr bl"><b>DISPLAY</b><small>BACK</small></span>
+          <span class="q2-pr br"><b>GAS-PLAN</b><i class="q2-ico">${ICON_BT}</i><small>DOWN</small></span>
+          <span class="q2-side"><b>DEPTH</b><b>DECO</b><b>TIME</b></span>
+          <span class="q2-scale"><i class="r"></i>${'<i></i>'.repeat(9)}</span>
+          <span class="q2-algo">ZH-L16C GF</span>
           <button class="q2-btn tl" data-btn="tl" aria-label="TL"></button>
           <button class="q2-btn tr" data-btn="tr" aria-label="TR"></button>
           <button class="q2-btn bl" data-btn="bl" aria-label="BL"></button>
