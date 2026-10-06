@@ -61,6 +61,7 @@ table.compare tbody tr:hover { background: var(--panel-2); }
 table.compare tr.active { background: rgba(76, 195, 255, 0.1); }
 table.compare tr.active td:first-child { box-shadow: inset 3px 0 var(--accent); }
 table.compare tr.mn90-row td { border-top: 2px solid var(--line); }
+table.compare .extrapolated { text-decoration: underline dotted; cursor: help; }
 td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 td.deco { color: var(--warn); }
 
