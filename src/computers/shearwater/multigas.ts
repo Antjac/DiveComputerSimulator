@@ -1,6 +1,6 @@
 // Multi-gas rules shared by the Shearwater models: the 3 GasNx mode (Perdix 2 and Peregrine TX
 // Recreational manuals) and the Perdix 2 OC Tec mode (Technical manual), and their Select Gas menu.
-import type { Gas } from '../../engine/buhlmann';
+import { depthToPressure, type Gas } from '../../engine/buhlmann';
 import type { DiveSession } from '../../engine/session';
 import type { SettingDef } from '../base';
 
@@ -127,4 +127,10 @@ export class SwMenu {
     if (name === 'Select Gas') this.gas = this.style === 'classic' ? SwMenu.order(gases)[0] : queued;
     return null;
   }
+}
+
+/** Gas density (g/l) at `depth`: O2, N2, He at about 20 °C (Perdix 2 Technical manual §4.6, approximation). */
+export function gasDensity(v: { depth: number }, g: Gas): number {
+  const n2 = 1 - g.o2 - g.he;
+  return (g.o2 * 1.331 + n2 * 1.165 + g.he * 0.166) * depthToPressure(v.depth);
 }
