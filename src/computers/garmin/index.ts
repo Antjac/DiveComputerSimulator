@@ -30,6 +30,14 @@ function marker(a: number, r: number, outward: boolean): string {
   return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(1)})"><path d="M -9 -4 L 3 -4 L 8 0 L 3 4 L -9 4 Z" fill="#fff"/></g>`;
 }
 
+/** Gas name in the watch's lists (no figure in the manual: Air, O2 or the O2 %, deduced). */
+function gasName(g: { o2: number; he?: number }): string {
+  const o2 = Math.round(g.o2 * 100);
+  const he = Math.round((g.he ?? 0) * 100);
+  if (he > 0) return `${o2}/${he}`;
+  return o2 === 21 ? 'Air' : o2 === 100 ? 'O2' : `${o2}% O2`;
+}
+
 /** Garmin Descent Mk3i: buttons and round display, after the manual (rules in rules.ts). */
 export class GarminDescent extends DescentRules {
   private screenCount = 4;
@@ -48,8 +56,21 @@ export class GarminDescent extends DescentRules {
   private given = new Set<string>();
   private repeats = new Map<string, { last: number; count: number }>();
 
+  tick(s: DiveSession, dt: number): void {
+    super.tick(s, dt);
+    const offered = this.prompt.offer;
+    // Dive Alerts, "Continuing on %1. Switch at any time.": "You selected Not Now when prompted to
+    // switch to a higher-oxygen gas, or you ignored the prompt" (%1: the gas breathed, deduced).
+    if (this.updatePrompt(s) !== null) this.say(`Continuing on ${gasName(s.gas)}. Switch at any time.`);
+    if (this.prompt.offer !== offered) this.promptSel = 0;
+  }
+
+  /** Option highlighted in the switch prompt: 0 Yes, 1 Not Now, 2 Never. */
+  private promptSel = 0;
+
   onDiveStart(s: DiveSession): void {
     super.onDiveStart(s);
+    this.promptSel = 0;
     this.pausedStop = null;
     this.lastStop = this.approachedStop = 0;
     this.stopDoneUntil = 0;
@@ -138,6 +159,23 @@ export class GarminDescent extends DescentRules {
   private menu: { page: 'menu' | 'gas'; idx: number } | null = null;
 
   press(button: string, s: DiveSession): boolean {
+    // Prompt "Safe to switch to %1. Switch now?": UP / DOWN highlight an answer, START selects it
+    // (the watch's usual list handling; the prompt itself has no figure in the manual). "A confirmation
+    // message for your choice appears."
+    const offer = this.prompt.offer;
+    if (offer !== null && s.inDive) {
+      if (button === 'down') this.promptSel = (this.promptSel + 1) % 3;
+      else if (button === 'up') this.promptSel = (this.promptSel + 2) % 3;
+      else if (button === 'start') {
+        const answer = (['yes', 'notnow', 'never'] as const)[this.promptSel];
+        const name = gasName(s.allGases[offer]);
+        this.answerPrompt(s, answer);
+        // "Switched to %1." is deduced (the manual does not word the confirmation of a switch).
+        this.say(answer === 'yes' ? `Switched to ${name}.` : answer === 'never' ? 'No more gas switch alerts will be issued.' : `Continuing on ${gasName(s.gas)}. Switch at any time.`);
+        this.menu = null;
+      } else return false;
+      return true;
+    }
     const m = this.menu;
     if (m && s.inDive) {
       const n = m.page === 'menu' ? 1 : this.knownGases(s).length;
@@ -206,7 +244,8 @@ export class GarminDescent extends DescentRules {
     const screen = this.currentScreen();
     let content: string;
     if (this.menu && !v.inDive) this.menu = null;
-    if (this.menu) content = this.menuScreen(s);
+    if (v.inDive && this.prompt.offer !== null) content = this.promptScreen(s);
+    else if (this.menu) content = this.menuScreen(s);
     else if (!v.inDive) content = this.surfaceScreen(v, s);
     else if (screen === 0) content = this.settings.layout === 'std' ? this.standardScreen(v) : this.bigScreen(v);
     else content = this.dataScreen(screen, v, s);
@@ -234,9 +273,9 @@ export class GarminDescent extends DescentRules {
     const items = m.page === 'menu'
       ? ['Gas']
       : this.knownGases(s).map((g, i) => {
-        const o2 = Math.round(g.o2 * 100);
-        const name = o2 === 21 ? 'Air' : o2 === 100 ? 'O2' : `${o2}% O2`;
-        return `${name}${i === s.breathing ? ' ✓' : i > 0 ? ' (Backup)' : ''}`;
+        // Backup gases: every other gas in Single-Gas mode, those marked as backup in Multi-Gas.
+        const backup = i > 0 && (!this.multiGas || this.backup.has(i));
+        return `${gasName(g)}${i === s.breathing ? ' ✓' : backup ? ' (Backup)' : ''}`;
       });
     const rows = items.map((t, i) => {
       const y = 150 + (i - (items.length - 1) / 2) * 42;
@@ -244,6 +283,20 @@ export class GarminDescent extends DescentRules {
       return `${sel ? `<rect x="40" y="${y - 28}" width="220" height="38" rx="6" fill="#0a84ff"/>` : ''}<text x="150" y="${y}" class="gm-t gm-pill">${t}</text>`;
     }).join('');
     return `<text x="150" y="62" class="gm-t gm-lbl">${m.page === 'menu' ? 'DIVE' : 'GAS'}</text>${rows}`;
+  }
+
+  /** Multi-Gas switch prompt, worded as in the Dive Alerts table (layout deduced: no figure). */
+  private promptScreen(s: DiveSession): string {
+    const name = gasName(s.allGases[this.prompt.offer!]);
+    const items = ['Yes', 'Not Now', 'Never'];
+    const rows = items.map((t, i) => {
+      const y = 170 + i * 38;
+      const sel = i === this.promptSel;
+      return `${sel ? `<rect x="70" y="${y - 26}" width="160" height="34" rx="6" fill="#0a84ff"/>` : ''}<text x="150" y="${y}" class="gm-t gm-pill">${t}</text>`;
+    }).join('');
+    return `<text x="150" y="76" class="gm-t gm-lbl">Safe to switch to</text>
+      <text x="150" y="108" class="gm-t gm-mid">${name}.</text>
+      <text x="150" y="134" class="gm-t gm-lbl">Switch now?</text>${rows}`;
   }
 
   /** Is a stop (safety or deco) currently guiding the diver? */
@@ -395,7 +448,7 @@ export class GarminDescent extends DescentRules {
     const { h, m } = clockOfDay(s);
     return `
       ${this.leftGauge({ ...v, safety: { ...v.safety, state: 'none' }, inDeco: false })}
-      <text x="150" y="70" class="gm-t gm-lbl">SINGLE-GAS · ${v.gas === 'AIR' ? 'Air' : v.gas}</text>
+      <text x="150" y="70" class="gm-t gm-lbl">${this.multiGas ? 'MULTI-GAS' : 'SINGLE-GAS'} · ${v.gas === 'AIR' ? 'Air' : v.gas}</text>
       <text x="150" y="120" class="gm-t gm-bignum2">${h}:${String(m).padStart(2, '0')}</text>
       <text x="100" y="168" class="gm-t gm-lbl">SURF. INT.</text>
       <text x="100" y="200" class="gm-t gm-mid">${v.surfaceInterval !== null ? hmm(v.surfaceInterval / 60) : '--'}</text>
@@ -426,7 +479,8 @@ export class GarminDescent extends DescentRules {
     else if (v.tank.ai && v.tank.pressure < this.criticalPressure()) [msg, color] = ['T1 pressure is critically low.', RED];
     else if (v.tank.ai && v.tank.pressure < v.tank.reserve) [msg, color] = ['T1 is below reserve pressure.', ORANGE];
     else if (v.safety.state === 'paused' && v.depth < this.safetyStop.top) [msg, color] = ['Descend to complete safety stop.', ORANGE];
-    else if (this.currentToast()) [msg, color] = [this.toast!.msg, this.toast!.color ?? color];
+    // Queued pop-ups wait while the switch prompt (itself a pop-up) is shown (deduced: not described).
+    else if (this.prompt.offer === null && this.currentToast()) [msg, color] = [this.toast!.msg, this.toast!.color ?? color];
     if (!msg) return '';
     const words = msg.split(' ');
     const lines: string[] = [];
