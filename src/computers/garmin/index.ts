@@ -479,7 +479,8 @@ export class GarminDescent extends DescentRules {
     else if (v.tank.ai && v.tank.pressure < this.criticalPressure()) [msg, color] = ['T1 pressure is critically low.', RED];
     else if (v.tank.ai && v.tank.pressure < v.tank.reserve) [msg, color] = ['T1 is below reserve pressure.', ORANGE];
     else if (v.safety.state === 'paused' && v.depth < this.safetyStop.top) [msg, color] = ['Descend to complete safety stop.', ORANGE];
-    else if (this.currentToast()) [msg, color] = [this.toast!.msg, this.toast!.color ?? color];
+    // Queued pop-ups wait while the switch prompt (itself a pop-up) is shown (deduced: not described).
+    else if (this.prompt.offer === null && this.currentToast()) [msg, color] = [this.toast!.msg, this.toast!.color ?? color];
     if (!msg) return '';
     const words = msg.split(' ');
     const lines: string[] = [];
