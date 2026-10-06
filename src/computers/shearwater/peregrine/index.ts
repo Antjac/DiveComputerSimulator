@@ -4,7 +4,7 @@ import type { Lang } from '../../../i18n';
 import { depthInt, depthText, depthUnit, imperial, pressText, pressUnit, tempUnit, tempVal } from '../../../units';
 import { ButtonHelp, ComputerView, clockOfDay, leadingOnGas } from '../../base';
 import { type PeregrineNotice, PeregrineRules } from './rules';
-import { SwMenu, bestGas, nxName, swO2 } from '../multigas';
+import { SwMenu, bestGas, gasDensity, nxName, swO2 } from '../multigas';
 
 // §4.10 primary notifications: title ("Warning", or "Alert" for the custom alerts) and message, as on
 // the figures of the table.
@@ -299,9 +299,61 @@ export class ShearwaterPeregrine extends PeregrineRules {
         const mini2 = `<div class="pt-mini l"><span class="pt-cyan">MAX</span> ${depthInt(v.maxDepth)}<span class="pt-cyan">${u}</span><br><span class="pt-cyan">PO2</span> <span class="${this.ppo2Bad(v) ? 'red blink' : ''}">${ppo2Text(v.ppO2)}</span><br><span class="pt-cyan">MOD</span> ${depthInt(v.mod)}<span class="pt-cyan">${u}</span></div>`;
         return `<div class="pt-cell c">${mini2}</div>${mini1}`;
       }
+      case 'custom':
+        return this.customCell(this.settings.bottomC, v, s, 'c') + this.customCell(this.settings.bottomR, v, s, 'r');
       default:
         return maxCell + mini1;
     }
+  }
+
+  /** One position of a custom bottom row: labels, units and colours of the §4.4 table and of the §4.7 info screens. */
+  private customCell(id: string, v: ComputerView, s: DiveSession, pos: 'c' | 'r'): string {
+    const u = depthUnit();
+    const gfCls = gf99Class(v);
+    const clock12 = (sec: number) => `${((Math.floor(sec / 3600) + 11) % 12) + 1}:${String(Math.floor((sec % 3600) / 60)).padStart(2, '0')}`;
+    switch (id) {
+      case 'max': return cell('MAX', depthDec(v.maxDepth), pos);
+      case 'avg': return cell('AVG', depthDec(v.avgDepth), pos);
+      case 'ppo2': return cell('PPO2', ppo2Text(v.ppO2), `${pos} ${this.ppo2Bad(v) ? 'red blink' : ''}`);
+      case 'cns': return cell('CNS', `${Math.round(v.cns)}<small class="pt-cyan">%</small>`, `${pos} ${v.cns > 100 ? 'red' : v.cns > 90 ? 'yellow' : ''}`);
+      case 'mod': return cell('MOD', depthDec(v.mod), `${pos} ${v.inDive && v.depth > v.mod ? 'red blink' : ''}`);
+      // Table figure: "1.3 g/L" (colour thresholds not given by this manual).
+      case 'density': return cell('DENSITY', `${gasDensity(v, s.gas).toFixed(1)}<span class="pt-vunit u">g<br>L</span>`, pos);
+      case 'gf99': return cell('GF99', gf99Text(v, s), `${pos} ${gfCls}`);
+      case 'surfgf': return cell('SurGF', `${Math.round(v.surfGf)}<small class="pt-cyan">%</small>`, `${pos} ${gfCls}`);
+      case 'ceil': return cell('CEIL', String(Math.ceil(imperial() ? v.ceiling * 3.28084 : v.ceiling)), pos);
+      case 'at5': return cell('@+5', String(this.at5(v, s)), pos);
+      case 'd5': {
+        const d = this.at5(v, s) - v.tts;
+        return cell('Δ+5', `${d > 0 ? '+' : ''}${d}`, pos); // table figure: "+8"
+      }
+      case 'tts': return cell('TTS', String(v.tts), pos);
+      case 'clock': return cell('CLOCK', clock12((s.clock + 9 * 3600) % 86400), pos);
+      case 'det': return cell('DET', clock12((s.clock + v.tts * 60 + 9 * 3600) % 86400), pos);
+      case 'rate': {
+        // Table figure: "↓43 ft/min" (arrow for the direction, unit stacked on the right).
+        const r = v.inDive ? v.ascentRate : 0;
+        const val = Math.round(Math.abs(imperial() ? r * 3.28084 : r));
+        const arrow = val === 0 ? '' : r > 0 ? '↑' : '↓';
+        return cell('RATE', `${arrow}${val}<span class="pt-vunit u">${u}<br>min</span>`, pos);
+      }
+      case 'temp': return cell('TEMP', `${Math.round(tempVal(v.temperature))}<small class="pt-cyan">${tempUnit()}</small>`, pos);
+      case 'cyl': return v.tank.ai ? this.pressureCell(v, s, pos) : cell('T1', '---', pos);
+      case 'sac': {
+        const sac = imperial() ? `${Math.round(v.tank.sacBar * 14.5038)}` : v.tank.sacBar.toFixed(1);
+        const val = v.tank.ai && v.inDive && v.diveTime >= 120 ? `${sac}<span class="pt-vunit u">${imperial() ? 'psi' : 'Bar'}<br>min</span>` : v.tank.ai && v.inDive ? 'wait' : '---';
+        return cell(`SAC<span class="pt-gray"> T1</span>`, val, pos);
+      }
+      case 'gtr': return cell(`GTR<span class="pt-gray"> T1</span>`, v.tank.ai ? this.gtrText(v) : '---', pos);
+      default: return cell('MAX', depthDec(v.maxDepth), pos);
+    }
+  }
+
+  /** §4.7 @+5: the TTS after 5 more minutes at the current depth. */
+  private at5(v: ComputerView, s: DiveSession): number {
+    const t = s.tissues.clone();
+    t.expose(depthToPressure(v.depth), s.gas, 5);
+    return planAscent(t, v.depth, s.gas, this.decoParams(s), this.anchor).tts;
   }
 
   /** §4.7 PPO2 in flashing red outside the limits (0.18 to the MOD PPO2 in Air and Nitrox modes). */
@@ -370,9 +422,7 @@ export class ShearwaterPeregrine extends PeregrineRules {
       case 'det': {
         // §4.7: DET = time of day at the surface if leaving now; @+5 = TTS after 5 more minutes here;
         // Δ+5 = (@+5) − TTS.
-        const t = s.tissues.clone();
-        t.expose(depthToPressure(v.depth), s.gas, 5);
-        const at5 = planAscent(t, v.depth, s.gas, this.decoParams(s), this.anchor).tts;
+        const at5 = this.at5(v, s);
         const end = (s.clock + v.tts * 60 + 9 * 3600) % 86400;
         const det = `${((Math.floor(end / 3600) + 11) % 12) + 1}:${String(Math.floor((end % 3600) / 60)).padStart(2, '0')}`;
         return cell('DET', det) + cell('Δ+5', String(at5 - v.tts), 'c') + cell('@+5/TTS', `${at5}/ ${v.tts}`, 'r');
