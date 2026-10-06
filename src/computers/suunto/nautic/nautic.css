@@ -1,0 +1,134 @@
+/* Suunto Nautic: rectangular colour display in a black case with six screws; Up and Back on the top
+   edge, Down and OK on the bottom edge (user guide §2 photo, positions deduced). Screen areas after
+   the §4.5 figures: depth, ascent bar and switch window on top; dive time, decompression field and
+   switch window in the middle; stop area and status at the bottom. */
+.nt { position: relative; padding: 14px 0; }
+.nt-case {
+  position: relative; width: 500px; height: 290px; border-radius: 34px;
+  background: linear-gradient(170deg, #34363a, #1a1b1d 55%, #101112);
+  box-shadow: 0 16px 30px rgba(0,0,0,0.55), inset 0 0 0 3px #3d4045;
+  display: grid; place-items: center;
+}
+.nt-screw { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #55585e, #1b1c1e); translate: -50% 0; }
+.nt-screw[style*="right"] { translate: 50% 0; }
+.nt-btn { position: absolute; height: 14px; border-radius: 4px; background: linear-gradient(#5a5d63, #26282c); box-shadow: 0 0 0 1px #0b0b0c; display: grid; place-items: center; }
+.nt-btn b { font-size: 8px; color: #f2d21b; line-height: 1; }
+.nt-btn.up { left: 104px; top: -10px; width: 40px; }
+.nt-btn.back { left: 156px; top: -10px; width: 48px; }
+.nt-btn.down { left: 104px; bottom: -10px; width: 40px; }
+.nt-btn.ok { left: 156px; bottom: -10px; width: 48px; }
+.nt-btn.up.pressed, .nt-btn.back.pressed { translate: 0 3px; }
+.nt-btn.down.pressed, .nt-btn.ok.pressed { translate: 0 -3px; }
+.nt-bezel { padding: 8px; background: #050506; border-radius: 16px; box-shadow: inset 0 0 0 2px #2a2c30; }
+
+.nt-screen {
+  --nt-cyan: #1fe6c8; --nt-green: #3fe07e; --nt-yellow: #ffe61a; --nt-pale: #fbd57a; --nt-red: #ff2a22; --nt-orange: #f8b03a; --nt-notify: #00f2da;
+  position: relative; width: 440px; height: 232px; background: #000; color: #fff; overflow: hidden; border-radius: 6px;
+  font-family: 'Barlow Condensed', 'Roboto Condensed', sans-serif; line-height: 1;
+}
+.nt-cell {
+  position: absolute; box-sizing: border-box; border: 1.5px solid #2c2d30; border-radius: 9px; background: #000;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.nt-c-depth { left: 0; top: 0; width: 232px; height: 88px; flex-direction: column; align-items: flex-start; justify-content: center; padding-left: 16px; }
+.nt-c-asc { left: 234px; top: 0; width: 46px; height: 88px; }
+.nt-c-time { left: 0; top: 90px; width: 166px; height: 72px; flex-direction: column; }
+.nt-c-deco { left: 168px; top: 90px; width: 112px; height: 72px; justify-content: space-between; padding: 0 6px 0 8px; }
+.nt-c-stop { left: 0; top: 164px; width: 280px; height: 68px; justify-content: flex-start; gap: 10px; padding-left: 12px; }
+.nt-c-sw1 { left: 284px; top: 0; width: 156px; height: 88px; }
+.nt-c-sw2 { left: 284px; top: 90px; width: 156px; height: 72px; }
+.nt-large { left: 284px; top: 0; width: 156px; height: 162px; }
+.nt-c-status { left: 284px; top: 164px; width: 156px; height: 68px; justify-content: flex-end; gap: 8px; padding-right: 8px; }
+
+.nt-lbl { font-size: 15px; font-weight: 600; color: var(--nt-cyan); letter-spacing: 0.2px; white-space: nowrap; }
+.nt-lbl.green { color: var(--nt-green); } .nt-lbl.orange { color: var(--nt-orange); }
+.nt-lbl.white { color: #fff; } .nt-lbl.black { color: #000; }
+.nt-big { font-weight: 500; white-space: nowrap; letter-spacing: -0.5px; }
+.nt-depth { font-size: 74px; }
+.nt-depth .nt-dec { font-size: 52px; }
+.nt-time { font-size: 56px; }
+.nt-mid { font-size: 42px; font-weight: 500; white-space: nowrap; }
+.nt-unit { font-size: 0.4em; font-weight: 500; margin-left: 2px; }
+.nt-dec { font-size: 0.8em; }
+.nt-small { font-size: 22px; }
+
+/* Stop arrows in the depth area (§9.1, §9.2 figures). */
+.nt-arrows { position: absolute; right: 10px; top: 16px; width: 24px; height: 56px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: space-around; font-size: 17px; line-height: 1; }
+.nt-arr-window { background: #3a3a3c; color: var(--nt-pale); }
+.nt-arr-yellow { background: var(--nt-yellow); color: #000; }
+.nt-arr-red { background: #fff; color: var(--nt-red); }
+
+/* Ascent rate bar: five slots, dashes or chevrons from the bottom. */
+.nt-bar { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.nt-dash { width: 20px; height: 4px; border-radius: 2px; background: #4a4b4e; margin: 4px 0; }
+.nt-chev { width: 14px; height: 14px; border-left: 4px solid; border-top: 4px solid; rotate: 45deg; margin-top: 2px; }
+.nt-chev.gray { color: #8a8a8d; } .nt-chev.green { color: var(--nt-green); } .nt-chev.yellow { color: var(--nt-yellow); } .nt-chev.red { color: var(--nt-red); }
+.nt-asc-alarm { background: var(--nt-red); border-color: var(--nt-red); }
+.nt-asc-alarm .nt-chev { color: #fff; }
+
+/* Decompression area. */
+.nt-dcol { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.nt-ndl { font-size: 46px; }
+.nt-badge { background: var(--nt-orange); color: #000; font-size: 14px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
+.nt-load { position: relative; width: 11px; height: 56px; border-radius: 4px; background: #3a3b3e; overflow: hidden; display: flex; align-items: flex-end; }
+.nt-load.hatched { background: repeating-linear-gradient(135deg, #8a8a8a 0 2px, #2a2a2a 2px 5px); }
+.nt-load i { display: block; width: 100%; border-radius: 3px; }
+.nt-load i.green { background: var(--nt-green); } .nt-load i.orange { background: var(--nt-orange); } .nt-load i.black { background: #000; }
+.nt-dual { flex-direction: column; justify-content: center; gap: 6px; padding: 0 8px; }
+.nt-row { width: 100%; display: flex; justify-content: space-between; align-items: baseline; }
+.nt-val2 { font-size: 30px; font-weight: 500; }
+
+/* Stop area. */
+.nt-stopv { font-size: 50px; }
+.nt-stopd { font-size: 46px; min-width: 56px; }
+.nt-stopt { font-size: 44px; }
+.nt-stopt.nt-pill { padding: 0 9px; }
+.nt-pill { padding: 0 12px; border-radius: 12px; color: #000; }
+.nt-pill.pale { background: var(--nt-pale); } .nt-pill.yellow { background: var(--nt-yellow); } .nt-pill.red { background: var(--nt-red); color: #fff; }
+.nt-done { font-size: 22px; font-weight: 600; color: #000; width: 100%; text-align: center; }
+
+/* Highlighted areas: user alarms (Notify cyan, Caution yellow) and mandatory alarms. */
+.nt-screen .nt-notify { background: var(--nt-notify); border-color: var(--nt-notify); color: #000; }
+.nt-screen .nt-caution { background: var(--nt-yellow); border-color: var(--nt-yellow); color: #000; }
+.nt-screen .nt-fill-yellow { background: var(--nt-yellow); border-color: var(--nt-yellow); color: #000; }
+.nt-screen .nt-fill-pale { background: var(--nt-pale); border-color: var(--nt-pale); color: #000; }
+.nt-screen .nt-fill-red { background: var(--nt-red); border-color: var(--nt-red); color: #fff; }
+.nt-screen .nt-fill-cyan { background: var(--nt-notify); border-color: var(--nt-notify); color: #000; }
+.nt-notify .nt-lbl, .nt-caution .nt-lbl, .nt-fill-yellow .nt-lbl, .nt-fill-pale .nt-lbl, .nt-fill-cyan .nt-lbl { color: #000; }
+.nt-fill-red .nt-lbl { color: #fff; }
+
+/* Switch window fields. */
+.nt-fld { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 8px; }
+.nt-fv { font-size: 36px; font-weight: 500; white-space: nowrap; }
+.nt-large .nt-fv { font-size: 46px; }
+.nt-fld2 { width: 100%; height: 100%; display: flex; }
+.nt-half { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 8px; min-width: 0; }
+.nt-half .nt-fv { font-size: 32px; }
+.nt-half.yellow .nt-fv, .nt-half.yellow .nt-lbl { color: var(--nt-yellow); }
+.nt-half.red .nt-fv, .nt-half.red .nt-lbl { color: var(--nt-red); }
+.nt-lbl sub { font-size: 0.7em; }
+.nt-tank { padding-right: 16px; box-sizing: border-box; }
+.nt-tankbar { position: absolute; right: 6px; top: 10px; bottom: 10px; width: 9px; border-radius: 3px; overflow: hidden;
+  background: linear-gradient(to top, var(--nt-red) 0 12%, var(--nt-yellow) 12% 24%, #3cb9ee 24%); }
+/* The empty part of the tank, hatched, from the top. */
+.nt-tankbar i { display: block; width: 100%; background: repeating-linear-gradient(135deg, #8a8a8a 0 2px, #2a2a2a 2px 5px); }
+.nt-notify .nt-tankbar, .nt-caution .nt-tankbar { background: #000; }
+.nt-alert { flex-direction: column; gap: 10px; text-align: center; font-size: 19px; font-weight: 700; padding: 6px; }
+.nt-warnhead { font-size: 30px; }
+.nt-play { font-size: 26px; }
+.nt-play.green { color: var(--nt-green); }
+.nt-list { flex-direction: column; justify-content: flex-start; gap: 4px; padding-top: 8px; }
+.nt-gasrow { width: 136px; display: flex; justify-content: space-between; font-size: 22px; font-weight: 500; padding: 3px 6px; border-radius: 6px; box-sizing: border-box; }
+.nt-gasrow.sel { background: #fff; color: #000; }
+.nt-tis { justify-content: flex-start; padding-top: 8px; }
+.nt-tisbars { width: 124px; display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.nt-tisbars i { display: block; height: 4px; border-radius: 1px; }
+.nt-tisbars i.green { background: var(--nt-green); } .nt-tisbars i.yellow { background: var(--nt-yellow); } .nt-tisbars i.red { background: var(--nt-red); }
+
+/* Status: flashlight, temperature, battery. */
+.nt-torch { width: 10px; height: 20px; fill: #6c6d70; margin-right: auto; margin-left: 10px; }
+.nt-torch.on { fill: var(--nt-yellow); }
+.nt-warnicon { color: var(--nt-red); font-size: 18px; }
+.nt-lockicon, .nt-pod { font-size: 13px; color: #bbb; }
+.nt-val3 { font-size: 30px; font-weight: 500; white-space: nowrap; }
+.nt-note { font-size: 16px; color: var(--nt-cyan); width: 100%; text-align: center; }

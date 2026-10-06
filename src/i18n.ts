@@ -86,8 +86,13 @@ const dict = {
   exChoose: { fr: 'Choisir un ordinateur…', en: 'Choose a computer…' },
   exMod: { fr: 'Profondeur maximale (MOD) dépassée', en: 'Maximum operating depth (MOD) exceeded' },
   compareNote: {
-    fr: '⚠ Les différences de temps de palier entre ordinateurs propriétaires (≈) ne doivent pas être interprétées comme une comparaison quantitative de leurs algorithmes : ceux-ci ne sont pas publiés et ne sont ici qu’approchés.',
-    en: '⚠ Differences in stop times between proprietary computers (≈) must not be read as a quantitative comparison of their algorithms: these are unpublished and only approximated here.',
+    fr: '<b>✓</b> Algorithme public (Bühlmann + GF) ou tables MN90 : reproduits, à une ou deux minutes près de l’appareil réel. <b>≈</b> Algorithme non publié ou variante non documentée : NDL calée sur les tables publiées, mais paliers et DTR seulement extrapolés, donc non affichés (estimation non vérifiée au survol). Comparez leurs réactions, pas les minutes.',
+    en: '<b>✓</b> Public algorithm (Bühlmann + GF) or MN90 tables: reproduced, within a minute or two of the real device. <b>≈</b> Unpublished algorithm or undocumented variant: NDL fitted to the published tables, but stops and TTS only extrapolated, so not shown (unverified estimate on hover). Compare how they react, not the minutes.',
+  },
+  stopRequired: { fr: 'Palier obligatoire', en: 'Stop required' },
+  extrapolated: {
+    fr: 'Algorithme non publié : estimation extrapolée, non vérifiée',
+    en: 'Unpublished algorithm: extrapolated, unverified estimate',
   },
   tissuesShort: { fr: 'Tissus', en: 'Tissues' },
   logShort: { fr: 'Carnet', en: 'Logbook' },
