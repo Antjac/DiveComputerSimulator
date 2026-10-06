@@ -1,5 +1,5 @@
 // Rules shared by the Mares computers (from their manuals; each model cites its own sections).
-import { ndl, pressureToDepth, type DecoParams } from '../../engine/buhlmann';
+import { equilibriumDepth, ndl, type DecoParams } from '../../engine/buhlmann';
 import type { DiveSession } from '../../engine/session';
 import type { AlertCue, ComputerView, SettingDef } from '../base';
 
@@ -118,15 +118,28 @@ export class DeepStop {
 
   reset(): void {
     this.state = 'none';
+    this.depth = 0;
     this.remaining = 120;
   }
 
   /** `enabled`: the deep stop setting (only needed to start one; a started stop goes on). */
   update(s: DiveSession, ceil: number, p: DecoParams, dt: number, enabled: boolean): void {
-    if (enabled && this.state === 'none' && s.maxDepth > 15) {
+    // Quad 2 §2.8: "for air and nitrox dives only".
+    if (s.gas.he > 0) {
+      if (this.state === 'pending') this.state = 'none';
+    } else if (enabled && (this.state === 'none' || this.state === 'pending') && s.maxDepth > 15 && s.depth > this.depth + 1.5) {
+      // "generated as you approach the no deco limit" (Quad 2 §8.1): the depth follows the 5th tissue as it
+      // loads (on a deep dive the limit is near on arrival, when that tissue is still nearly empty), until
+      // the diver gets within 1.5 m of it. Inert gas fraction of the gas breathed (air or nitrox).
       if (ceil > 0 || ndl(s.tissues, s.depth, s.gas, p.gfHigh) <= 10) {
-        this.depth = Math.round(pressureToDepth(s.tissues.n2[4] / 0.7902 + 0.0627) * 10) / 10;
-        this.state = this.depth >= 9 && this.depth < s.depth ? 'pending' : 'done';
+        const d = Math.round(equilibriumDepth(s.tissues, 4, s.gas) * 10) / 10;
+        // Shallower than 9 m it would merge with the safety stop: not suggested (limit not given by the manuals, assumed).
+        if (d >= 9 && d < s.depth) {
+          this.depth = d;
+          this.state = 'pending';
+        } else {
+          this.state = 'none';
+        }
       }
     }
     if (this.state === 'pending' || this.state === 'active') {
