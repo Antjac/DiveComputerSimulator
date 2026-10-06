@@ -16,8 +16,8 @@ export abstract class PuckRules extends DiveComputer {
   readonly algorithm = 'Mares RGBM (≈)';
   readonly exact = false;
   readonly notes = {
-    fr: 'Le RGBM Mares est propriétaire : approximation (Bühlmann + P0/P1/P2, pénalité en successives). Affichage et règles conformes au manuel : alarme à 10 m/min, remontée incontrôlée (> 12 m/min) ou palier manqué > 3 min = mode profondimètre pour les plongées suivantes. Bouton : informations alternatives (profondeur moyenne, O2 % et CNS en nitrox, heure) ; appui long : rétroéclairage. Deux gaz G1 et G2 (§3.5 ; bloc principal et premier gaz de déco de la page) : au MOD de G2 pendant la remontée, bip et O2 % de G1 clignotant 20 s ; appui : G2 proposé (O2 % clignotant, MOD en haut à droite) ; appui long : confirmation, appui : annulation ; appui long avec l’O2 % affiché : changement manuel. Remontée calculée avec le gaz respiré seulement (supposé, comme le Quad Air) ; ppO2max de G2 1,6 bar supposé.',
-    en: 'Mares RGBM is proprietary: approximation (Bühlmann + P0/P1/P2, repetitive-dive penalty). Display and rules as per the manual: alarm at 10 m/min, uncontrolled ascent (> 12 m/min) or missed stop > 3 min = bottom timer mode for the following dives. Button: alternate information (average depth, O2 % and CNS on nitrox, time of day); hold: backlight. Two gases G1 and G2 (§3.5; the main tank and the first deco gas set on the page): at the MOD of G2 during the ascent, a beep and the O2 % of G1 blinking for 20 s; press: G2 proposed (O2 % blinking, MOD top right); hold: confirm, press: cancel; hold with the O2 % shown: manual switch. Ascent computed with the gas breathed only (assumed, as on the Quad Air); ppO2max of G2 1.6 bar assumed.',
+    fr: 'Le RGBM Mares est propriétaire : approximation (Bühlmann + P0/P1/P2, pénalité en successives). Affichage et règles conformes au manuel : alarme à 10 m/min, remontée incontrôlée (> 12 m/min) ou palier manqué > 3 min = mode profondimètre pour les plongées suivantes. Bouton : informations alternatives (profondeur moyenne, O2 % et CNS en nitrox, heure) ; appui long : rétroéclairage. Deux gaz G1 et G2 (§3.5 ; bloc principal et premier gaz de déco de la page) : au MOD de G2 pendant la remontée, bip et O2 % de G1 clignotant 20 s ; appui : G2 proposé (O2 % clignotant, MOD en haut à droite) ; appui long : confirmation, appui : annulation ; appui long avec l’O2 % affiché : changement manuel. Remontée calculée avec le gaz respiré seulement (non vérifié : la note du §3.5 « la MOD de G2 […] est ce que le Puck Pro utilise pour son calcul » est ambiguë ; le manuel du Quad Air, qui porte la même note, précise que le temps de remontée est mis à jour après le changement) ; retour à G1 (§3.5.3.1) : même séquence, appui long avec l’O2 % affiché ; sous la MOD du gaz respiré : alarme MOD (§3.5.3.2) ; ppO2max de G2 1,6 bar supposé.',
+    en: 'Mares RGBM is proprietary: approximation (Bühlmann + P0/P1/P2, repetitive-dive penalty). Display and rules as per the manual: alarm at 10 m/min, uncontrolled ascent (> 12 m/min) or missed stop > 3 min = bottom timer mode for the following dives. Button: alternate information (average depth, O2 % and CNS on nitrox, time of day); hold: backlight. Two gases G1 and G2 (§3.5; the main tank and the first deco gas set on the page): at the MOD of G2 during the ascent, a beep and the O2 % of G1 blinking for 20 s; press: G2 proposed (O2 % blinking, MOD top right); hold: confirm, press: cancel; hold with the O2 % shown: manual switch. Ascent computed with the gas breathed only (not verified: the §3.5 note "the MOD for G2 […] is what Puck Pro uses for its calculation" is ambiguous; the Quad Air manual, with the same note, states that the ascent time is updated after the switch); back to G1 (§3.5.3.1): same sequence, hold with the O2 % shown; below the MOD of the gas breathed: MOD alarm (§3.5.3.2); ppO2max of G2 1.6 bar assumed.',
   };
   readonly settingDefs: SettingDef[] = [
     {
@@ -58,7 +58,14 @@ export abstract class PuckRules extends DiveComputer {
     return Number(this.settings.ppo2Deco) || 1.6;
   }
 
-  /** Ascent time with the gas breathed only (not stated for the Puck Pro: as the Quad Air §3.5.2). */
+  /**
+   * Ascent time with the gas breathed only (not verified). §3.5 NOTE: "The MOD for G2 is the switch depth
+   * for the corresponding gas. This is what Puck Pro uses for its calculation, alarms and suggested
+   * switch points": ambiguous on its own. The Quad Air manual has the same note and also states that
+   * after the switch "within 20 seconds the ascent time is updated to reflect the higher oxygen
+   * concentration in the breathing gas" (§3.5.2), i.e. a calculation with the gas breathed; the Puck
+   * Pro, of the same generation, is assumed to do the same (deduced, not stated in its manual).
+   */
   planGases() {
     return [];
   }
