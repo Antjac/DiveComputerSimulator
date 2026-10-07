@@ -133,13 +133,13 @@ export abstract class PeregrineRules extends DiveComputer {
     // each position takes any option of the table. Not offered here: Timer, Compass, Redundant Time
     // Remaining (two transmitters) and the Mini Display (its own setup, §12.4), not simulated. The
     // defaults of the custom row (RATE, TTS) are the simulator's choice: the device's default row is
-    // MAX and mini display 1.
+    // MAX and mini display 1. Shown beside the bottom row setting (part of the screen layout).
     ...(['bottomC', 'bottomR'] as const).map((key) => ({
       key,
+      essential: true,
       label: key === 'bottomC' ? { fr: 'Ligne du bas : centre', en: 'Bottom row: center' } : { fr: 'Ligne du bas : droite', en: 'Bottom row: right' },
       options: BOTTOM_OPTIONS,
       default: key === 'bottomC' ? 'rate' : 'tts',
-      group: 'display' as const,
       showIf: (st: Record<string, string>) => st.bottom === 'custom',
     })),
     {

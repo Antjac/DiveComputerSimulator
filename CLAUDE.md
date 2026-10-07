@@ -95,8 +95,9 @@ Passer **chaque** point en revue dans le manuel, l'implémenter ou noter qu'il n
 
 ### 2. Réglages (`settingDefs`)
 - Tous les réglages utiles à la plongée, avec les valeurs **par défaut du fabricant**.
-- Marquer `essential: true` le seul réglage d'affichage de l'écran (mise en page) ; les autres vont
-  dans « Réglages avancés ».
+- Marquer `essential: true` le seul réglage d'affichage de l'écran (mise en page), ainsi que les
+  réglages qui n'apparaissent qu'avec l'une de ses valeurs (ex. les deux positions de la ligne du bas
+  « Personnalisée » du Peregrine, avec `showIf`) ; les autres vont dans « Réglages avancés ».
 
 ### 3. Boutons (`buttons()`, `press()`, `hold()`)
 - Chaque bouton, appui court et long, en plongée ; fonction réelle d'après le manuel, `simulated`
