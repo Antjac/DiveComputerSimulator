@@ -15,7 +15,7 @@ export interface DevHook {
 type Box = { left: number; right: number; top: number; bottom: number };
 interface Item { t: string; el: Element; rc: Box }
 
-const SCREENS = '.pd-screen, .pt-screen, .aq3-screen, .aq7-screen, .qc-screen, .qa-lcd, .gn-screen, .g2-screen, .mr-lcd, .cg-lcd, .gm-screen, .su-screen, .ln-screen, .zn-lcd, .od-screen, .nt-screen';
+const SCREENS = '.pd-screen, .pt-screen, .aq3-screen, .aq7-screen, .qc-screen, .qa-lcd, .q2-lcd, .gn-screen, .g2-screen, .mr-lcd, .cg-lcd, .gm-screen, .su-screen, .ln-screen, .zn-lcd, .od-screen, .nt-screen';
 const ctx = document.createElement('canvas').getContext('2d')!;
 
 /** Ink box of a text run: the line box shrunk to the glyphs actually drawn. */
@@ -124,6 +124,7 @@ export function diveStates(h: DevHook): Record<string, (c: DiveComputer) => void
     s.descentSpeed = 20;
     s.ascentSpeed = 9;
     s.gas = { o2: 0.21, he: 0 };
+    s.decoGases = [];
     s.transmitterOn = true;
     // Low enough for the long deco dives to end with gas left (an empty tank stops the simulation).
     s.rmv = 12;
@@ -169,6 +170,16 @@ export function diveStates(h: DevHook): Record<string, (c: DiveComputer) => void
     longDive: () => { reset(); s.rmv = 10; go(8, 60 * 125); },
     veryDeep: () => { reset(); go(66, 60 * 20); },
     noTransmitter: () => { deco(); s.transmitterOn = false; h.advance(2, 0.5); },
+    // Multi-gas mode turned on (the sweep restores the settings), an EAN50 stage, 1 m above its switch
+    // depth after a deco dive: the computer's switch prompt (or its gas list, for those without one).
+    gasPrompt: (c) => {
+      for (const [k, v] of Object.entries({ diveMode: 'multi', multigas: 'on', pmg: 'on' })) if (c.settingDefs.some((d) => d.key === k)) c.settings[k] = v;
+      reset();
+      s.decoGases = [{ gas: { o2: 0.5, he: 0 }, tank: { volume: 7, fill: 200 }, pressure: 200 }];
+      go(40, 60 * 20);
+      const to = Math.max(3, c.decoMod(0.5) - 1);
+      go(to, ((40 - to) / s.ascentSpeed) * 60 + 5);
+    },
   };
 }
 

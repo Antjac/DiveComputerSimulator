@@ -4,7 +4,7 @@ import type { Lang } from '../../../i18n';
 import { depthInt, depthText, depthUnit, imperial, pressText, pressUnit, tempUnit, tempVal } from '../../../units';
 import { ButtonHelp, ComputerView, clockOfDay, leadingOnGas } from '../../base';
 import { type PerdixNotice, PerdixRules } from './rules';
-import { SwMenu, bestGas, nxName, swO2, trimixName } from '../multigas';
+import { SwMenu, bestGas, gasDensity, nxName, swO2, trimixName } from '../multigas';
 
 const NOTICE_TEXT: Record<PerdixNotice, string> = {
   'high-ppo2': 'HIGH PPO2',
@@ -543,12 +543,6 @@ export class ShearwaterPerdix extends PerdixRules {
         return cell('SERIAL NO', 'SIMUL') + cell('VERSION', '---', 'r');
     }
   }
-}
-
-/** Gas density (g/l) at the current depth: O2, N2, He at about 20 °C (Technical manual §4.6, approximation). */
-function gasDensity(v: ComputerView, g: { o2: number; he: number }): number {
-  const n2 = 1 - g.o2 - g.he;
-  return (g.o2 * 1.331 + n2 * 1.165 + g.he * 0.166) * depthToPressure(v.depth);
 }
 
 type InfoScreen = 'last' | 'ai' | 'mod' | 'temp' | 'gf' | 'tissues' | 'det' | 'battery' | 'pressure' | 'date' | 'serial';

@@ -2,6 +2,7 @@ import type { DecoParams } from '../../engine/buhlmann';
 import type { DiveSession } from '../../engine/session';
 import { remainingTime } from '../../engine/gas';
 import { type AlertCue, type ComputerView, DiveComputer, SettingDef } from '../base';
+import { GasPrompt } from '../common/gasSwitch';
 import { ppo2Setting } from '../common/ppo2';
 import { pressureSetting } from '../common/tank';
 
@@ -14,7 +15,7 @@ const GF_VALUES = Array.from({ length: 19 }, (_, i) => String(10 + i * 5));
 const customGf = (s: Record<string, string>) => s.gf === 'custom';
 
 /**
- * Garmin Descent Mk3, single-gas mode.
+ * Garmin Descent Mk3, Single-Gas and Multi-Gas dive modes.
  * Layout and thresholds follow the Descent Mk3 Series owner's manual (Dive data screens, safety and
  * decompression stops, alerts).
  */
@@ -26,10 +27,21 @@ export abstract class DescentRules extends DiveComputer {
   readonly transmitter = 'Descent T2';
   readonly gasTimeName = 'ATR';
   readonly notes = {
-    fr: 'Bühlmann ZHL-16C avec facteurs de gradient : Low, Medium, High ou Custom (GF bas et haut réglés séparément ; bornes et pas non donnés par le manuel, 10 à 100 % par 5 supposés). DOWN (et UP en sens inverse) : écrans de données ; LIGHT, START et BACK ne sont pas simulés. Verrouillage de déco après 3 min au-dessus du plafond. L’écran TTS / plafond / GF99 / Surface GF est un écran personnalisé : sur la montre, ces champs s’ajoutent via Dive Setup > Display Settings > Data Screens. Émetteur : pression de réserve réglable (valeur par défaut non indiquée : 50 bar supposé), alertes « T1 is below reserve pressure. » et « T1 pressure is critically low. » sous max(21 bar, réserve / 2) ; la montre n’a pas d’alerte de demi-bloc. Alertes du tableau Dive Alerts : Approaching NDL (10 et 5 min), NDL exceeded, Approaching Deco Stop, Decompression Cleared, Safety Stop Started / Cleared, CNS 80 % et 100 % (toutes les 2 min, 3 fois), OTU 250 et 300, PO2 Warning (valeur en jaune) et PO2 is high (toutes les 30 s, 3 fois ; seuils 1,4 / 1,6 bar supposés), alertes personnalisées de profondeur et de durée (texte non donné : « Depth Alert » / « Time Alert » déduits). Mode Single-Gas : les gaz de déco de la page sont des gaz de secours (« backup gases »), hors NDL et TTS tant qu’ils ne sont pas activés ; START > Gas : choix d’un gaz (UP / DOWN, START, BACK pour revenir). Le mode Multi-Gas (invite « Safe to switch to… ») est un autre mode de plongée, non simulé. Non simulés : fin automatique de plongée, batterie, capteur, CCR, mode Multi-Gas.',
-    en: 'Bühlmann ZHL-16C with gradient factors: Low, Medium, High or Custom (GF low and high set separately; range and step not given by the manual, 10 to 100 % by 5 assumed). DOWN (and UP backwards): data screens; LIGHT, START and BACK are not simulated. Decompression lockout after 3 min above the ceiling. The TTS / ceiling / GF99 / Surface GF screen is a custom one: on the watch, these fields are added via Dive Setup > Display Settings > Data Screens. Transmitter: settable reserve pressure (default not given: 50 bar assumed), "T1 is below reserve pressure." and "T1 pressure is critically low." below max(21 bar, reserve / 2) alerts; the watch has no half tank alert. Dive Alerts table: Approaching NDL (10 and 5 min), NDL exceeded, Approaching Deco Stop, Decompression Cleared, Safety Stop Started / Cleared, CNS 80% and 100% (every 2 min, 3 times), OTU 250 and 300, PO2 Warning (yellow value) and PO2 is high (every 30 s, 3 times; 1.4 / 1.6 bar thresholds assumed), custom depth and time alerts (text not given: "Depth Alert" / "Time Alert" deduced). Single-Gas mode: the deco gases set on the page are backup gases, left out of the NDL and TTS until activated; START > Gas: choose a gas (UP / DOWN, START, BACK to go back). The Multi-Gas mode ("Safe to switch to…" prompt) is another dive mode, not simulated. Not simulated: automatic dive end, battery, sensor, CCR, Multi-Gas mode.',
+    fr: 'Bühlmann ZHL-16C avec facteurs de gradient : Low, Medium, High ou Custom (GF bas et haut réglés séparément ; bornes et pas non donnés par le manuel, 10 à 100 % par 5 supposés). DOWN (et UP en sens inverse) : écrans de données ; LIGHT, START et BACK ne sont pas simulés. Verrouillage de déco après 3 min au-dessus du plafond. L’écran TTS / plafond / GF99 / Surface GF est un écran personnalisé : sur la montre, ces champs s’ajoutent via Dive Setup > Display Settings > Data Screens. Émetteur : pression de réserve réglable (valeur par défaut non indiquée : 50 bar supposé), alertes « T1 is below reserve pressure. » et « T1 pressure is critically low. » sous max(21 bar, réserve / 2) ; la montre n’a pas d’alerte de demi-bloc. Alertes du tableau Dive Alerts : Approaching NDL (10 et 5 min), NDL exceeded, Approaching Deco Stop, Decompression Cleared, Safety Stop Started / Cleared, CNS 80 % et 100 % (toutes les 2 min, 3 fois), OTU 250 et 300, PO2 Warning (valeur en jaune) et PO2 is high (toutes les 30 s, 3 fois ; seuils 1,4 / 1,6 bar supposés), alertes personnalisées de profondeur et de durée (texte non donné : « Depth Alert » / « Time Alert » déduits). Modes de plongée Single-Gas (par défaut supposé) et Multi-Gas (Dive Modes). Single-Gas : les gaz de déco de la page sont des gaz de secours (« backup gases »), hors NDL et TTS tant qu’ils ne sont pas activés. Multi-Gas : ce sont des gaz de décompression, comptés dans le NDL et la TTS ; à la MOD/Deco PO2 d’un gaz plus riche pendant la remontée, invite « Safe to switch to … Switch now? » (Yes / Not Now / Never, UP / DOWN puis START) ; Not Now, ou l’invite ignorée (30 s supposées) : « Continuing on … Switch at any time. », le gaz devient un gaz de secours et sort du calcul jusqu’à ce qu’on le choisisse ; Never : « No more gas switch alerts will be issued. », plus d’invite pour ce gaz. La montre ne change jamais de gaz d’elle-même. Dans les deux modes, START > Gas : choix d’un gaz, y compris le retour au gaz fond (UP / DOWN, START, BACK pour revenir) ; alerte « PO2 is high. Ascend or switch to lower O2 gas. ». Déduits : libellés Yes et « Switched to … » (non donnés), nouvelle invite après Not Now une fois redescendu sous la profondeur de changement. Non simulés : fin automatique de plongée, batterie, capteur, CCR, gaz de voyage (Travel Gas), ajout d’un gaz en plongée (Add New).',
+    en: 'Bühlmann ZHL-16C with gradient factors: Low, Medium, High or Custom (GF low and high set separately; range and step not given by the manual, 10 to 100 % by 5 assumed). DOWN (and UP backwards): data screens; LIGHT, START and BACK are not simulated. Decompression lockout after 3 min above the ceiling. The TTS / ceiling / GF99 / Surface GF screen is a custom one: on the watch, these fields are added via Dive Setup > Display Settings > Data Screens. Transmitter: settable reserve pressure (default not given: 50 bar assumed), "T1 is below reserve pressure." and "T1 pressure is critically low." below max(21 bar, reserve / 2) alerts; the watch has no half tank alert. Dive Alerts table: Approaching NDL (10 and 5 min), NDL exceeded, Approaching Deco Stop, Decompression Cleared, Safety Stop Started / Cleared, CNS 80% and 100% (every 2 min, 3 times), OTU 250 and 300, PO2 Warning (yellow value) and PO2 is high (every 30 s, 3 times; 1.4 / 1.6 bar thresholds assumed), custom depth and time alerts (text not given: "Depth Alert" / "Time Alert" deduced). Single-Gas (assumed default) and Multi-Gas dive modes (Dive Modes). Single-Gas: the deco gases set on the page are backup gases, left out of the NDL and TTS until activated. Multi-Gas: they are decompression gases, counted in the NDL and TTS; at the MOD/Deco PO2 of a richer gas during the ascent, "Safe to switch to … Switch now?" prompt (Yes / Not Now / Never, UP / DOWN then START); Not Now, or the prompt ignored (30 s assumed): "Continuing on … Switch at any time.", the gas becomes a backup gas and leaves the calculation until selected; Never: "No more gas switch alerts will be issued.", no more prompt for that gas. The watch never switches gases by itself. In both modes, START > Gas: choose a gas, including back to the bottom gas (UP / DOWN, START, BACK to go back); "PO2 is high. Ascend or switch to lower O2 gas." alert. Deduced: the Yes and "Switched to …" wording (not given), a new prompt after Not Now once back below the switch depth. Not simulated: automatic dive end, battery, sensor, CCR, travel gas, adding a gas during the dive (Add New).',
   };
   readonly settingDefs: SettingDef[] = [
+    {
+      // Dive Modes: "Single-Gas: This mode allows you to dive with a single gas blend. You can set up to
+      // 11 additional gases as backup gases." / "Multi-Gas: This mode allows you to configure multiple
+      // gas blends and switch gases during your dive. [...] one bottom gas, and up to 11 additional gases
+      // as decompression or backup gases." The mode is chosen on the watch before the dive (no default
+      // in the manual: Single-Gas assumed).
+      key: 'diveMode',
+      label: { fr: 'Mode de plongée', en: 'Dive mode' },
+      options: [{ value: 'single', label: 'Single-Gas' }, { value: 'multi', label: 'Multi-Gas' }],
+      default: 'single',
+    },
     {
       key: 'gf',
       label: { fr: 'Conservatisme', en: 'Conservatism' },
@@ -119,16 +131,76 @@ export abstract class DescentRules extends DiveComputer {
   ];
 
   /**
-   * Single-Gas mode: "You can set up to 11 additional gases as backup gases" (the deco gases set on the
-   * page are taken as backup gases); "Backup gases are not used in no-decompression limit (NDL) and time
-   * to surface (TTS) decompression calculations until you activate them during a dive".
+   * Setting Up Your Breathing Gases: "You can enter up to twelve gases for each gas dive mode.
+   * Decompression calculations include your decompression gases, but do not include your backup gases."
+   * Single-Gas mode: the deco gases set on the page are backup gases; "Backup gases are not used in
+   * no-decompression limit (NDL) and time to surface (TTS) decompression calculations until you
+   * activate them during a dive" (activating one = switching to it). Multi-Gas mode: they are
+   * decompression gases, counted in the plan, except those the diver turned into backup gases by
+   * answering Not Now or Never to the switch prompt, or by ignoring it (Dive Alerts: "The watch marks
+   * the gas as a backup and updates decompression guidance accordingly").
    */
   get maxGases(): number {
     return 12;
   }
 
-  planGases() {
-    return [];
+  get multiGas(): boolean {
+    return this.settings.diveMode === 'multi';
+  }
+
+  /** Multi-Gas: gases marked as backup during this dive (index in allGases), until switched to. */
+  protected readonly backup = new Set<number>();
+  /** Multi-Gas: gases answered Never ("It will no longer prompt you to switch to the gas"). */
+  protected readonly never = new Set<number>();
+  /** Multi-Gas switch prompt "Safe to switch to %1. Switch now?". */
+  protected prompt = new GasPrompt();
+
+  planGases(s: DiveSession) {
+    if (!this.multiGas) return [];
+    return super.planGases(s).filter((g) => !this.backup.has(s.allGases.indexOf(g.gas)));
+  }
+
+  onDiveStart(s: DiveSession): void {
+    super.onDiveStart(s);
+    this.backup.clear();
+    this.never.clear();
+    this.prompt.reset();
+  }
+
+  /**
+   * Switching Gases During a Dive: "Dive until you reach the MOD/Deco PO2 threshold. The dive computer
+   * prompts you to switch to the gas that has the highest percentage of oxygen and is below the
+   * threshold. NOTE: The dive computer does not switch gases for you automatically." Multi-Gas only
+   * (Dive Alerts, "Safe to switch to %1": "In a multi-gas dive"). An unanswered prompt counts as
+   * ignored after a delay the manual does not give (30 s assumed); a gas answered Not Now may be
+   * offered again after going back below its switch depth (not stated, assumed), never one answered Never.
+   * Returns the gas whose prompt was ignored, if any.
+   */
+  protected updatePrompt(s: DiveSession): number | null {
+    if (!this.multiGas || !s.inDive || this.locked) {
+      this.prompt.offer = null;
+      return null;
+    }
+    // A gas switched to is in use again: no longer a backup gas.
+    this.backup.delete(s.breathing);
+    const mods = this.knownGases(s).map((g, i) => (this.never.has(i) ? -1 : this.decoMod(g.o2)));
+    const { expired } = this.prompt.update(s, mods, 30);
+    if (expired !== null) this.backup.add(expired);
+    return expired;
+  }
+
+  /** Answer to the prompt: Yes (switch), Not Now or Never (the gas becomes a backup gas). */
+  answerPrompt(s: DiveSession, answer: 'yes' | 'notnow' | 'never'): void {
+    const g = this.prompt.offer;
+    if (g === null) return;
+    if (answer === 'yes') {
+      this.prompt.accept(s);
+      this.backup.delete(g);
+      return;
+    }
+    this.prompt.decline();
+    this.backup.add(g);
+    if (answer === 'never') this.never.add(g);
   }
 
   /** "MOD/Deco PO2": one threshold for the bottom gas and the decompression gases. */
@@ -233,6 +305,7 @@ export abstract class DescentRules extends DiveComputer {
     const pop = (key: string, level: AlertCue['level']) => cues.push({ key, kind: 'both', level, until: 'once' });
     if (!v.inDeco && v.ndl <= 10) pop(v.ndl <= 5 ? 'ndl-5' : 'ndl-10', 'info');
     if (v.inDeco) pop('deco', 'warning');
+    if (this.prompt.offer !== null) pop(`switch-${this.prompt.offer}`, 'info');
     if (v.alarms.includes('ASCENT')) pop('fast-ascent', 'alarm');
     if (v.alarms.includes('CEILING')) pop('ceiling', 'alarm');
     if (v.ppO2 > this.po2Critical) pop('po2', 'alarm');
