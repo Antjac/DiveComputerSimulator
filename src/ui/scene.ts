@@ -10,6 +10,11 @@ interface Bubble {
 
 const SKY = 36; // px of sky above the surface
 
+/** Break on board (app/boat.ts): real seconds for the diver to swim to the ladder and climb aboard,
+ *  and how much faster going back in is played. */
+export const BOARD_TIME = 6.2;
+export const BOARD_BACK = 1.5;
+
 /** Water column view: shows the diver, lets the user set the target depth with the mouse. */
 export class Scene {
   private ctx: CanvasRenderingContext2D;
@@ -25,6 +30,9 @@ export class Scene {
   boatWanted = false;
   private boatPos = 0; // 0 = off screen, 1 = alongside
   private boatAt: { x: number; top: number; bottom: number } | null = null;
+  /** Break on board (app/boat.ts): the diver climbs the ladder, waits on deck, then jumps back in. */
+  aboard = false;
+  private boardT = 0; // s along the boarding (0: in the water, BOARD_TIME: on deck)
 
   constructor(private canvas: HTMLCanvasElement, private session: DiveSession) {
     this.ctx = canvas.getContext('2d')!;
@@ -227,7 +235,7 @@ export class Scene {
 
     // Bubbles: exhaled every ~4 s of simulated time; they rise at ~15 m/min... faster in real time.
     this.bubbleTimer += simDt;
-    if (s.depth > 0.5 && this.bubbleTimer > 4) {
+    if (s.depth > 0.5 && this.bubbleTimer > 4 && !this.aboard) {
       this.bubbleTimer = 0;
       for (let i = 0; i < 5; i++) {
         this.bubbles.push({ x: cx + 18 + Math.random() * 8, depth: s.depth - 0.3, r: 1.5 + Math.random() * 3, wobble: Math.random() * 6 });
@@ -249,18 +257,35 @@ export class Scene {
     // of the diver, then turns round and leaves to the right (never over the diver).
     this.boatPos = Math.max(0, Math.min(1, this.boatPos + (this.boatWanted ? 1 : -1) * realDt / 1.6));
     this.boatAt = null;
+    this.boardT = Math.max(0, Math.min(BOARD_TIME, this.boardT + (this.aboard ? realDt : -realDt * BOARD_BACK)));
+    let boatX = 0;
     if (this.boatPos > 0) {
       const e = 1 - Math.pow(1 - this.boatPos, 3); // eases in on arrival
       const dock = Math.min(cx + 100, w - 46);
-      const x = w + 70 + (dock - w - 70) * e;
+      boatX = w + 70 + (dock - w - 70) * e;
       const y = SKY + Math.sin(performance.now() / 700) * 1.2;
-      this.drawBoat(x, y, !this.boatWanted);
-      if (this.boatPos === 1) this.boatAt = { x: x + 6, top: y - 34, bottom: y + 9 };
+      this.drawBoat(boatX, y, !this.boatWanted, this.boardT >= BOARD_TIME, Math.min(1, this.boardT / 1.2));
+      if (this.boatPos === 1) this.boatAt = { x: boatX + 6, top: y - 34, bottom: y + 9 };
     }
 
-    // Diver
-    this.finPhase += realDt * (2 + Math.abs(s.velocity) * 8);
-    this.drawDiver(cx, this.depthToY(s.depth), s.velocity);
+    // Diver; on the way to the boat: swims to the ladder at the stern (getting smaller, as the people
+    // on deck), stands up and climbs it, then sits on deck.
+    const t = this.boatPos > 0 ? this.boardT : 0;
+    this.finPhase += realDt * (2 + Math.abs(s.velocity) * 8 + (t > 0 && t < 3 ? 10 : 0));
+    if (t >= BOARD_TIME) return;
+    const dy = this.depthToY(s.depth);
+    const ease = (x: number) => x * x * (3 - 2 * x);
+    const ladder = boatX + 38;
+    if (t < 3) {
+      const k = ease(t / 3);
+      this.drawDiver(cx + (ladder + 8 - cx) * k, dy + (SKY + 4 - dy) * k, 0, 0, 1 - 0.7 * k);
+    } else {
+      // Upright against the ladder, feet going from the bottom rung to the deck (fins 17 px below).
+      const k = Math.min(1, (t - 3) / (BOARD_TIME - 3.6));
+      const up = ease(Math.min(1, (t - 3) / 0.5));
+      const step = Math.abs(Math.sin(k * Math.PI * 4)) * 1.5;
+      this.drawDiver(ladder + 8 - 5 * up, SKY + 4 - 29 * k - step, 0, up, 0.3);
+    }
   }
 
   /** Boat alongside (else null): centre, top of the mast and bottom of the hull, in CSS px of the canvas. */
@@ -269,7 +294,8 @@ export class Scene {
   }
 
   /** Dive boat on the waterline `y`, bow to the left (to the right when `leaving`). */
-  private drawBoat(x: number, y: number, leaving: boolean): void {
+  /** `ladder`: 0 stowed, 1 lowered into the water for the diver. */
+  private drawBoat(x: number, y: number, leaving: boolean, diverOnDeck = false, ladder = 0): void {
     const { ctx } = this;
     ctx.save();
     ctx.translate(x, y);
@@ -323,25 +349,42 @@ export class Scene {
     ctx.strokeStyle = '#c9d0d6';
     ctx.lineWidth = 1.2;
     ctx.beginPath();
-    for (let k = 0; k < 3; k++) {
-      ctx.moveTo(36, -6 + k * 5);
-      ctx.lineTo(41, -6 + k * 5);
+    const foot = 8 + 14 * ladder;
+    for (let ry = -6; ry < foot; ry += 5) {
+      ctx.moveTo(36, ry);
+      ctx.lineTo(41, ry);
     }
     ctx.moveTo(36, -8);
-    ctx.lineTo(36, 8);
+    ctx.lineTo(36, foot);
     ctx.moveTo(41, -8);
-    ctx.lineTo(41, 8);
+    ctx.lineTo(41, foot);
     ctx.stroke();
+    // Diver sitting on deck during a break, tank beside them.
+    if (diverOnDeck) {
+      ctx.fillStyle = '#c8ccd2';
+      ctx.beginPath();
+      ctx.roundRect(30, -17, 4, 9, 2);
+      ctx.fill();
+      ctx.fillStyle = '#1b2733';
+      ctx.beginPath();
+      ctx.roundRect(22, -17, 7, 9, 3);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(25.5, -20.5, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 
-  private drawDiver(x: number, y: number, v: number): void {
+  /** `upright`: 0 swimming, 1 standing on the boat's ladder; `scale`: smaller near the boat. */
+  private drawDiver(x: number, y: number, v: number, upright = 0, scale = 1): void {
     const { ctx } = this;
     // Pitch the diver slightly head-down while descending, head-up while ascending.
     const tilt = Math.max(-0.5, Math.min(0.5, v * 1.2));
     ctx.save();
     ctx.translate(x, y);
-    ctx.rotate(tilt);
+    ctx.rotate(tilt * (1 - upright) - (Math.PI / 2) * upright);
+    ctx.scale(scale, scale);
     // Fins
     const fin = Math.sin(this.finPhase) * 6;
     ctx.fillStyle = '#ffcc33';

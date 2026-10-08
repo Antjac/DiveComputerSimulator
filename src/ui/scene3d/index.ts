@@ -6,7 +6,8 @@ import { clamp, fbm, mulberry32, noise, ramp, wrapAngle } from './math';
 import { AREA, CLEARANCE, Environment, WORLD, WRECK_H, WRECK_HEADING, WRECK_L, WRECK_ROLL, WRECK_W, floorDepth, startOf, wallEdge, wreckTop } from './sites';
 import { SeaLife } from './life';
 import { SolidGrid } from './solids';
-import { buildAmbience, buildBoat, buildDiver, buildOcean, buildOverlays } from './models';
+import { BOAT_DECK, BOAT_LADDER, LADDER_STOW, buildAmbience, buildBoat, buildDiver, buildOcean, buildOverlays } from './models';
+import { BOARD_BACK, BOARD_TIME } from '../scene';
 import { CORALS, CoralKind, SPECIES, School, Species } from './species';
 
 export type { Environment } from './sites';
@@ -26,6 +27,11 @@ export class Scene3D {
   onInteract: (() => void) | null = null;
   /** Boat offering a full tank (main.ts): comes alongside the diver while true, leaves otherwise. */
   boatWanted = false;
+  /** Break on board (app/boat.ts): the diver swims to the boat's ladder and climbs aboard, then comes back. */
+  aboard = false;
+  private boardT = 0; // s along the boarding (0: in the water, BOARD_TIME: on deck)
+  private boardFrom = new THREE.Vector3(); // where the diver left the water (world)
+  private boardSide = 1; // side of the boat the diver comes from (boat frame x)
 
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
@@ -213,6 +219,84 @@ export class Scene3D {
       top.z < 1 && keel.z < 1
         ? { x: ((clamp(top.x, -0.9, 0.9) + 1) / 2) * w, top: toY(Math.max(top.y, keel.y)), bottom: toY(Math.min(top.y, keel.y)) }
         : { x: w / 2, top: toY(0.9), bottom: toY(0.9) };
+  }
+
+  /**
+   * Break on board: the ladder's lower part slides down, the diver swims round to the stern, stands up
+   * against the ladder, climbs it and steps onto the deck, where they wait; played backwards (faster)
+   * to go back in. Times in real seconds (BOARD_TIME, shared with app/boat.ts).
+   */
+  private updateBoarding(realDt: number): void {
+    const was = this.boardT;
+    this.boardT = clamp(this.boardT + (this.aboard ? realDt : -realDt * BOARD_BACK), 0, BOARD_TIME);
+    const t = this.boat.visible ? this.boardT : 0;
+    const low = this.boat.userData.ladderLow as THREE.Group | undefined;
+    if (low) low.position.y = LADDER_STOW * (1 - clamp(t / 1.2, 0, 1));
+    if (was === 0 && t > 0) {
+      this.boardFrom.copy(this.diver.position);
+      this.boardSide = Math.sign(this.boat.worldToLocal(this.boardFrom.clone()).x) || 1;
+    }
+    if (t <= 0) return;
+    const SWIM = 3;
+    const TURN = 0.6;
+    const CLIMB = 1.8;
+    const ease = (x: number) => x * x * (3 - 2 * x);
+    const local = (x: number, y: number, z: number) => this.boat.localToWorld(new THREE.Vector3(x, y, z));
+    const boatHeading = this.boat.rotation.y;
+    // Diver origin above the feet when upright (fins down), and the ladder's foot / top.
+    const FEET = 1.05;
+    const L = BOAT_LADDER;
+    const water = local(L.x, -0.3, L.z - 1.05); // lying in the water, head at the ladder
+    const foot = local(L.x, -1.3 + FEET, L.z - 0.38); // upright, feet on the bottom rung
+    const top = local(L.x, BOAT_DECK + FEET, L.z - 0.38);
+    const deck = local(L.x, BOAT_DECK + FEET, L.z + 0.9);
+    let pitch = 0;
+    let heading = boatHeading;
+    const p = new THREE.Vector3();
+    if (t < SWIM) {
+      // Round the stern on the diver's side, then to the ladder.
+      const side = this.boardSide;
+      const via = local(side * 2, -0.3, L.z - 1.9);
+      const k = ease(t / SWIM);
+      const d1 = this.boardFrom.distanceTo(via);
+      const d2 = via.distanceTo(water);
+      const at = k * (d1 + d2);
+      if (at < d1) p.lerpVectors(this.boardFrom, via, at / d1);
+      else p.lerpVectors(via, water, (at - d1) / d2);
+      const dir = (at < d1 ? via.clone().sub(this.boardFrom) : water.clone().sub(via));
+      heading = Math.atan2(dir.x, dir.z);
+      if (at >= d1) heading += wrapAngle(boatHeading - heading) * clamp((at - d1) / d2 * 1.5, 0, 1);
+      this.fins.forEach((f, i) => (f.rotation.x = Math.sin(this.time * 9 + i * Math.PI) * 0.4));
+    } else if (t < SWIM + TURN) {
+      const k = ease((t - SWIM) / TURN);
+      p.lerpVectors(water, foot, k);
+      pitch = (-Math.PI / 2) * k;
+    } else if (t < SWIM + TURN + CLIMB) {
+      const k = (t - SWIM - TURN) / CLIMB;
+      p.lerpVectors(foot, top, k);
+      p.y += Math.abs(Math.sin(k * Math.PI * 5)) * 0.06; // one rung after another
+      pitch = -Math.PI / 2;
+    } else {
+      const k = ease(clamp((t - SWIM - TURN - CLIMB) / (BOARD_TIME - SWIM - TURN - CLIMB), 0, 1));
+      p.lerpVectors(top, deck, k);
+      p.y += Math.sin(k * Math.PI) * 0.25; // over the transom
+      pitch = -Math.PI / 2;
+    }
+    this.diver.position.copy(p);
+    this.diver.rotation.y = heading;
+    this.diverPitch.rotation.x = pitch;
+    this.diverPitch.rotation.z = 0;
+
+    // Camera: eases to a view of the stern from behind, on the diver's side, to watch the climb.
+    const c = ease(clamp(t / 1.5, 0, 1));
+    const eye = local(this.boardSide * 4.5, 2.4, L.z - 7);
+    const look = local(L.x * 0.5, 0.5, L.z + 0.3);
+    const fwd = new THREE.Vector3();
+    this.camera.getWorldDirection(fwd);
+    const was3 = this.camera.position.clone().add(fwd.multiplyScalar(8));
+    this.camera.position.lerp(eye, c);
+    this.camera.lookAt(was3.lerp(look, c));
+    this.dome.position.copy(this.camera.position);
   }
 
   /** Boat alongside (else null): centre, top of the cabin and keel, in CSS px of the canvas. */
@@ -675,6 +759,7 @@ export class Scene3D {
     this.updateTurtle(dt);
     this.life?.update(dt, this.time, pos, this.camera.position);
     this.updateBoat(realDt, pos, fwd);
+    this.updateBoarding(realDt);
 
     // Overlays around the diver.
     const target = Math.min(s.targetDepth, s.seabed);

@@ -239,12 +239,14 @@ export class DiveSession {
   }
 
   setTarget(depth: number): void {
+    if (this.aboard) return;
     this.control = 'target';
     this.targetDepth = Math.min(this.siteDepth, Math.max(0, depth));
   }
 
   /** Vertical speed command in m/min, positive when descending. */
   setRate(rate: number): void {
+    if (this.aboard) return;
     this.control = 'rate';
     this.commandRate = Math.min(MAX_DESCENT, Math.max(-MAX_ASCENT, Math.round(rate)));
     if (this.commandRate < 0) this.ascentSpeed = -this.commandRate;
@@ -409,7 +411,7 @@ export class DiveSession {
   }
 
   /** Fresh tank: at reset, when the tank model is changed at the surface, or handed from the boat
-   *  (boardBoat). There is no automatic refill between dives. */
+   *  (boardBoat, or a tank swap in the water). There is no automatic refill between dives. */
   refillTank(): void {
     this.tankPressure = this.tank.fill;
     for (const d of this.decoGases) d.pressure = d.tank.fill;
@@ -437,11 +439,20 @@ export class DiveSession {
     return this.gasPressure(this.breathing) <= 0;
   }
 
-  /** A full tank handed from the boat at the surface: the diver climbs aboard, so the dive in
-   *  progress ends now and the next descent is a new dive (consecutive or repetitive). */
+  /** On the boat (app/boat.ts): the diver stays at the surface, depth commands are ignored. */
+  aboard = false;
+
+  /** The diver climbs aboard for a break: the dive in progress ends now and the tank is refilled, so
+   *  the next descent is a new dive (consecutive or repetitive). `leaveBoat` puts them back in the water. */
   boardBoat(): void {
     if (this.inDive && this.depth < DIVE_START_DEPTH) this.endDive();
     this.refillTank();
+    this.setTarget(0);
+    this.aboard = true;
+  }
+
+  leaveBoat(): void {
+    this.aboard = false;
   }
 
   private startDive(): void {
@@ -514,6 +525,7 @@ export class DiveSession {
     this.surfaceTimer = 0;
     this.lastDiveEnd = null;
     this.breathing = 0;
+    this.aboard = false;
     this.refillTank();
     this.profile = [];
     this.log = [];

@@ -188,6 +188,12 @@ export function buildOcean(): { near: THREE.Mesh<THREE.PlaneGeometry, THREE.Mesh
 }
 
   /** Small dive boat (about 7 m), bow along +z; seen from below: red antifouling, keel, outboard. */
+/** Boarding ladder of the boat (boat frame: bow towards +z, deck at y = BOAT_DECK). */
+export const BOAT_LADDER = { x: 0.75, z: -3.45 };
+export const BOAT_DECK = 0.55;
+/** How far the lower part of the ladder is raised when stowed. */
+export const LADDER_STOW = 1.35;
+
 export function buildBoat(boat: THREE.Group): void {
     const white = new THREE.MeshStandardMaterial({ color: 0xf2f4f6, roughness: 0.6 });
     const red = new THREE.MeshStandardMaterial({ color: 0x8e2a22, roughness: 0.8 });
@@ -219,8 +225,35 @@ export function buildBoat(boat: THREE.Group): void {
     const prop = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.06, 12), dark);
     prop.rotation.x = Math.PI / 2;
     prop.position.set(0, -0.65, -3.8);
-    const ladder = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.4, 0.06), dark);
-    ladder.position.set(0.7, -0.35, -3.45);
+    // Boarding ladder on the transom, beside the motor: a fixed upper part with handrails, and a lower
+    // part that slides down into the water for the diver (boat.userData.ladderLow, moved by Scene3D).
+    const steel = new THREE.MeshStandardMaterial({ color: 0xc9d0d6, roughness: 0.35, metalness: 0.7 });
+    const ladder = new THREE.Group();
+    ladder.position.set(BOAT_LADDER.x, 0, BOAT_LADDER.z);
+    const rails = (group: THREE.Group, y0: number, y1: number) => {
+      for (const side of [-1, 1]) {
+        const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, y1 - y0, 6), steel);
+        rail.position.set(side * 0.22, (y0 + y1) / 2, 0);
+        group.add(rail);
+      }
+    };
+    const rungs = (group: THREE.Group, ys: number[]) => {
+      for (const y of ys) {
+        const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.44, 6), steel);
+        rung.rotation.z = Math.PI / 2;
+        rung.position.set(0, y, 0);
+        group.add(rung);
+      }
+    };
+    const upper = new THREE.Group();
+    rails(upper, -0.2, 1.15);
+    rungs(upper, [0.0, 0.3]);
+    const low = new THREE.Group();
+    rails(low, -1.55, -0.1);
+    rungs(low, [-1.5, -1.2, -0.9, -0.6, -0.3]);
+    low.position.z = -0.06;
+    ladder.add(upper, low);
+    boat.userData.ladderLow = low;
     boat.add(hull, bottom, keel, cabin, motor, prop, ladder);
     boat.visible = false;
   }

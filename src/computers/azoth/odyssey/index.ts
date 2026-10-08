@@ -1,4 +1,4 @@
-import { Tissues, WATER_VAPOUR, depthToPressure, n2Fraction, planAscent } from '../../../engine/buhlmann';
+import { AIR, COMPARTMENTS, SURFACE_PRESSURE, Tissues, WATER_VAPOUR, depthToPressure, n2Fraction, planAscent } from '../../../engine/buhlmann';
 import type { DiveSession } from '../../../engine/session';
 import type { Lang } from '../../../i18n';
 import { depthInt, depthText, depthUnit, imperial, pressText, tempUnit, tempVal } from '../../../units';
@@ -16,6 +16,12 @@ const DTR_MODES = ['DTR', "DTR/+5'", 'DTR/HS', 'DTR/DTP', 'DTR/BG'];
 /** §8 (figures) : contenu du champ central du bas : bloc (avec sonde), pile, CNS, température, profondeur max., tissus. */
 type Mid = 'tank' | 'battery' | 'cns' | 'temp' | 'max' | 'tissues';
 const MIDS: Mid[] = ['tank', 'battery', 'cns', 'temp', 'max', 'tissues'];
+/**
+ * Champ en haut à droite, dans l'ordre de défilement (voir le réglage `top` dans rules.ts : GFsurf et
+ * Plafond d'après les figures, Tissus d'après les photos, P moy. et GF d'après un utilisateur).
+ */
+const TOPS = ['ceil', 'tissues', 'avg', 'gfsurf', 'gf'];
+const TOP_LABEL: Record<string, string> = { ceil: 'Plafond', tissues: 'Tissus', avg: 'P moy.', gfsurf: 'GFsurf', gf: 'GF' };
 /** §4.2 (figure) : tuiles de l'écran d'accueil. */
 const TILES = ['Système', 'Réglages', 'Transfert', 'Plongée'];
 
@@ -88,7 +94,7 @@ export class AzothOdyssey extends OdysseyRules {
       return true;
     }
     this.selAt = performance.now();
-    if (this.sel === 'top') this.settings.top = this.settings.top === 'ceil' ? 'gfsurf' : 'ceil';
+    if (this.sel === 'top') this.settings.top = TOPS[(TOPS.indexOf(this.settings.top) + 1) % TOPS.length];
     else if (this.sel === 'dtr') this.dtrMode = (this.dtrMode + 1) % DTR_MODES.length;
     else if (this.sel === 'gas' && s.inDive && this.knownGases(s).length > 1) {
       // §8 (figures) : « Sélection du 2ème Gaz disponible » puis « Changement de gaz » : le gaz suivant est proposé.
@@ -227,16 +233,22 @@ export class AzothOdyssey extends OdysseyRules {
     const deco = v.inDive && v.inDeco;
     const stopCls = deco && v.depth < v.ceiling - 0.1 ? ' od-red' : deco && v.depth < v.stopDepth - 0.1 ? ' od-brown' : '';
 
-    // Ligne du haut : Durée, Profondeur, GFsurf ou Plafond.
+    // Ligne du haut : Durée, Profondeur, champ modulable (Plafond, Tissus, P moy., GFsurf ou GF).
     const timeTxt = dur(v.diveTime, 5); // m'ss au début de la plongée (figures : « 3'20 », puis « 8' ») ; seuil supposé
     const depth = imperial() ? depthText(v.depth) : fr(depthText(v.depth));
-    const ceilMode = this.settings.top === 'ceil';
-    const topLbl = ceilMode ? 'Plafond' : 'GFsurf';
-    const topVal = ceilMode ? (imperial() ? String(depthInt(v.ceiling)) : fr(v.ceiling.toFixed(1))) : String(Math.round(v.surfGf));
+    const mode = TOP_LABEL[this.settings.top] ? this.settings.top : 'gfsurf';
+    const ceilMode = mode === 'ceil';
+    // Plafond au dixième (figures du §8) ; P moy. au format de la profondeur (non vérifié) ; GF entier
+    // comme GFsurf (non vérifié).
+    const topVal = ceilMode ? (imperial() ? String(depthInt(v.ceiling)) : fr(v.ceiling.toFixed(1)))
+      : mode === 'tissues' ? tissueBars(s.tissues, s.pressure, s.gas.o2, s.gas.he)
+      : mode === 'avg' ? (imperial() ? depthText(v.avgDepth) : fr(depthText(v.avgDepth)))
+      : String(Math.round(mode === 'gf' ? v.gf99 : v.surfGf));
+    const topHtml = mode === 'tissues' ? topVal : `<div class="od-val">${topVal}</div>`;
     const top = `
       <div class="od-cell l"><div class="od-lbl">Durée</div><div class="od-val">${timeTxt}</div></div>
       <div class="od-cell c"><div class="od-lbl">Profondeur</div><div class="od-val">${depth}</div></div>
-      <div class="od-cell r${hl('top')}${ceilMode ? stopCls : ''}"><div class="od-lbl">${topLbl}</div><div class="od-val">${topVal}</div></div>`;
+      <div class="od-cell r${hl('top')}${ceilMode ? stopCls : ''}"><div class="od-lbl">${TOP_LABEL[mode]}</div>${topHtml}</div>`;
 
     // Ligne du milieu : NDL ou palier, DTR.
     const dtr = this.dtrField(v, s);
@@ -348,6 +360,24 @@ export class AzothOdyssey extends OdysseyRules {
 
 function battery(): string {
   return '<span class="od-bat"><i></i><i></i><i></i><i></i><i></i></span>';
+}
+
+/**
+ * Petit graphique « Tissus » du champ en haut à droite (photos du §12 et de la plaquette) : une barre
+ * verticale grise par compartiment (rapides à gauche), remplie en bleu clair. Le manuel ne le décrit
+ * pas : hauteur supposée = part de la saturation atteinte à la profondeur actuelle (0 = saturé en
+ * surface, plein = saturé à cette profondeur ou sursaturé), ce qui redonne l'allure des photos.
+ */
+function tissueBars(t: Tissues, pAmb: number, o2: number, he: number): string {
+  const surface = (SURFACE_PRESSURE - WATER_VAPOUR) * n2Fraction(AIR);
+  const inspired = (pAmb - WATER_VAPOUR) * (n2Fraction({ o2, he }) + he);
+  const bars = Array.from({ length: COMPARTMENTS }, (_, i) => {
+    const p = t.n2[i] + t.he[i];
+    const span = inspired - surface;
+    const f = span > 0.05 ? (p - surface) / span : p > inspired + 0.01 ? 1 : 0;
+    return `<i><b style="height:${(Math.max(0, Math.min(1, f)) * 100).toFixed(0)}%"></b></i>`;
+  });
+  return `<span class="od-tbars">${bars.join('')}</span>`;
 }
 
 /**

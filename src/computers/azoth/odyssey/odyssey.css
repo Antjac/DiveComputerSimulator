@@ -67,6 +67,10 @@
 .od-bat { display: inline-flex; gap: 2px; padding: 2px; border: 2px solid #eee; border-radius: 2px; position: relative; }
 .od-bat::after { content: ''; position: absolute; right: -6px; top: 5px; width: 3px; height: 7px; background: #eee; }
 .od-bat i { width: 5px; height: 12px; background: #eee; }
+/* Top right "Tissus" graph (photos of §12 and of the brochure): 16 grey bars, light blue filling. */
+.od-tbars { display: flex; align-items: stretch; gap: 1px; width: 78px; height: 36px; margin-top: 14px; padding: 1px; background: #2a2a2a; box-sizing: border-box; }
+.od-tbars i { position: relative; flex: 1; background: #6c6c6c; }
+.od-tbars b { position: absolute; left: 0; right: 0; bottom: 0; background: #5fd0e8; }
 .od-tis { position: relative; display: block; width: 100%; height: 32px; background: #333; }
 .od-tis i { position: absolute; height: 2px; }
 .od-tis b { position: absolute; left: 45%; top: 0; bottom: 0; width: 1px; background: #fff; }

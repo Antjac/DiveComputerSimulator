@@ -7,10 +7,12 @@
 @keyframes blink { to { visibility: hidden; } }
 
 /* Pressure gauge beside the computer. */
-.spg { position: absolute; left: 10px; top: 10px; width: 112px; text-align: center; z-index: 1; pointer-events: none; }
+.spg { position: absolute; left: 10px; top: 10px; width: 112px; text-align: center; z-index: 1; cursor: zoom-in; }
 .spg[hidden] { display: none; }
 .spg svg { width: 100%; display: block; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.5)); }
 .spg-lbl { font-size: 11px; color: var(--muted); }
+/* Room for the gauge beside the caption above the computer (both sides: the caption stays centred). */
+.device-caption.with-spg { padding-inline: 124px; }
 
 /* Larger hit areas for the device buttons (fingers). */
 .dev button::after { content: ''; position: absolute; inset: -14px; }
@@ -40,9 +42,19 @@
 
 /* Phones: smaller pressure gauge (after its base rules). */
 @media (max-width: 640px), (max-height: 500px) and (orientation: landscape) {
-  .spg { width: 54px; left: 4px; top: 4px; }
+  .spg { width: 44px; left: 4px; top: 4px; }
   .spg-lbl { display: none; }
+  .device-caption.with-spg { padding-inline: 46px 0; }
 }
+/* Enlarged with a click or a tap (diveControls.ts), back with another one or after a few seconds. */
+.spg.big {
+  position: fixed; left: 50%; top: 50%; width: min(300px, 76vw, 70vh); translate: -50% -50%; z-index: 30;
+  padding: 14px; background: rgba(5, 12, 20, 0.92); border: 1px solid var(--line); border-radius: 16px;
+  cursor: zoom-out; animation: spg-zoom 0.18s ease-out;
+}
+.spg.big .spg-lbl { display: block; margin-top: 6px; font-size: 14px; }
+@keyframes spg-zoom { from { scale: 0.4; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .spg.big { animation: none; } }
 
 /* The computer vibrates (alarm sounds on, vibrating model): a small shake while it buzzes. */
 #device.buzzing > * { animation: dev-buzz 0.07s linear infinite; }

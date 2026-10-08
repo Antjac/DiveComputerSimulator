@@ -24,6 +24,7 @@ export class GasPrompt {
     this.offer = null;
     this.declined.clear();
     this.armed.clear();
+    this.left = null;
   }
 
   /**
@@ -67,6 +68,35 @@ export class GasPrompt {
       this.armed.delete(best);
     }
     return { expired, included };
+  }
+
+  /** Last switch to a leaner gas: the richer gas left, and when (session clock). */
+  private left: { gas: number; at: number } | null = null;
+  private lastBreathing = 0;
+
+  /**
+   * Not described by the Mares manuals (assumed, from user feedback, issue #19): back from a richer gas
+   * to a leaner one while shallower than the MOD of the richer gas, it leaves the plan after `delay`
+   * seconds, as when its prompt goes unanswered; no new offer is made above its MOD. Call after
+   * `update`. Returns the gas just excluded, or null.
+   */
+  leave(s: DiveSession, mods: number[], delay: number): number | null {
+    if (s.breathing !== this.lastBreathing) {
+      const gases = s.allGases;
+      const from = this.lastBreathing;
+      this.left = s.inDive && from > 0 && (gases[s.breathing]?.o2 ?? 0) < (gases[from]?.o2 ?? 0) - 1e-9 ? { gas: from, at: s.clock } : null;
+      this.lastBreathing = s.breathing;
+    }
+    const l = this.left;
+    if (!l || !s.inDive || s.depth > mods[l.gas]) {
+      if (!s.inDive || (l && s.depth > mods[l.gas])) this.left = null;
+      return null;
+    }
+    if (s.clock - l.at < delay) return null;
+    this.left = null;
+    if (this.declined.has(l.gas)) return null;
+    this.declined.add(l.gas);
+    return l.gas;
   }
 
   /** The diver accepts the gas offered. */

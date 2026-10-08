@@ -177,19 +177,25 @@
 .boat-offer.above::before { top: 100%; bottom: auto; border-width: 13px 9px 0; border-color: #1d2630 transparent transparent; }
 .boat-offer.above::after { top: calc(100% - 3px); bottom: auto; border-width: 11px 7px 0; border-color: #fffdf5 transparent transparent; }
 .boat-offer p { margin: 0; font-weight: 600; }
-.boat-offer .boat-note { margin-top: 4px; font-weight: 400; font-size: 12px; color: #4a5663; }
-.boat-offer .boat-note[hidden], .boat-offer .boat-warn[hidden], .boat-btns[hidden] { display: none; }
+.boat-offer .boat-warn[hidden], .boat-offer .boat-joke[hidden], .boat-choices[hidden] { display: none; }
+/* Divers' joke during the break (app/jokes.ts). */
+.boat-offer .boat-joke { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #d9d2bf; font-weight: 400; font-style: italic; color: #36424e; }
 .boat-offer .boat-warn { margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid #d9d2bf; color: #b3261e; }
-.boat-btns { display: flex; gap: 8px; margin-top: 8px; }
-.boat-btns .btn { flex: 1; color: #1d2630; background: #fff; border: 2px solid #1d2630; font-weight: 700; }
-.boat-btns .btn.primary { background: #1d2630; color: #fffdf5; }
-.boat-btns .btn:hover { border-color: #1f6fa8; }
+.boat-choices { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.boat-pause { display: flex; gap: 6px; }
+.boat-pause .btn { flex: 1; }
+.boat-choices .btn, .boat-pause select {
+  color: #1d2630; background: #fff; border: 2px solid #1d2630; border-radius: 8px; font-weight: 700;
+}
+.boat-pause select { flex: none; width: 84px; padding: 0 4px; font: inherit; font-weight: 600; }
+.boat-choices .btn.primary { background: #1d2630; color: #fffdf5; }
+.boat-choices .btn:hover, .boat-pause select:hover { border-color: #1f6fa8; }
 .boat-offer.no-tail::before, .boat-offer.no-tail::after { display: none; }
 @media (max-width: 640px), (max-height: 500px) and (orientation: landscape) {
   .boat-offer { padding: 7px 10px; font-size: 12px; }
-  .boat-offer .boat-note { font-size: 11px; margin-top: 2px; }
-  .boat-btns { margin-top: 6px; }
-  .boat-btns .btn { min-height: 32px; padding: 4px 8px; }
+  .boat-choices { margin-top: 6px; gap: 4px; }
+  .boat-choices .btn, .boat-pause select { min-height: 30px; padding: 3px 8px; }
+  .boat-pause select { width: 76px; padding: 0 2px; }
 }
 /* MN90 tables (app/mn90.ts) */
 .mn90 { width: min(760px, calc(100vw - 32px)); }

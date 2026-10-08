@@ -192,19 +192,23 @@ const dict = {
     fr: 'Consécutive : moins de 15 min d’intervalle surface ; successive : moins de 12 h ; simple : première plongée ou plus de 12 h.',
     en: 'Consecutive: surface interval under 15 min; repetitive: under 12 h; single: first dive or more than 12 h.',
   },
-  // Boat offering a full tank at the surface (main.ts, updateBoat).
-  boatAsk: { fr: 'Ohé ! Il vous reste {p}. On vous passe un bloc plein ?', en: 'Ahoy! You have {p} left. Want a full tank?' },
-  boatAskNote: { fr: 'Oui : vous remontez à bord, la plongée est terminée.', en: 'Yes: you climb aboard and the dive ends.' },
-  boatYes: { fr: 'Oui', en: 'Yes' },
-  boatNo: { fr: 'Non', en: 'No' },
-  boatYesReply: { fr: 'Voilà un bloc plein : {p}. Bonne pause à bord !', en: 'Here is a full tank: {p}. Enjoy the break on board!' },
+  // Boat alongside at the surface (app/boat.ts): break on board, fresh tank, or carry on.
+  boatAsk: { fr: 'Ohé ! Il vous reste {p}. Que faites-vous ?', en: 'Ahoy! You have {p} left. What will you do?' },
+  boatBoard: { fr: 'Pause à bord', en: 'Break on board' },
+  boatDur: { fr: 'Durée de la pause (intervalle surface)', en: 'Length of the break (surface interval)' },
+  boatSwap: { fr: 'Repartir avec un bloc plein', en: 'Go again with a full tank' },
+  boatStay: { fr: 'Continuer avec ce bloc', en: 'Carry on with this tank' },
+  boatAboard: { fr: 'À bord : pause de {d}, plongée terminée. Bloc plein : {p}.', en: 'On board: {d} break, dive over. Full tank: {p}.' },
+  boatAboardLeft: { fr: 'Encore {d}…', en: '{d} to go…' },
+  boatBack: { fr: 'À l’eau ! Bonne plongée.', en: 'Back in the water! Enjoy your dive.' },
+  boatSwapReply: { fr: 'Voilà un bloc plein : {p}.', en: 'Here is a full tank: {p}.' },
+  boatSwapSame: { fr: 'Si vous redescendez dans les {m} min, la plongée continue.', en: 'Go back down within {m} min and the dive carries on.' },
   // Boat arriving after an ascent judged too fast (session.rapidAscent, same criterion as the rescue alert).
   boatRapid: {
     fr: 'Votre remontée était trop rapide : {rate} de {from} à {to} (au-delà de {max}). Déclenchez la procédure adaptée selon votre formation.',
     en: 'Your ascent was too fast: {rate} from {from} to {to} (above {max}). Start the appropriate procedure according to your training.',
   },
-  boatOk: { fr: 'Compris', en: 'Understood' },
-  boatNoReply: { fr: 'Pas de souci, bonne plongée !', en: 'No worries, enjoy your dive!' },
+  boatStayReply: { fr: 'Pas de souci, bonne plongée !', en: 'No worries, enjoy your dive!' },
   alarms: { fr: 'Alarmes', en: 'Alarms' },
   none: { fr: 'aucune', en: 'none' },
   status: { fr: 'État', en: 'Status' },
@@ -297,8 +301,8 @@ const dict = {
   },
   tourSettingsT: { fr: 'Réglages', en: 'Settings' },
   tourSettingsB: {
-    fr: 'Les réglages de l’ordinateur choisi (écran…), le gaz, modifiable seulement en surface, et l’<b>alerte secours</b>, qui arrête la simulation en cas d’incident. Les <b>réglages avancés</b> regroupent d’abord la plongée (unités, fond du site, bloc, consommation), puis les autres réglages de l’ordinateur (dont ses alertes de pression du bloc, réserve comprise) et l’émetteur.',
-    en: 'The chosen computer’s settings (display…), the gas, which can only be changed at the surface, and the <b>rescue alert</b>, which stops the simulation after an incident. <b>Advanced settings</b> hold the dive first (units, site depth, tank, consumption), then the computer’s other settings (including its tank pressure alerts and reserve) and the transmitter.',
+    fr: 'Le fond du site, les réglages de l’ordinateur choisi (écran…), le gaz, modifiable seulement en surface, et l’<b>alerte secours</b>, qui arrête la simulation en cas d’incident. Les <b>réglages avancés</b> regroupent d’abord la plongée (unités, bloc, consommation), puis les autres réglages de l’ordinateur (dont ses alertes de pression du bloc, réserve comprise) et l’émetteur.',
+    en: 'The site depth, the chosen computer’s settings (display…), the gas, which can only be changed at the surface, and the <b>rescue alert</b>, which stops the simulation after an incident. <b>Advanced settings</b> hold the dive first (units, tank, consumption), then the computer’s other settings (including its tank pressure alerts and reserve) and the transmitter.',
   },
   tourTimeT: { fr: 'Le temps', en: 'Time' },
   tourTimeB: {

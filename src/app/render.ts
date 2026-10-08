@@ -38,6 +38,8 @@ function renderSpg(v: ComputerView): void {
   const el = $('spg');
   const shown = !v.tank.ai || app.spgWithTx;
   el.hidden = !shown;
+  // The caption above the computer makes room for the gauge, which must not hide its text.
+  $('device-caption').classList.toggle('with-spg', shown);
   if (!shown) return;
   setHtml(el, renderGauge(v.tank.pressure, SPG_RED_ZONE, t('spg')));
 }

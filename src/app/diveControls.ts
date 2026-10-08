@@ -123,6 +123,15 @@ export function setupDiveControls(): void {
 
   $('btn-reset').addEventListener('click', resetAll);
 
+  // Analog pressure gauge: small beside the computer; a click or a tap enlarges it, another one (or
+  // 8 s) brings it back.
+  const spg = $('spg');
+  let spgTimer = 0;
+  spg.addEventListener('click', () => {
+    clearTimeout(spgTimer);
+    if (spg.classList.toggle('big')) spgTimer = window.setTimeout(() => spg.classList.remove('big'), 8000);
+  });
+
   window.addEventListener('keydown', (e) => {
     if ((e.target as HTMLElement).tagName === 'SELECT') return;
     if (e.key === 'ArrowDown') session.nudgeRate(1);
