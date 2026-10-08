@@ -192,6 +192,12 @@ const dict = {
     fr: 'Consécutive : moins de 15 min d’intervalle surface ; successive : moins de 12 h ; simple : première plongée ou plus de 12 h.',
     en: 'Consecutive: surface interval under 15 min; repetitive: under 12 h; single: first dive or more than 12 h.',
   },
+  // Floating pressure gauge (app/spg.ts).
+  spgClose: { fr: 'Remettre le manomètre à côté de l’ordinateur', en: 'Put the gauge back beside the computer' },
+  spgFloatHelp: {
+    fr: 'Glisser pour déplacer, coin en bas à droite pour redimensionner, toucher pour le remettre en place',
+    en: 'Drag to move, bottom-right corner to resize, tap to put it back',
+  },
   // Boat alongside at the surface (app/boat.ts): break on board, fresh tank, or carry on.
   boatAsk: { fr: 'Ohé ! Il vous reste {p}. Que faites-vous ?', en: 'Ahoy! You have {p} left. What will you do?' },
   boatBoard: { fr: 'Pause à bord', en: 'Break on board' },

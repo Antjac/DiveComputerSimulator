@@ -97,7 +97,11 @@
       <section class="panel device-panel">
         <p class="device-caption" id="device-caption"></p>
         <div id="device" class="device-host"></div>
-        <div id="spg" class="spg" hidden></div>
+        <div id="spg" class="spg" hidden>
+          <div id="spg-dial"></div>
+          <button class="spg-close" data-i18n-title="spgClose" aria-label="✕">✕</button>
+          <span class="spg-resize" aria-hidden="true"></span>
+        </div>
         <div id="ex-banner" class="ex-banner" hidden></div>
         <div id="device-alarms" class="alarms" aria-live="polite"></div>
         <div class="device-hint" id="device-hint"></div>

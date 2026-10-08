@@ -3,6 +3,7 @@
 import './style.css';
 import { setupSound } from './app/alertSounds';
 import { setupBoat } from './app/boat';
+import { setupSpg } from './app/spg';
 import { setupCompare } from './app/compare';
 import { installDevHook } from './app/devHook';
 import { showIntro, setupDialogs } from './app/dialogs';
@@ -52,6 +53,7 @@ setupMn90();
 setupExercises();
 setupRescue();
 setupBoat();
+setupSpg();
 setupSound();
 if (import.meta.env.DEV) installDevHook();
 

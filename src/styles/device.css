@@ -46,13 +46,31 @@
   .spg-lbl { display: none; }
   .device-caption.with-spg { padding-inline: 46px 0; }
 }
-/* Enlarged with a click or a tap (diveControls.ts), back with another one or after a few seconds. */
+/* Floating gauge (app/spg.ts): opened with a click or a tap, dragged and resized by the user. */
+.spg-close, .spg-resize { display: none; }
 .spg.big {
-  position: fixed; left: 50%; top: 50%; width: min(300px, 76vw, 70vh); translate: -50% -50%; z-index: 30;
-  padding: 14px; background: rgba(5, 12, 20, 0.92); border: 1px solid var(--line); border-radius: 16px;
-  cursor: zoom-out; animation: spg-zoom 0.18s ease-out;
+  position: fixed; z-index: 30; padding: 14px; touch-action: none;
+  background: rgba(5, 12, 20, 0.92); border: 1px solid var(--line); border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); cursor: grab; animation: spg-zoom 0.18s ease-out;
 }
+.spg.big:active { cursor: grabbing; }
 .spg.big .spg-lbl { display: block; margin-top: 6px; font-size: 14px; }
+.spg.big .spg-close {
+  display: grid; place-items: center; position: absolute; top: 6px; right: 6px; width: 28px; height: 28px;
+  border-radius: 50%; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.08); color: var(--ink);
+  font-size: 13px; cursor: pointer;
+}
+.spg.big .spg-close:hover { background: rgba(255, 255, 255, 0.18); }
+/* Resize handle: three diagonal ridges in the bottom-right corner. */
+.spg.big .spg-resize {
+  display: block; position: absolute; right: 3px; bottom: 3px; width: 22px; height: 22px; cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--muted) 50%, var(--muted) 56%, transparent 56%,
+    transparent 68%, var(--muted) 68%, var(--muted) 74%, transparent 74%, transparent 86%, var(--muted) 86%, var(--muted) 92%, transparent 92%);
+}
+@media (pointer: coarse) {
+  .spg.big .spg-close { width: 36px; height: 36px; }
+  .spg.big .spg-resize { width: 32px; height: 32px; }
+}
 @keyframes spg-zoom { from { scale: 0.4; opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .spg.big { animation: none; } }
 

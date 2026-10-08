@@ -41,7 +41,7 @@ function renderSpg(v: ComputerView): void {
   // The caption above the computer makes room for the gauge, which must not hide its text.
   $('device-caption').classList.toggle('with-spg', shown);
   if (!shown) return;
-  setHtml(el, renderGauge(v.tank.pressure, SPG_RED_ZONE, t('spg')));
+  setHtml($('spg-dial'), renderGauge(v.tank.pressure, SPG_RED_ZONE, t('spg')));
 }
 
 /** Last HTML written to each element: rewriting identical markup still costs a style and layout pass. */
