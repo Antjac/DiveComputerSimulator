@@ -4,7 +4,7 @@ import type { Lang } from '../../../i18n';
 import { depthInt, depthText, depthUnit, imperial, pressText, pressUnit, tempUnit, tempVal } from '../../../units';
 import { ButtonHelp, ComputerView, clockOfDay, leadingOnGas } from '../../base';
 import { type PerdixNotice, PerdixRules } from './rules';
-import { SwMenu, bestGas, gasDensity, nxName, swO2, trimixName } from '../multigas';
+import { SwMenu, bestGas, gasDensity, nxName, swO2, trimixName, turnGasOn } from '../multigas';
 
 const NOTICE_TEXT: Record<PerdixNotice, string> = {
   'high-ppo2': 'HIGH PPO2',
@@ -38,7 +38,11 @@ export class ShearwaterPerdix extends PerdixRules {
       if (button === 'left') menu.menu(items, this.knownGases(s));
       else {
         const g = menu.select(items[menu.item!], this.knownGases(s), this.queuedGas(s));
-        if (g !== null) s.switchGas(g);
+        if (g !== null) {
+          // §11.3: a gas that is off "will be turned on automatically if it is selected".
+          turnGasOn(this.settings, g);
+          s.switchGas(g);
+        }
       }
       return true;
     }
@@ -71,7 +75,7 @@ export class ShearwaterPerdix extends PerdixRules {
   /** The best gas when it differs from the gas breathed (gas shown in yellow), else null. */
   private betterGas(s: DiveSession): number | null {
     if (this.maxGases < 2) return null;
-    const b = bestGas(s, this.knownGases(s), this.modPpo2, this.decoPpo2());
+    const b = bestGas(s, this.knownGases(s), this.modPpo2, this.decoPpo2(), (i) => this.gasOff(i));
     return b !== null && b !== s.breathing ? b : null;
   }
 
@@ -290,7 +294,9 @@ export class ShearwaterPerdix extends PerdixRules {
    * Menu in the bottom row: the item's name (figures "Turn Off", "Select Gas"), or Select Gas: new style
    * (Recreational manual §11.3 figure: every gas "NN%", the active one inverted, ▸ on the one pointed,
    * "Next" / "Select", "Active" when the active gas is pointed); classic style (Technical manual §10.2
-   * figures: "A1 OC On 21/00", Next / Select).
+   * figures: "A1 OC On 21/00", Next / Select). §10.2 / §11.3: a gas turned off is shown in magenta (the
+   * digits only, "%" stays blue, Recreational §11.3 figure); new style pointed on it: "Off" in magenta
+   * instead of "Active" (Technical manual §10.2 New Style figure, also assumed for 3 GasNx).
    */
   private menuRow(s: DiveSession): string {
     const m = this.menu;
@@ -299,10 +305,12 @@ export class ShearwaterPerdix extends PerdixRules {
     const order = SwMenu.order(gases);
     if (this.mode === 'octec') {
       const k = order.indexOf(m.gas);
-      return `<div class="pd-msel"><div class="pd-mgas">${m.gas === s.breathing ? 'A' : '&nbsp;'}<u>${k + 1}</u> OC On ${trimixName(gases[m.gas])}</div><div class="pd-mlbl"><span>Next</span><span>Select</span></div></div>`;
+      const off = this.gasOff(m.gas);
+      return `<div class="pd-msel"><div class="pd-mgas ${off ? 'pd-magenta' : ''}">${m.gas === s.breathing ? 'A' : '&nbsp;'}<u>${k + 1}</u> OC ${off ? 'Off' : 'On'} ${trimixName(gases[m.gas])}</div><div class="pd-mlbl"><span>Next</span><span>Select</span></div></div>`;
     }
-    const items = order.map((i) => `<span class="${i === s.breathing ? 'act' : ''}">${i === m.gas ? '<b class="yellow">▸</b>' : ''}${swO2(gases[i])}<small class="pd-blue">%</small></span>`).join('');
-    return `<div class="pd-msel"><div class="pd-mlist">${items}</div><div class="pd-mlbl"><span>Next</span><span>${m.gas === s.breathing ? 'Active' : ''}</span><span>Select</span></div></div>`;
+    const items = order.map((i) => `<span class="${i === s.breathing ? 'act' : ''}">${i === m.gas ? '<b class="yellow">▸</b>' : ''}<i class="${this.gasOff(i) ? 'pd-magenta' : ''}">${swO2(gases[i])}</i><small class="pd-blue">%</small></span>`).join('');
+    const mid = m.gas === s.breathing ? 'Active' : this.gasOff(m.gas) ? '<i class="pd-magenta">Off</i>' : '';
+    return `<div class="pd-msel"><div class="pd-mlist">${items}</div><div class="pd-mlbl"><span>Next</span><span>${mid}</span><span>Select</span></div></div>`;
   }
 
   /**

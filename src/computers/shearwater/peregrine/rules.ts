@@ -5,7 +5,7 @@ import { type AlertCue, type ComputerView, DiveComputer, SettingDef } from '../.
 import { Notices } from '../../common/notices';
 import { ppo2Setting } from '../../common/ppo2';
 import { pressureSetting } from '../../common/tank';
-import { OC_DECO_PPO2, decoPpo2Setting } from '../multigas';
+import { OC_DECO_PPO2, decoPpo2Setting, gasIsOff, gasOnSettings, turnGasOn } from '../multigas';
 
 /** §4.10 primary notifications that can occur here, highest priority first (order of the table). */
 export type PeregrineNotice =
@@ -55,8 +55,8 @@ export abstract class PeregrineRules extends DiveComputer {
   readonly transmitter = 'Swift';
   readonly gasTimeName = 'GTR';
   readonly notes = {
-    fr: 'Modes Air / Nitrox (un seul gaz) et 3 GasNx (par défaut, §12.1 ; jusqu’à 3 gaz Nx, §12.5) ; Gauge non simulé. 3 GasNx : le gaz le moins riche suit la MOD PPO2, les autres la PPO2 de déco (1,61 par défaut, Adv. Config 2) ; le plan suppose le passage au meilleur gaz (§6.1) ; gaz en jaune quand un meilleur gaz est disponible, notifications persistantes MOD ⟳Gas et Best Gas (§4.8) ; MENU puis FUNC sur Select Gas (§11.3 : liste de tous les gaz, meilleur gaz proposé d’abord) ; dernier palier 3 ou 6 m (§12.2). Ligne du bas (§4.4) : MAX et mini-affichage 1 par défaut, quelques combinaisons des figures, ou personnalisée (centre et droite au choix parmi les options du tableau du §4.4 : profondeurs, PPO2, CNS, MOD, densité, GF99, SurGF, plafond, @+5, Δ+5, TTS, heure, DET, RATE, température, pression, SAC, GTR ; Timer, boussole, RTR et mini-affichages personnalisés non simulés). Bouton droit (FUNC) : écrans d’info (LAST DIVE, AI, MOD/MAX/PPO2, TEMP/CONSERV/CNS, GF99/SurGF/CEIL, tissus, DET/Δ+5/@+5, batterie, pression, date, n° de série) ; bouton gauche (MENU) : retour à l’écran principal (menus non simulés). Aucun verrouillage en cas de palier manqué (§5.2). Palier de sécurité ajouté au-delà de 11 m, décompte entre 2,4 et 8,3 m (§5.1) ; réglages 3, 4, 5 min, Adapt, CntUp ou Off. Notifications du §4.10 en jaune sur la ligne du bas jusqu’à l’appui sur un bouton (HIGH PPO2, MISSED DECO STOP, FAST ASCENT, VERY HIGH CNS, HIGH CNS, alertes NDL / profondeur / durée, T1 CRITICAL PRES) ; notifications persistantes à gauche du NDL (High CNS, MOD, Near MOD). Compas, boussole, mini-affichages personnalisés et menus non simulés. Émetteur : pression de réserve réglable (50 bar par défaut, §12.3), alerte critique sous max(21 bar, réserve / 2).',
-    en: 'Air / Nitrox (single gas) and 3 GasNx (default, §12.1; up to 3 Nx gases, §12.5) modes; Gauge not simulated. 3 GasNx: the leanest gas obeys the MOD PPO2, the others the deco PPO2 (1.61 by default, Adv. Config 2); the plan assumes the switch to the best gas (§6.1); gas in yellow when a better gas is available, MOD ⟳Gas and Best Gas persistent notifications (§4.8); MENU then FUNC on Select Gas (§11.3: list of every gas, best gas offered first); last stop 3 or 6 m (§12.2). Bottom row (§4.4): MAX and mini display 1 by default, some combinations of the figures, or custom (centre and right chosen among the options of the §4.4 table: depths, PPO2, CNS, MOD, density, GF99, SurGF, ceiling, @+5, Δ+5, TTS, clock, DET, RATE, temperature, pressure, SAC, GTR; Timer, compass, RTR and custom mini displays not simulated). Right button (FUNC): info screens (LAST DIVE, AI, MOD/MAX/PPO2, TEMP/CONSERV/CNS, GF99/SurGF/CEIL, tissues, DET/Δ+5/@+5, battery, pressure, date, serial number); left button (MENU): back to the main screen (menus not simulated). No lock-out for missed stops (§5.2). Safety stop added beyond 11 m, counting down between 2.4 and 8.3 m (§5.1); settings 3, 4, 5 min, Adapt, CntUp or Off. §4.10 notifications in yellow on the bottom row until a button is pressed (HIGH PPO2, MISSED DECO STOP, FAST ASCENT, VERY HIGH CNS, HIGH CNS, NDL / depth / time alerts, T1 CRITICAL PRES); persistent notifications left of the NDL (High CNS, MOD, Near MOD). Compass, custom mini displays and menus are not simulated. Transmitter: settable reserve pressure (50 bar by default, §12.3), critical warning below max(21 bar, reserve / 2).',
+    fr: 'Modes Air / Nitrox (un seul gaz) et 3 GasNx (par défaut, §12.1 ; jusqu’à 3 gaz Nx, §12.5) ; Gauge non simulé. 3 GasNx : le gaz le moins riche suit la MOD PPO2, les autres la PPO2 de déco (1,61 par défaut, Adv. Config 2) ; le plan suppose le passage au meilleur gaz (§6.1) ; gaz en jaune quand un meilleur gaz est disponible, notifications persistantes MOD ⟳Gas et Best Gas (§4.8) ; MENU puis FUNC sur Select Gas (§11.3 : liste de tous les gaz, meilleur gaz proposé d’abord) ; Gaz 2 et 3 activables / désactivables (réglages, comme Define Gas ; §11.3–11.4) : un gaz désactivé est hors calcul et n’est pas proposé comme meilleur gaz, il apparaît en magenta dans Select Gas (« Off » quand il est pointé) et le sélectionner le réactive ; le gaz actif ne peut pas être désactivé ; dernier palier 3 ou 6 m (§12.2). Ligne du bas (§4.4) : MAX et mini-affichage 1 par défaut, quelques combinaisons des figures, ou personnalisée (centre et droite au choix parmi les options du tableau du §4.4 : profondeurs, PPO2, CNS, MOD, densité, GF99, SurGF, plafond, @+5, Δ+5, TTS, heure, DET, RATE, température, pression, SAC, GTR ; Timer, boussole, RTR et mini-affichages personnalisés non simulés). Bouton droit (FUNC) : écrans d’info (LAST DIVE, AI, MOD/MAX/PPO2, TEMP/CONSERV/CNS, GF99/SurGF/CEIL, tissus, DET/Δ+5/@+5, batterie, pression, date, n° de série) ; bouton gauche (MENU) : retour à l’écran principal (menus non simulés). Aucun verrouillage en cas de palier manqué (§5.2). Palier de sécurité ajouté au-delà de 11 m, décompte entre 2,4 et 8,3 m (§5.1) ; réglages 3, 4, 5 min, Adapt, CntUp ou Off. Notifications du §4.10 en jaune sur la ligne du bas jusqu’à l’appui sur un bouton (HIGH PPO2, MISSED DECO STOP, FAST ASCENT, VERY HIGH CNS, HIGH CNS, alertes NDL / profondeur / durée, T1 CRITICAL PRES) ; notifications persistantes à gauche du NDL (High CNS, MOD, Near MOD). Compas, boussole, mini-affichages personnalisés et menus non simulés. Émetteur : pression de réserve réglable (50 bar par défaut, §12.3), alerte critique sous max(21 bar, réserve / 2).',
+    en: 'Air / Nitrox (single gas) and 3 GasNx (default, §12.1; up to 3 Nx gases, §12.5) modes; Gauge not simulated. 3 GasNx: the leanest gas obeys the MOD PPO2, the others the deco PPO2 (1.61 by default, Adv. Config 2); the plan assumes the switch to the best gas (§6.1); gas in yellow when a better gas is available, MOD ⟳Gas and Best Gas persistent notifications (§4.8); MENU then FUNC on Select Gas (§11.3: list of every gas, best gas offered first); Gases 2 and 3 can be turned on or off (settings, as Define Gas; §11.3–11.4): a gas turned off is left out of the calculation and not offered as the best gas, it is shown in magenta in Select Gas ("Off" when pointed) and selecting it turns it on; the active gas cannot be turned off; last stop 3 or 6 m (§12.2). Bottom row (§4.4): MAX and mini display 1 by default, some combinations of the figures, or custom (centre and right chosen among the options of the §4.4 table: depths, PPO2, CNS, MOD, density, GF99, SurGF, ceiling, @+5, Δ+5, TTS, clock, DET, RATE, temperature, pressure, SAC, GTR; Timer, compass, RTR and custom mini displays not simulated). Right button (FUNC): info screens (LAST DIVE, AI, MOD/MAX/PPO2, TEMP/CONSERV/CNS, GF99/SurGF/CEIL, tissues, DET/Δ+5/@+5, battery, pressure, date, serial number); left button (MENU): back to the main screen (menus not simulated). No lock-out for missed stops (§5.2). Safety stop added beyond 11 m, counting down between 2.4 and 8.3 m (§5.1); settings 3, 4, 5 min, Adapt, CntUp or Off. §4.10 notifications in yellow on the bottom row until a button is pressed (HIGH PPO2, MISSED DECO STOP, FAST ASCENT, VERY HIGH CNS, HIGH CNS, NDL / depth / time alerts, T1 CRITICAL PRES); persistent notifications left of the NDL (High CNS, MOD, Near MOD). Compass, custom mini displays and menus are not simulated. Transmitter: settable reserve pressure (50 bar by default, §12.3), critical warning below max(21 bar, reserve / 2).',
   };
   readonly settingDefs: SettingDef[] = [
     {
@@ -76,6 +76,7 @@ export abstract class PeregrineRules extends DiveComputer {
       showIf: (s) => s.mode !== 'nitrox',
     },
     decoPpo2Setting((s) => s.mode !== 'nitrox'),
+    ...gasOnSettings((s) => s.mode !== 'nitrox'),
     {
       key: 'gf',
       label: { fr: 'Conservatisme', en: 'Conservatism' },
@@ -226,6 +227,16 @@ export abstract class PeregrineRules extends DiveComputer {
     return this.settings.mode === 'nitrox' ? 1 : 3;
   }
 
+  /** Define Gas: gas `i` (index in allGases) turned off, left out of the calculations (see gasOnSettings). */
+  gasOff(i: number): boolean {
+    return this.maxGases > 1 && gasIsOff(this.settings, i);
+  }
+
+  /** §6.1: the plan assumes the diver "plans to use every gas that is currently turned on". */
+  planGases(s: DiveSession) {
+    return super.planGases(s).filter((g) => !this.gasOff(s.allGases.indexOf(g.gas)));
+  }
+
   /** Adv. Config 2: deco gases obey the OC Deco PPO2 (1.61 by default). */
   decoPpo2(): number {
     return Number(this.settings.decoPpo2) || OC_DECO_PPO2;
@@ -286,6 +297,8 @@ export abstract class PeregrineRules extends DiveComputer {
   }
 
   tick(s: DiveSession, dt: number): void {
+    // §11.3 Select Gas turns a gas on when it is selected, and the active gas cannot be off (multigas.ts).
+    if (this.maxGases > 1) turnGasOn(this.settings, s.breathing);
     const now: PeregrineNotice[] = [];
     if (s.inDive) {
       const gfHigh = this.decoParams(s).gfHigh;

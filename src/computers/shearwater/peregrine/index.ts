@@ -4,7 +4,7 @@ import type { Lang } from '../../../i18n';
 import { depthInt, depthText, depthUnit, imperial, pressText, pressUnit, tempUnit, tempVal } from '../../../units';
 import { ButtonHelp, ComputerView, clockOfDay, leadingOnGas } from '../../base';
 import { type PeregrineNotice, PeregrineRules } from './rules';
-import { SwMenu, bestGas, gasDensity, nxName, swO2 } from '../multigas';
+import { SwMenu, bestGas, gasDensity, nxName, swO2, turnGasOn } from '../multigas';
 
 // §4.10 primary notifications: title ("Warning", or "Alert" for the custom alerts) and message, as on
 // the figures of the table.
@@ -35,7 +35,11 @@ export class ShearwaterPeregrine extends PeregrineRules {
       if (button === 'left') menu.menu(items, this.knownGases(s));
       else {
         const g = menu.select(items[menu.item!], this.knownGases(s), this.betterGas(s) ?? s.breathing);
-        if (g !== null) s.switchGas(g);
+        if (g !== null) {
+          // §11.3: a gas that is off "will be turned on automatically if it is selected".
+          turnGasOn(this.settings, g);
+          s.switchGas(g);
+        }
       }
       return true;
     }
@@ -64,17 +68,23 @@ export class ShearwaterPeregrine extends PeregrineRules {
   /** The best gas when it differs from the gas breathed (§4.4: gas in yellow), else null. */
   private betterGas(s: DiveSession): number | null {
     if (this.maxGases < 2) return null;
-    const b = bestGas(s, this.knownGases(s), this.modPpo2, this.decoPpo2());
+    const b = bestGas(s, this.knownGases(s), this.modPpo2, this.decoPpo2(), (i) => this.gasOff(i));
     return b !== null && b !== s.breathing ? b : null;
   }
 
-  /** §11.3 figure: every gas "NN%", the active one inverted, ▸ on the one pointed; Next / Select. */
+  /**
+   * §11.3 figure: every gas "NN%", the active one inverted, ▸ on the one pointed; Next / Select. A gas
+   * "programmed, but off will be shown in Magenta" (the digits only, "%" stays cyan, §11.3 figure);
+   * pointed on it: "Off" in magenta instead of "Active" (Perdix 2 Technical manual §10.2 New Style figure,
+   * assumed here: not shown by this manual).
+   */
   private menuRow(s: DiveSession): string {
     const m = this.menu;
     if (m.gas === null) return `<div class="pt-menu">${this.menuItems(s)[m.item!]}</div>`;
     const gases = this.knownGases(s);
-    const items = SwMenu.order(gases).map((i) => `<span class="${i === s.breathing ? 'act' : ''}">${i === m.gas ? '<b class="yellow">▸</b>' : ''}${swO2(gases[i])}<small class="pt-cyan">%</small></span>`).join('');
-    return `<div class="pt-msel"><div class="pt-mlist">${items}</div><div class="pt-mlbl"><span>Next</span><span>${m.gas === s.breathing ? 'Active' : ''}</span><span>Select</span></div></div>`;
+    const items = SwMenu.order(gases).map((i) => `<span class="${i === s.breathing ? 'act' : ''}">${i === m.gas ? '<b class="yellow">▸</b>' : ''}<i class="${this.gasOff(i) ? 'pt-magenta' : ''}">${swO2(gases[i])}</i><small class="pt-cyan">%</small></span>`).join('');
+    const mid = m.gas === s.breathing ? 'Active' : this.gasOff(m.gas) ? '<i class="pt-magenta">Off</i>' : '';
+    return `<div class="pt-msel"><div class="pt-mlist">${items}</div><div class="pt-mlbl"><span>Next</span><span>${mid}</span><span>Select</span></div></div>`;
   }
 
   /**

@@ -27,6 +27,41 @@ export function decoPpo2Setting(showIf: (s: Record<string, string>) => boolean):
   };
 }
 
+/**
+ * Define Gas, On / Off of the programmed deco gases (gases 2 and 3 of the page; the simulator assumes
+ * the gases are programmed as carried). Technical manual §10.2 Select Gas: "Gases that are turned off
+ * are not used in decompression calculations"; Recreational and Peregrine TX manuals §11.4: "In 3 GasNx
+ * mode gases may be edited and turned on or off during a dive". Turning them off during the dive is
+ * done here with these settings (Dive Setup > Define Gas is not simulated).
+ */
+export function gasOnSettings(showIf: (s: Record<string, string>) => boolean): SettingDef[] {
+  return [2, 3].map((n) => ({
+    key: `gas${n}`,
+    label: { fr: `Gaz ${n} (Define Gas)`, en: `Gas ${n} (Define Gas)` },
+    options: [{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }],
+    default: 'on',
+    group: 'deco' as const,
+    showIf,
+  }));
+}
+
+/** Is gas `i` (index in allGases) turned off in Define Gas? The bottom gas has no On / Off setting here. */
+export function gasIsOff(settings: Record<string, string>, i: number): boolean {
+  return i > 0 && settings[`gas${i + 1}`] === 'off';
+}
+
+/**
+ * Select Gas: "A gas that is off will be shown in Magenta, but can still be selected. It will be turned
+ * on automatically if it is selected" (Technical manual §10.2, Recreational and Peregrine TX manuals
+ * §11.3); Define Gas: "You cannot turn off the active gas". So the gas breathed is always on.
+ * Returns true when the gas was off.
+ */
+export function turnGasOn(settings: Record<string, string>, i: number): boolean {
+  if (!gasIsOff(settings, i)) return false;
+  settings[`gas${i + 1}`] = 'on';
+  return true;
+}
+
 /** Gas O2 % as Shearwater shows it: gases are set from 21 to 99 % O2 (Nitrox Gases, Define Gas). */
 export function swO2(g: Gas): number {
   return Math.min(99, Math.round(g.o2 * 100));
@@ -46,12 +81,14 @@ export function trimixName(g: Gas): string {
 /**
  * The best gas at the current depth: "the gas with the highest PPO2" that obeys its limit; "the least
  * oxygen rich mix is considered a bottom gas and obeys the OC MOD PPO2 limit. Other gases are
- * considered deco gases and obey Deco PPO2 limit" (Adv. Config 2). Null when no gas is breathable.
+ * considered deco gases and obey Deco PPO2 limit" (Adv. Config 2). Gases turned off (`off`) are left
+ * out: they are not used in the decompression calculations (§10.2). Null when no gas is breathable.
  */
-export function bestGas(s: DiveSession, gases: Gas[], modPpo2: number, decoPpo2: number): number | null {
+export function bestGas(s: DiveSession, gases: Gas[], modPpo2: number, decoPpo2: number, off: (i: number) => boolean = () => false): number | null {
   const bottom = gases.reduce((b, g, i) => (g.o2 < gases[b].o2 ? i : b), 0);
   let best: number | null = null;
   gases.forEach((g, i) => {
+    if (off(i)) return;
     const limit = i === bottom ? modPpo2 : decoPpo2;
     if (s.pressure * g.o2 <= limit + 1e-9 && (best === null || g.o2 > gases[best].o2)) best = i;
   });

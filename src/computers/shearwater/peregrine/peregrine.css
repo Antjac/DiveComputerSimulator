@@ -100,4 +100,7 @@
 .pt-mlist span.act { background: #fff; color: #000; }
 .pt-mlist span.act small { color: #000; }
 .pt-mlbl { display: flex; justify-content: space-between; font-size: 18px; }
+.pt-msel i { font-style: normal; }
+/* §11.3 Select Gas: gases turned off in magenta (figure). */
+.pt-magenta { color: #b4248f; }
 .pt-mlist b { margin-right: 3px; }

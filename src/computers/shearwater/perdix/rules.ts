@@ -5,7 +5,7 @@ import { type AlertCue, type ComputerView, DiveComputer, SettingDef } from '../.
 import { Notices } from '../../common/notices';
 import { ppo2Setting } from '../../common/ppo2';
 import { pressureSetting } from '../../common/tank';
-import { OC_DECO_PPO2, decoPpo2Setting, type SwMode } from '../multigas';
+import { OC_DECO_PPO2, decoPpo2Setting, gasIsOff, gasOnSettings, turnGasOn, type SwMode } from '../multigas';
 
 export type PerdixNotice = 'high-ppo2' | 'missed-stop' | 'fast-ascent' | 'very-high-cns' | 'high-cns' | 'low-ndl' | 'depth-alert' | 'time-alert' | 'gas';
 
@@ -36,8 +36,8 @@ export abstract class PerdixRules extends DiveComputer {
   readonly transmitter = 'Swift';
   readonly gasTimeName = 'GTR';
   readonly notes = {
-    fr: 'Modes Nitrox, 3 GasNx (par défaut, §4.1 : jusqu’à 3 gaz Nx) et OC Tec (manuel Technical, rév. B : jusqu’à 5 gaz). Multigaz : le gaz le moins riche suit la MOD PPO2, les autres la PPO2 de déco (1,61 par défaut, Adv. Config 2) ; le plan suppose le passage au meilleur gaz ; gaz en jaune quand un meilleur gaz est disponible ; MENU puis SELECT sur Select Gas pour changer (liste « nouveau style » en 3 GasNx, un gaz à la fois en OC Tec). OC Tec : écran technique (DEPTH TIME STOP TIME, ligne centrale PPO2 et deux emplacements réglables, OC O2/HE NDL TTS), GF 30/70, dernier palier 3 ou 6 m, pas de palier de sécurité, compteur CLEAR, PPO2 en rouge clignotant au-delà de 1,65 (High PPO2 dans la ligne centrale). Mode Nitrox Recreational. Bouton droit (SELECT) : écrans d’info (MOD/MAX/PPO2, GF99/SurGF/CEIL, tissus, DET/Δ+5/@+5…) ; bouton gauche (MENU) : retour à l’écran principal (le menu de plongée n’est pas simulé). Aucun verrouillage en cas de palier manqué (conforme au manuel). Palier de sécurité ajouté dès 11 m et affiché dès lors (§6.1), décompte entre 2,4 et 7 m. Notifications du §10 (High PPO2 au-delà de 1,65 pendant 30 s, Missed Stop, Fast Ascent au-delà de 10 m/min, High CNS au-delà de 90 %, Very High CNS au-delà de 150 %) et alertes du §4.9 (Low NDL 5 min, Depth 40 m, Time 60 min désactivée par défaut ; valeur concernée en jaune) affichées en bas de l’écran sous « Warning » ou « Alert » jusqu’à SELECT. Vibrations (règles du manuel Tech) : début, pause et fin du palier de sécurité, notifications toutes les 10 s jusqu’à SELECT, High PPO2 jusqu’à sa résolution. Émetteur : pression de réserve réglable (50 bar par défaut, §12.3), T1 en jaune sous la réserve, en rouge et T1 CRITICAL PRES sous max(21 bar, réserve / 2) ; T1 reste affiché quel que soit le gaz (§10.3) ; GTR : wait, puis deco dès que des paliers sont requis (§10.3).',
-    en: 'Nitrox, 3 GasNx (default, §4.1: up to 3 Nx gases) and OC Tec (Technical manual, rev. B: up to 5 gases) modes. Multigas: the leanest gas obeys the MOD PPO2, the others the deco PPO2 (1.61 by default, Adv. Config 2); the plan assumes the switch to the best gas; gas in yellow when a better gas is available; MENU then SELECT on Select Gas to switch (new style list in 3 GasNx, one gas at a time in OC Tec). OC Tec: technical screen (DEPTH TIME STOP TIME, centre row PPO2 and two settable positions, OC O2/HE NDL TTS), GF 30/70, last stop 3 or 6 m, no safety stop, CLEAR counter, PPO2 flashing red above 1.65 (High PPO2 in the centre row). Nitrox Recreational mode. Right button (SELECT): info screens (MOD/MAX/PPO2, GF99/SurGF/CEIL, tissues, DET/Δ+5/@+5…); left button (MENU): back to the main screen (the dive menu is not simulated). No lock-out for missed stops (as per the manual). Safety stop added beyond 11 m and shown from then on (§6.1), counting down between 2.4 and 7 m. §10 notifications (High PPO2 above 1.65 for 30 s, Missed Stop, Fast Ascent above 10 m/min, High CNS above 90 %, Very High CNS above 150 %) and §4.9 alerts (Low NDL 5 min, Depth 40 m, Time 60 min off by default; the value concerned in yellow) shown at the bottom of the screen under "Warning" or "Alert" until SELECT. Vibration (rules of the Tech manual): safety stop start, pause and end, notifications every 10 s until SELECT, High PPO2 until resolved. Transmitter: settable reserve pressure (50 bar by default, §12.3), T1 yellow below the reserve, red and T1 CRITICAL PRES below max(21 bar, reserve / 2); T1 stays shown on any gas (§10.3); GTR: wait, then deco once stops are needed (§10.3).',
+    fr: 'Modes Nitrox, 3 GasNx (par défaut, §4.1 : jusqu’à 3 gaz Nx) et OC Tec (manuel Technical, rév. B : jusqu’à 5 gaz). Multigaz : le gaz le moins riche suit la MOD PPO2, les autres la PPO2 de déco (1,61 par défaut, Adv. Config 2) ; le plan suppose le passage au meilleur gaz ; gaz en jaune quand un meilleur gaz est disponible ; MENU puis SELECT sur Select Gas pour changer (liste « nouveau style » en 3 GasNx, un gaz à la fois en OC Tec). Gaz 2 et 3 activables / désactivables (réglages, comme Define Gas ; §10.2 Tech, §11.3–11.4) : un gaz désactivé est hors calcul et n’est pas proposé comme meilleur gaz, il apparaît en magenta dans Select Gas (« Off » quand il est pointé) et le sélectionner le réactive ; le gaz actif ne peut pas être désactivé. OC Tec : écran technique (DEPTH TIME STOP TIME, ligne centrale PPO2 et deux emplacements réglables, OC O2/HE NDL TTS), GF 30/70, dernier palier 3 ou 6 m, pas de palier de sécurité, compteur CLEAR, PPO2 en rouge clignotant au-delà de 1,65 (High PPO2 dans la ligne centrale). Mode Nitrox Recreational. Bouton droit (SELECT) : écrans d’info (MOD/MAX/PPO2, GF99/SurGF/CEIL, tissus, DET/Δ+5/@+5…) ; bouton gauche (MENU) : retour à l’écran principal (le menu de plongée n’est pas simulé). Aucun verrouillage en cas de palier manqué (conforme au manuel). Palier de sécurité ajouté dès 11 m et affiché dès lors (§6.1), décompte entre 2,4 et 7 m. Notifications du §10 (High PPO2 au-delà de 1,65 pendant 30 s, Missed Stop, Fast Ascent au-delà de 10 m/min, High CNS au-delà de 90 %, Very High CNS au-delà de 150 %) et alertes du §4.9 (Low NDL 5 min, Depth 40 m, Time 60 min désactivée par défaut ; valeur concernée en jaune) affichées en bas de l’écran sous « Warning » ou « Alert » jusqu’à SELECT. Vibrations (règles du manuel Tech) : début, pause et fin du palier de sécurité, notifications toutes les 10 s jusqu’à SELECT, High PPO2 jusqu’à sa résolution. Émetteur : pression de réserve réglable (50 bar par défaut, §12.3), T1 en jaune sous la réserve, en rouge et T1 CRITICAL PRES sous max(21 bar, réserve / 2) ; T1 reste affiché quel que soit le gaz (§10.3) ; GTR : wait, puis deco dès que des paliers sont requis (§10.3).',
+    en: 'Nitrox, 3 GasNx (default, §4.1: up to 3 Nx gases) and OC Tec (Technical manual, rev. B: up to 5 gases) modes. Multigas: the leanest gas obeys the MOD PPO2, the others the deco PPO2 (1.61 by default, Adv. Config 2); the plan assumes the switch to the best gas; gas in yellow when a better gas is available; MENU then SELECT on Select Gas to switch (new style list in 3 GasNx, one gas at a time in OC Tec). Gases 2 and 3 can be turned on or off (settings, as Define Gas; Tech §10.2, §11.3–11.4): a gas turned off is left out of the calculation and not offered as the best gas, it is shown in magenta in Select Gas ("Off" when pointed) and selecting it turns it on; the active gas cannot be turned off. OC Tec: technical screen (DEPTH TIME STOP TIME, centre row PPO2 and two settable positions, OC O2/HE NDL TTS), GF 30/70, last stop 3 or 6 m, no safety stop, CLEAR counter, PPO2 flashing red above 1.65 (High PPO2 in the centre row). Nitrox Recreational mode. Right button (SELECT): info screens (MOD/MAX/PPO2, GF99/SurGF/CEIL, tissues, DET/Δ+5/@+5…); left button (MENU): back to the main screen (the dive menu is not simulated). No lock-out for missed stops (as per the manual). Safety stop added beyond 11 m and shown from then on (§6.1), counting down between 2.4 and 7 m. §10 notifications (High PPO2 above 1.65 for 30 s, Missed Stop, Fast Ascent above 10 m/min, High CNS above 90 %, Very High CNS above 150 %) and §4.9 alerts (Low NDL 5 min, Depth 40 m, Time 60 min off by default; the value concerned in yellow) shown at the bottom of the screen under "Warning" or "Alert" until SELECT. Vibration (rules of the Tech manual): safety stop start, pause and end, notifications every 10 s until SELECT, High PPO2 until resolved. Transmitter: settable reserve pressure (50 bar by default, §12.3), T1 yellow below the reserve, red and T1 CRITICAL PRES below max(21 bar, reserve / 2); T1 stays shown on any gas (§10.3); GTR: wait, then deco once stops are needed (§10.3).',
   };
   readonly settingDefs: SettingDef[] = [
     {
@@ -140,6 +140,7 @@ export abstract class PerdixRules extends DiveComputer {
       showIf: isTec,
     },
     decoPpo2Setting((s) => s.mode === '3gasnx' || s.mode === 'octec'),
+    ...gasOnSettings((s) => s.mode === '3gasnx' || s.mode === 'octec'),
     {
       key: 'safety',
       label: { fr: 'Palier de sécurité', en: 'Safety stop' },
@@ -287,6 +288,16 @@ export abstract class PerdixRules extends DiveComputer {
     return this.mode === 'octec' ? 5 : this.mode === '3gasnx' ? 3 : 1;
   }
 
+  /** Define Gas: gas `i` (index in allGases) turned off, left out of the calculations (see gasOnSettings). */
+  gasOff(i: number): boolean {
+    return this.maxGases > 1 && gasIsOff(this.settings, i);
+  }
+
+  /** Technical manual §5.1: the plan assumes the switch to every gas "currently turned on". */
+  planGases(s: DiveSession) {
+    return super.planGases(s).filter((g) => !this.gasOff(s.allGases.indexOf(g.gas)));
+  }
+
   /** Adv. Config 2: deco gases obey the OC Deco PPO2 (1.61 by default). */
   decoPpo2(): number {
     return Number(this.settings.decoPpo2) || OC_DECO_PPO2;
@@ -372,6 +383,8 @@ export abstract class PerdixRules extends DiveComputer {
   protected clearedAt: number | null = null;
 
   tick(s: DiveSession, dt: number): void {
+    // Select Gas turns a gas on when it is selected, and the active gas cannot be off (multigas.ts).
+    if (this.maxGases > 1) turnGasOn(this.settings, s.breathing);
     if (s.inDive) {
       const gfHigh = this.decoParams(s).gfHigh;
       // §8.2 Adapt: 5 min if the dive exceeds 30 m or the NDL falls below 5 minutes.

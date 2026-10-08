@@ -6,6 +6,7 @@ import type { ButtonAction, ButtonHelp } from '../computers/base';
 import { lang, t } from '../i18n';
 import { savePrefs } from './prefs';
 import { refresh } from './render';
+import { renderControls } from './settings';
 import { $, app, session } from './state';
 
 const HOLD_MS = 700;
@@ -68,12 +69,24 @@ export function decorateButtons(): void {
   updateTip();
 }
 
+/**
+ * Runs a button action. Some change a setting of the computer (e.g. a Shearwater gas turned on when it
+ * is selected): the settings panel then shows it, and it is saved.
+ */
+function act(f: () => void): void {
+  const before = JSON.stringify(app.active.settings);
+  f();
+  if (JSON.stringify(app.active.settings) === before) return;
+  savePrefs();
+  renderControls();
+}
+
 function releaseButton(): void {
   if (!pressed) return;
   const p = pressed;
   window.clearTimeout(p.timer);
   pressed = null;
-  if (app.active.buttons()[p.id]?.hold?.simulated && !p.held) app.active.press(p.id, session);
+  if (app.active.buttons()[p.id]?.hold?.simulated && !p.held) act(() => app.active.press(p.id, session));
   released = { id: p.id, until: performance.now() + 120 };
   refresh();
   window.setTimeout(decorateButtons, 140);
@@ -124,11 +137,11 @@ export function setupDevice(): void {
       pressed.timer = window.setTimeout(() => {
         if (pressed?.id !== id) return;
         pressed.held = true;
-        app.active.hold(id, session);
+        act(() => app.active.hold(id, session));
         refresh();
       }, HOLD_MS);
     } else {
-      app.active.press(id, session);
+      act(() => app.active.press(id, session));
     }
     refresh();
   });

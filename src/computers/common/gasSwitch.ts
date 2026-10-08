@@ -4,6 +4,13 @@
 // cites its manual; a gas is offered again only after the diver went back deeper than its MOD.
 import type { DiveSession } from '../../engine/session';
 
+/**
+ * Margin (m) under the MOD before the diver counts as "deeper than the MOD" of a gas (not given by the
+ * manuals, assumed): hovering at a stop at the MOD (e.g. 6 m for oxygen) must not re-include a gas or
+ * cancel its exclusion.
+ */
+const BELOW_MOD = 0.3;
+
 export class GasPrompt {
   /**
    * `sticky`: a declined gas stays out of the calculation for the rest of the dive, without a new offer,
@@ -39,7 +46,7 @@ export class GasPrompt {
     this.declined.delete(s.breathing);
     for (let i = 1; i < mods.length; i++) {
       if (this.sticky && this.declined.has(i)) continue;
-      if (s.depth > mods[i] + 0.3) {
+      if (s.depth > mods[i] + BELOW_MOD) {
         this.armed.add(i);
         if (this.declined.delete(i)) included.push(i);
       }
@@ -47,7 +54,7 @@ export class GasPrompt {
     let expired: number | null = null;
     if (this.offer !== null) {
       const o = this.offer;
-      if (s.breathing === o || s.depth > mods[o] + 0.3 || !s.inDive) this.offer = null;
+      if (s.breathing === o || s.depth > mods[o] + BELOW_MOD || !s.inDive) this.offer = null;
       else if (timeout !== null && s.clock - this.at > timeout) {
         this.declined.add(o);
         this.offer = null;
@@ -89,8 +96,10 @@ export class GasPrompt {
       this.lastBreathing = s.breathing;
     }
     const l = this.left;
-    if (!l || !s.inDive || s.depth > mods[l.gas]) {
-      if (!s.inDive || (l && s.depth > mods[l.gas])) this.left = null;
+    // Deeper than its MOD (same margin as the re-inclusion in update), the richer gas stays in the plan.
+    const below = l !== null && s.depth > mods[l.gas] + BELOW_MOD;
+    if (!l || !s.inDive || below) {
+      if (!s.inDive || below) this.left = null;
       return null;
     }
     if (s.clock - l.at < delay) return null;

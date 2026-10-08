@@ -86,6 +86,9 @@
 .pd-mlist span.act { background: #fff; color: #000; }
 .pd-mlist span.act small { color: #000; }
 .pd-mlbl { display: flex; justify-content: space-between; font-size: 18px; }
+.pd-msel i { font-style: normal; }
+/* Select Gas: gases turned off in magenta (Technical manual §10.2, Recreational manual §11.3 figure). */
+.pd-magenta { color: #b4248f; }
 
 /* OC Tec screen (Technical manual §4.3): three rows, cyan titles above white figures. */
 .pd-screen.pdt { --pdt-cyan: #34b4ff; }
