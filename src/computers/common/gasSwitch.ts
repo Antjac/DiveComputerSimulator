@@ -25,6 +25,7 @@ export class GasPrompt {
     this.declined.clear();
     this.armed.clear();
     this.left = null;
+    this.pending = null;
   }
 
   /**
@@ -103,6 +104,28 @@ export class GasPrompt {
   accept(s: DiveSession): void {
     if (this.offer !== null) s.switchGas(this.offer);
     this.offer = null;
+  }
+
+  /** Gas whose offer was answered by opening a switch sequence (`handOff`), until `settle`. */
+  private pending: number | null = null;
+
+  /** A button opened the switch sequence on the gas offered: the offer ends, its outcome is pending. */
+  handOff(): void {
+    if (this.offer !== null) this.pending = this.offer;
+    this.offer = null;
+  }
+
+  /**
+   * Once the sequence opened by `handOff` is over (`open` false), the gas offered is declined unless
+   * it is the one breathed now, as an unanswered prompt. Returns the gas just declined, or null.
+   */
+  settle(s: DiveSession, open: boolean): number | null {
+    const g = this.pending;
+    if (g === null || open) return null;
+    this.pending = null;
+    if (!s.inDive || s.breathing === g) return null;
+    this.declined.add(g);
+    return g;
   }
 
   /** The diver declines it (stays on the current gas). */

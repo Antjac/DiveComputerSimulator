@@ -102,7 +102,7 @@ export class MaresQuad2 extends Quad2Rules {
         }
         if (this.prompt.offer !== null) {
           this.seq.start(s, this.seqMods(s), this.prompt.offer);
-          this.prompt.offer = null;
+          this.prompt.handOff();
           return true;
         }
         const fields = this.bottomFields(s, v);
@@ -156,7 +156,7 @@ export class MaresQuad2 extends Quad2Rules {
     }
     if (this.knownGases(s).length > 1) {
       this.seq.start(s, this.seqMods(s), this.prompt.offer);
-      this.prompt.offer = null;
+      this.prompt.handOff();
       return true;
     }
     return false;

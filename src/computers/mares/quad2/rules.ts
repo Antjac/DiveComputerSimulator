@@ -410,6 +410,9 @@ export abstract class Quad2Rules extends DiveComputer {
     this.prompt.leave(s, mods, 20);
     // The sequence started by a button: time-out not given, 20 s assumed (as the prompt).
     this.seq.expire(s, 20);
+    // §10.2 NOTE: a prompt answered by BR but whose switch is not confirmed (sequence ended, or another
+    // gas chosen) counts as unanswered: the gas offered leaves the PREDICTIVE plan.
+    this.prompt.settle(s, this.seq.gas !== null);
 
     // §2.8: deep stop for air and nitrox dives, as the no deco limit approaches (§8.1); optional.
     this.deep.update(s, ceil, p, dt, this.settings.deepstop === 'on');
