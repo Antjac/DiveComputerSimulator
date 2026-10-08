@@ -72,9 +72,13 @@ function renderBoatText(): void {
   const j = $('boat-joke');
   j.hidden = boat !== 'aboard' || !joke;
   if (joke) j.textContent = joke[lang()];
+  // Options built once: rebuilding them at each refresh while the list is open froze Chrome on macOS
+  // (issue #20; the native menu is modal).
   const sel = $<HTMLSelectElement>('boat-dur');
-  const opts = BREAKS.map((m) => `<option value="${m}"${m === breakMin ? ' selected' : ''}>${durText(m)}</option>`).join('');
-  if (sel.innerHTML !== opts) sel.innerHTML = opts;
+  if (!sel.options.length) {
+    sel.innerHTML = BREAKS.map((m) => `<option value="${m}">${durText(m)}</option>`).join('');
+    sel.value = String(breakMin);
+  }
 }
 
 /** Puts the diver aboard for `min` minutes of surface interval, shown as a short animation. */
@@ -155,12 +159,21 @@ export function updateBoat(): void {
   }
 }
 
+/** Vertical placement of the bubble, kept while nothing changes its layout: the boat rides the swell,
+ *  the bubble does not (it would seem to float). */
+let bubbleAt: { key: string; top: number; y: number; below: boolean; fits: boolean } | null = null;
+/** Moves of the boat's anchor ignored, px: the swell; beyond (camera turned in 3D), the bubble follows. */
+const BOB = 30;
+
 /** The speech bubble points at the boat once it is alongside: above it if there is room, else below. */
 export function placeBoatBubble(): void {
   const el = $('boat-offer');
   const a = boat === 'away' ? null : app.view === '3d' && app.scene3d ? app.scene3d.boatAnchor() : scene.boatAnchor();
   el.hidden = !a;
-  if (!a) return;
+  if (!a) {
+    bubbleAt = null;
+    return;
+  }
   const pr = $('scene-panel').getBoundingClientRect();
   const cr = $(app.view === '3d' ? 'scene3d' : 'scene').getBoundingClientRect();
   const ax = cr.left - pr.left + a.x;
@@ -168,11 +181,15 @@ export function placeBoatBubble(): void {
   const bottom = cr.top - pr.top + a.bottom;
   const bw = el.offsetWidth;
   const bh = el.offsetHeight;
-  const below = top - 14 - bh < 8;
-  let y = below ? bottom + 14 : top - 14 - bh;
-  // Short water column (phones): no room above or below, the bubble stays whole, without its tail.
-  const fits = y + bh <= pr.height - 8;
-  if (!fits) y = Math.max(8, pr.height - bh - 8);
+  const key = `${app.view}|${bh}|${Math.round(pr.height)}|${Math.round(cr.top - pr.top)}`;
+  if (bubbleAt?.key !== key || Math.abs(top - bubbleAt.top) > BOB) {
+    const below = top - 14 - bh < 8;
+    const y = below ? bottom + 14 : top - 14 - bh;
+    // Short water column (phones): no room above or below, the bubble stays whole, without its tail.
+    const fits = y + bh <= pr.height - 8;
+    bubbleAt = { key, top, y: fits ? y : Math.max(8, pr.height - bh - 8), below, fits };
+  }
+  const { y, below, fits } = bubbleAt;
   const x = Math.max(8, Math.min(ax - bw * 0.65, pr.width - bw - 8));
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
