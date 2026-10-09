@@ -28,6 +28,7 @@ import { $, app, mn90, session } from './state';
 const L = {
   title: { fr: 'Tables MN90', en: 'MN90 tables' },
   sub: { fr: 'Tables fédérales FFESSM (MN90 de la Marine nationale) · air · niveau de la mer', en: 'FFESSM tables (French Navy MN90) · air · sea level' },
+  unofficial: { fr: 'Transcription non officielle, ni publiée ni approuvée par la FFESSM : seul le livret fédéral fait foi.', en: 'Unofficial transcription, neither published nor endorsed by the FFESSM: only the federal booklet prevails.' },
   pCover: { fr: 'La plongée', en: 'The dive' },
   pT1: { fr: 'Tableau I', en: 'Table I' },
   pT2: { fr: 'Tableau II', en: 'Table II' },
@@ -404,7 +405,7 @@ export function openMn90(): void {
   const dlg = $<HTMLDialogElement>('mn90');
   dlg.innerHTML = `
     <header class="mn-head">
-      <div><h2 id="mn90-title">${tr('title')}</h2><p class="muted small">${tr('sub')}</p></div>
+      <div><h2 id="mn90-title">${tr('title')}</h2><p class="muted small">${tr('sub')}</p><p class="muted small">${tr('unofficial')}</p></div>
       <form method="dialog"><button class="mn-x" aria-label="✕">✕</button></form>
     </header>
     <nav class="mn-index" id="mn90-index"></nav>

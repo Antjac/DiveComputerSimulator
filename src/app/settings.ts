@@ -62,7 +62,7 @@ const GROUPS: { id: SettingGroup; title: I18nKey }[] = [
   { id: 'display', title: 'grpDisplay' },
 ];
 
-/** Fidelity badge text: ✓ public algorithm reproduced, ≈ proprietary or undocumented variant. */
+/** Fidelity badge text: ✓ public algorithm with published parameters, ≈ proprietary or undocumented variant. */
 export function fidelityLabel(c: DiveComputer): string {
   return c.exact ? `✓ ${t('exact')}` : `≈ ${t(c.undocumentedVariant ? 'approxVariant' : 'approx')}`;
 }

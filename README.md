@@ -9,6 +9,8 @@ User interface in English and French, metric or imperial units.
 > [!WARNING]
 > **Educational tool only. Never use it to plan or conduct a real dive.**
 > Calculations are approximations and may differ significantly from those of a real dive computer. Always follow your training, your tables and your equipment manufacturer's instructions.
+>
+> **Instructors:** you remain responsible for your teaching. The simulator illustrates principles; it does not replace the manual of each student's real computer, nor your agency's procedures and tables. See [For instructors](#for-instructors) and [Terms of use](#terms-of-use).
 
 ## Simulated computers
 
@@ -16,24 +18,26 @@ User interface in English and French, metric or imperial units.
 | --- | --- | --- |
 | Aqualung i330R (Dive mode) | Bühlmann ZHL-16C + GF | Approximation (≈): the real device adds an undocumented margin (stops 2–3 min longer than GF 90/90 in field comparisons), not simulated |
 | Aqualung i770R (Dive mode) | Pelagic Z+ | Approximation (≈) |
-| Azoth Systems Odyssey (open circuit) | Bühlmann ZHL-16C + GF | Approximation (≈): first dive reproduced; the patented repetitive dive penalty (Standard by default) is unpublished, not simulated |
-| Shearwater Perdix 2 (Nitrox, 3 GasNx and OC Tec modes) | Bühlmann ZHL-16C + GF | Public algorithm, reproduced |
-| Shearwater Peregrine TX (Air / Nitrox and 3 GasNx modes) | Bühlmann ZHL-16C + GF | Public algorithm, reproduced |
-| Garmin Descent Mk3i (Single-Gas and Multi-Gas modes) | Bühlmann ZHL-16C + GF | Public algorithm, reproduced |
+| Azoth Systems Odyssey (open circuit) | Bühlmann ZHL-16C + GF | Approximation (≈): first dive with the published parameters; the patented repetitive dive penalty (Standard by default) is unpublished, not simulated |
+| Shearwater Perdix 2 (Nitrox, 3 GasNx and OC Tec modes) | Bühlmann ZHL-16C + GF | Public algorithm, published parameters |
+| Shearwater Peregrine TX (Air / Nitrox and 3 GasNx modes) | Bühlmann ZHL-16C + GF | Public algorithm, published parameters |
+| Garmin Descent Mk3i (Single-Gas and Multi-Gas modes) | Bühlmann ZHL-16C + GF | Public algorithm, published parameters |
 | Suunto D5 | Fused RGBM 2 | Approximation (≈) |
 | Suunto Zoop Novo | Suunto RGBM | Approximation (≈) |
-| Suunto Nautic (Single gas and Multigas modes) | Suunto Bühlmann 16 GF (ZHL-16C + GF) | Public algorithm, reproduced |
+| Suunto Nautic (Single gas and Multigas modes) | Suunto Bühlmann 16 GF (ZHL-16C + GF) | Public algorithm, published parameters |
 | Mares Puck Pro | Mares RGBM | Approximation (≈) |
-| Mares Quad Ci | Bühlmann ZH-L16C + GF | Public algorithm, reproduced (R1, R2, T1, T2 interpolated) |
-| Mares Quad 2 | Bühlmann ZH-L16C + GF | Public algorithm, reproduced (R1, R2, T1, T2 taken from the other Mares) |
+| Mares Quad Ci | Bühlmann ZH-L16C + GF | Public algorithm, published parameters (R1, R2, T1, T2 interpolated) |
+| Mares Quad 2 | Bühlmann ZH-L16C + GF | Public algorithm, published parameters (R1, R2, T1, T2 taken from the other Mares) |
 | Mares Quad Air | Mares RGBM | Approximation (≈) |
-| Mares Genius | Bühlmann ZH-L16C + GF | Public algorithm, reproduced (R2, T1, T2 interpolated) |
+| Mares Genius | Bühlmann ZH-L16C + GF | Public algorithm, published parameters (R2, T1, T2 interpolated) |
 | Scubapro Galileo 2 (G2) | ZH-L16 ADT MB | Approximation (≈) |
-| Scubapro Luna 2.0 AI | ZH-L16 ADT MB or ZH-L16C + GF | Approximation (≈) for ADT MB, reproduced for ZH-L16C + GF |
+| Scubapro Luna 2.0 AI | ZH-L16 ADT MB or ZH-L16C + GF | Approximation (≈) for ADT MB, published parameters for ZH-L16C + GF |
 | Cressi Goa | Cressi RGBM | Approximation (≈) |
 | Cressi Donatello | Cressi RGBM | Approximation (≈) |
 
-Proprietary algorithms (RGBM, ZH-L16 ADT MB, Pelagic Z+) are unpublished: they are approximated from Bühlmann ZHL-16C with gradient factors and penalties calibrated on published values. The Aqualung i330R states Bühlmann ZHL-16C + GF but departs from it in an undocumented way: it runs here with its published gradient factors, marked ≈. Likewise the Azoth Systems Odyssey adds an unpublished penalty to repetitive dives: its first dive is plain Bühlmann + GF, the following ones are not penalised here. Displays and rules (alarms, stops, lockouts…) are inspired by each model's public user manual.
+Proprietary algorithms (RGBM, ZH-L16 ADT MB, Pelagic Z+) are unpublished: they are approximated from Bühlmann ZHL-16C with gradient factors and penalties calibrated on published values. The Aqualung i330R states Bühlmann ZHL-16C + GF but departs from it in an undocumented way: it runs here with its published gradient factors, marked ≈. Likewise the Azoth Systems Odyssey adds an unpublished penalty to repetitive dives: its first dive is plain Bühlmann + GF, the following ones are not penalised here.
+
+**Public algorithm does not mean identical values.** For the models marked "public algorithm" (✓), the simulator applies Bühlmann ZHL-16C with the gradient factors published by the manufacturer. The real device may still depart from it: rounding of stops and times, ascent rate assumed by the calculation, last stop depth, ceiling or 3 m stops, water density and surface pressure, definition of the NDL, undocumented safety margins, firmware updates. Stops differing by a few minutes are therefore normal. When a gap is observed and documented (as for the Aqualung i330R), the model is moved to ≈ with an explanation, and the change is recorded in the [change log](CHANGELOG.md). Displays and rules (alarms, stops, lockouts…) are inspired by each model's public user manual.
 
 In the app, a notice is shown on every visit (educational use, approximated algorithms, no affiliation), and a ✓ / ≈ caption above each computer reminds you that it is an unofficial interpretation. In the Compare tab, the stop depth and time and the TTS of the ≈ computers are not shown during decompression (only "Stop required", with the unverified extrapolated estimate on hover): only their no-deco limit is calibrated on published values, so compare how they react, not the minutes.
 
@@ -85,6 +89,9 @@ The tank is not refilled automatically between dives. Five seconds after surfaci
 
 ## MN90 tables
 
+> [!NOTE]
+> This is an unofficial transcription, neither published nor endorsed by the FFESSM: only the federal booklet prevails.
+
 The **MN90** button (in the header, next to the computer list) opens, at any time, the French federal air tables (FFESSM tables based on the French Navy's MN90, July 2005 booklet) and shows where the diver stands in them (the dive is paused while it is open and resumes on closing), as a book whose pages are turned (◀ ▶ or the arrow keys): first the dive (type, depth, time, result), then each table used in the order it is read — Table I (previous dive's group × surface interval → residual nitrogen), Table II (residual nitrogen × depth of the second dive → penalty time) for a repetitive dive, then the depth's stop table (line → stops, DTR, group) — with the row, the column and the value read highlighted and the reading explained (next value up or down as the booklet requires). During the dive it shows the stops if the diver left the bottom now and when the next line is reached; at the surface, the last dive and the tables to read before diving again. Rules applied from the booklet: dive time counted until leaving the bottom, any minute started counts; an ascent slower than 15 m/min adds its time up to the first stop (slow ascent), so the time stops on reaching the first stop (the surface without stops); consecutive dives (under 15 min apart): times added, deepest depth; repetitive dives (15 min to 12 h): penalty time; nitrox: equivalent air depth; warnings for the emergency tables beyond 60 m, a previous dive without group (*), out of the tables, more than two dives in 24 hours, rapid ascent. Not simulated: the rapid-ascent and missed-stop procedures, pure-oxygen stops, Table III (oxygen at the surface), altitude. The Compare tab also has an MN90 row for the dive in progress: no-stop time left, first stop, DTR (in the TTS column) and group; a click opens the tables. A blank cell of Table I is read as no residual nitrogen left to count (the booklet does not say).
 
 ## 3D view
@@ -104,9 +111,29 @@ src/styles/      page style sheets (the computers' sheets live next to their cod
 scripts/         calibration, scenario and regression (snapshot) scripts
 ```
 
+## For instructors
+
+Many instructors use the simulator in class. If you do:
+
+- **You remain responsible for your teaching.** The simulator illustrates principles (tissue loading, stops, how computers react to an error); it does not replace the manual of each student's real computer, nor your agency's procedures, tables and training material.
+- **Check what you present** against the official manual of the model shown (the "ⓘ Simulation details" dialog lists, for each model, what is simulated, assumed or not simulated).
+- **Remind students** that their own computer may behave differently (firmware, settings, model), and that the ≈ computers' stop times are only approximations.
+- Report any gap you notice (issue or e-mail): it will be fixed and recorded in the [change log](CHANGELOG.md).
+
+## Terms of use
+
+These terms are also shown in the app (About › Terms of use).
+
+- **Intended use:** learning and teaching diving, only. Never use the simulator to plan, conduct or check a real dive, nor to choose or set up equipment.
+- **No warranty:** the simulator is provided free of charge, "as is", with no warranty of accuracy, completeness or fitness for a particular purpose (GNU AGPL v3, sections 15 and 16). To the extent permitted by law, its authors cannot be held liable for its use.
+- **Known limits:** algorithms marked ≈ are approximated and their values differ from the real device; even a public algorithm (✓) may be applied differently by the real device (rounding, calculation assumptions, undocumented margins); displays are interpretations; only part of the modes and features is simulated; tissues are shared by every computer compared; manufacturers may change their devices without the simulator following.
+- **MN90 tables:** an unofficial transcription of the FFESSM booklet of July 2005, neither published nor endorsed by the FFESSM. Only the federal booklet prevails.
+- **Corrections:** a reported error (gap with a manual, wrong calculation) is fixed as soon as possible and recorded in the [change log](CHANGELOG.md).
+- **Contact:** [antoalex@free.fr](mailto:antoalex@free.fr) or a GitHub issue.
+
 ## Trademarks and affiliation
 
-This project is independent and **is not affiliated with, endorsed or sponsored by** the manufacturers mentioned. Aqualung, Aqua Lung, Shearwater, Perdix, Peregrine, Garmin, Descent, Suunto, Zoop, Nautic, Mares, Puck, Quad, Genius, Scubapro, Galileo, Luna, Cressi, Goa and Donatello are trademarks of their respective owners; they are only mentioned to identify the models whose displays inspired this simulator. No manufacturer logo, code or artwork is included.
+This project is independent and **is not affiliated with, endorsed or sponsored by** the manufacturers mentioned. Aqualung, Aqua Lung, Azoth Systems, Odyssey, Shearwater, Perdix, Peregrine, Garmin, Descent, Suunto, Zoop, Nautic, Mares, Puck, Quad, Genius, Scubapro, Galileo, Luna, Cressi, Goa and Donatello are trademarks of their respective owners; they are only mentioned to identify the models whose displays inspired this simulator. No manufacturer logo, code or artwork is included.
 
 If you represent one of these manufacturers and would like something changed or removed, please open an issue.
 

@@ -43,7 +43,7 @@ const dict = {
   surfaceSkip: { fr: 'Intervalle surface +1 h', en: 'Surface interval +1 h' },
   algorithm: { fr: 'Algorithme', en: 'Algorithm' },
   modelNotes: { fr: 'Détails de la simulation', en: 'Simulation details' },
-  exact: { fr: 'Algorithme public, reproduit fidèlement', en: 'Public algorithm, faithfully reproduced' },
+  exact: { fr: 'Algorithme public, paramètres publiés', en: 'Public algorithm, published parameters' },
   approx: { fr: 'Algorithme propriétaire : approximation', en: 'Proprietary algorithm: approximation' },
   approxVariant: { fr: 'Variante non documentée : approximation', en: 'Undocumented variant: approximation' },
   compare: { fr: 'Comparaison des ordinateurs', en: 'Computer comparison' },
@@ -86,8 +86,8 @@ const dict = {
   exChoose: { fr: 'Choisir un ordinateur…', en: 'Choose a computer…' },
   exMod: { fr: 'Profondeur maximale (MOD) dépassée', en: 'Maximum operating depth (MOD) exceeded' },
   compareNote: {
-    fr: '<b>✓</b> Algorithme public (Bühlmann + GF) ou tables MN90 : reproduits, à une ou deux minutes près de l’appareil réel. <b>≈</b> Algorithme non publié ou variante non documentée : NDL calée sur les tables publiées, mais paliers et DTR seulement extrapolés, donc non affichés (estimation non vérifiée au survol). Comparez leurs réactions, pas les minutes.',
-    en: '<b>✓</b> Public algorithm (Bühlmann + GF) or MN90 tables: reproduced, within a minute or two of the real device. <b>≈</b> Unpublished algorithm or undocumented variant: NDL fitted to the published tables, but stops and TTS only extrapolated, so not shown (unverified estimate on hover). Compare how they react, not the minutes.',
+    fr: '<b>✓</b> Algorithme public (Bühlmann + GF) avec les paramètres publiés, ou tables MN90 transcrites ; l’appareil réel peut toutefois s’en écarter (arrondis, hypothèses de calcul, marges non documentées, firmware) : quelques minutes d’écart sur les paliers sont possibles. <b>≈</b> Algorithme non publié ou variante non documentée : NDL calée sur les tables publiées, mais paliers et DTR seulement extrapolés, donc non affichés (estimation non vérifiée au survol). Comparez leurs réactions, pas les minutes.',
+    en: '<b>✓</b> Public algorithm (Bühlmann + GF) with the published parameters, or transcribed MN90 tables; the real device may still depart from it (rounding, calculation assumptions, undocumented margins, firmware): stops may differ by a few minutes. <b>≈</b> Unpublished algorithm or undocumented variant: NDL fitted to the published tables, but stops and TTS only extrapolated, so not shown (unverified estimate on hover). Compare how they react, not the minutes.',
   },
   stopRequired: { fr: 'Palier obligatoire', en: 'Stop required' },
   extrapolated: {
@@ -251,6 +251,11 @@ const dict = {
     fr: 'Projet indépendant, sans affiliation avec les fabricants. Les noms de marques appartiennent à leurs propriétaires et ne servent qu’à identifier les modèles.',
     en: 'Independent project, not affiliated with the manufacturers. Brand names belong to their owners and are only used to identify the models.',
   },
+  introInstructors: {
+    fr: 'Encadrants : vous restez responsables de votre enseignement. Le simulateur illustre des principes ; il ne remplace ni le manuel de l’ordinateur réel de chaque élève, ni les procédures et tables de votre fédération. Vérifiez ce que vous présentez.',
+    en: 'Instructors: you remain responsible for your teaching. The simulator illustrates principles; it does not replace the manual of each student’s real computer, nor your agency’s procedures and tables. Check what you present.',
+  },
+  termsLink: { fr: 'Conditions d’utilisation', en: 'Terms of use' },
   introOk: { fr: 'J’ai compris', en: 'I understand' },
   introTour: { fr: 'Visite guidée', en: 'Guided tour' },
   // Themes of the advanced settings
@@ -277,8 +282,8 @@ const dict = {
   },
   tourComputerT: { fr: 'Choisir un ordinateur', en: 'Pick a computer' },
   tourComputerB: {
-    fr: 'Choisissez le modèle simulé. <b>✓</b> : algorithme public (Bühlmann + facteurs de gradient), reproduit fidèlement. <b>≈</b> : algorithme propriétaire, ou variante non documentée, approché. Tous les ordinateurs suivent la même plongée : vous pouvez en changer à tout moment, même sous l’eau.',
-    en: 'Choose the simulated model. <b>✓</b>: public algorithm (Bühlmann + gradient factors), faithfully reproduced. <b>≈</b>: proprietary algorithm, or undocumented variant, approximated. All computers follow the same dive: you can switch at any time, even underwater.',
+    fr: 'Choisissez le modèle simulé. <b>✓</b> : algorithme public (Bühlmann + facteurs de gradient) avec les paramètres publiés ; l’appareil réel peut s’en écarter. <b>≈</b> : algorithme propriétaire, ou variante non documentée, approché. Tous les ordinateurs suivent la même plongée : vous pouvez en changer à tout moment, même sous l’eau.',
+    en: 'Choose the simulated model. <b>✓</b>: public algorithm (Bühlmann + gradient factors) with the published parameters; the real device may depart from it. <b>≈</b>: proprietary algorithm, or undocumented variant, approximated. All computers follow the same dive: you can switch at any time, even underwater.',
   },
   tourSceneT: { fr: 'La colonne d’eau', en: 'The water column' },
   tourSceneB: {
@@ -361,17 +366,43 @@ const dict = {
   aboutModel: { fr: 'Modèle', en: 'Model' },
   aboutFidelity: { fr: 'Fidélité', en: 'Fidelity' },
   aboutModelsNote: {
-    fr: 'Les algorithmes propriétaires (RGBM, ZH-L16 ADT MB) ne sont pas publiés : ils sont approchés à partir de Bühlmann ZHL-16C avec des facteurs de gradient et des pénalités calibrés sur des valeurs publiées. L’Aqualung i330R annonce Bühlmann ZHL-16C + GF mais s’en écarte d’une façon non documentée : il est simulé avec ses facteurs de gradient publiés, marqué ≈. Les écrans et les règles (alarmes, paliers, verrouillages…) s’inspirent des manuels utilisateurs publics de chaque modèle, sans les reproduire : disposition, couleurs, polices, textes, menus, comportements et valeurs peuvent différer, et seule une partie des fonctions est simulée. Le manuel officiel et l’appareil réel font foi.',
-    en: 'Proprietary algorithms (RGBM, ZH-L16 ADT MB) are unpublished: they are approximated from Bühlmann ZHL-16C with gradient factors and penalties calibrated on published values. The Aqualung i330R states Bühlmann ZHL-16C + GF but departs from it in an undocumented way: it runs with its published gradient factors, marked ≈. Displays and rules (alarms, stops, lockouts…) are inspired by each model’s public user manual without reproducing it: layout, colours, fonts, texts, menus, behaviour and values may differ, and only part of the features are simulated. The official manual and the real device prevail.',
+    fr: 'Les algorithmes propriétaires (RGBM, ZH-L16 ADT MB, Pelagic Z+) ne sont pas publiés : ils sont approchés à partir de Bühlmann ZHL-16C avec des facteurs de gradient et des pénalités calibrés sur des valeurs publiées. L’Aqualung i330R annonce Bühlmann ZHL-16C + GF mais s’en écarte d’une façon non documentée : il est simulé avec ses facteurs de gradient publiés, marqué ≈. De même, l’Azoth Systems Odyssey majore les plongées successives d’une façon non publiée, non simulée ici. Même quand l’algorithme est public (✓), l’appareil réel peut s’en écarter (arrondis, hypothèses de calcul, marges non documentées, firmware) : des écarts de quelques minutes sur les paliers sont normaux ; un écart constaté et documenté fait passer le modèle en ≈. Les écrans et les règles (alarmes, paliers, verrouillages…) s’inspirent des manuels utilisateurs publics de chaque modèle, sans les reproduire : disposition, couleurs, polices, textes, menus, comportements et valeurs peuvent différer, et seule une partie des fonctions est simulée. Le manuel officiel et l’appareil réel font foi.',
+    en: 'Proprietary algorithms (RGBM, ZH-L16 ADT MB, Pelagic Z+) are unpublished: they are approximated from Bühlmann ZHL-16C with gradient factors and penalties calibrated on published values. The Aqualung i330R states Bühlmann ZHL-16C + GF but departs from it in an undocumented way: it runs with its published gradient factors, marked ≈. Likewise, the Azoth Systems Odyssey adds an unpublished penalty to repetitive dives, not simulated here. Even when the algorithm is public (✓), the real device may depart from it (rounding, calculation assumptions, undocumented margins, firmware): stops differing by a few minutes are normal; a gap observed and documented moves the model to ≈. Displays and rules (alarms, stops, lockouts…) are inspired by each model’s public user manual without reproducing it: layout, colours, fonts, texts, menus, behaviour and values may differ, and only part of the features are simulated. The official manual and the real device prevail.',
   },
   aboutBrandsTitle: { fr: 'Marques et affiliation', en: 'Trademarks and affiliation' },
   aboutBrands: {
-    fr: 'Ce projet est indépendant et n’est ni affilié, ni approuvé, ni sponsorisé par les fabricants cités. Shearwater, Perdix, Garmin, Descent, Suunto, Mares, Puck, Scubapro et Galileo sont des marques de leurs propriétaires respectifs ; elles sont citées uniquement pour identifier les modèles dont les interfaces sont inspirées. Aucun logo, code ou élément graphique des fabricants n’est inclus.',
-    en: 'This project is independent and is not affiliated with, endorsed or sponsored by the manufacturers mentioned. Shearwater, Perdix, Garmin, Descent, Suunto, Mares, Puck, Scubapro and Galileo are trademarks of their respective owners; they are only mentioned to identify the models whose displays inspired this simulator. No manufacturer logo, code or artwork is included.',
+    fr: 'Ce projet est indépendant et n’est ni affilié, ni approuvé, ni sponsorisé par les fabricants cités. Aqualung, Aqua Lung, Azoth Systems, Odyssey, Shearwater, Perdix, Peregrine, Garmin, Descent, Suunto, Zoop, Nautic, Mares, Puck, Quad, Genius, Scubapro, Galileo, Luna, Cressi, Goa et Donatello sont des marques de leurs propriétaires respectifs ; elles sont citées uniquement pour identifier les modèles dont les interfaces sont inspirées. Aucun logo, code ou élément graphique des fabricants n’est inclus.',
+    en: 'This project is independent and is not affiliated with, endorsed or sponsored by the manufacturers mentioned. Aqualung, Aqua Lung, Azoth Systems, Odyssey, Shearwater, Perdix, Peregrine, Garmin, Descent, Suunto, Zoop, Nautic, Mares, Puck, Quad, Genius, Scubapro, Galileo, Luna, Cressi, Goa and Donatello are trademarks of their respective owners; they are only mentioned to identify the models whose displays inspired this simulator. No manufacturer logo, code or artwork is included.',
   },
   aboutRemoval: {
     fr: 'Si vous représentez l’un de ces fabricants et souhaitez qu’un élément soit modifié ou retiré, écrivez à :',
     en: 'If you represent one of these manufacturers and would like something changed or removed, please write to:',
+  },
+  aboutInstructorsTitle: { fr: 'Pour les encadrants', en: 'For instructors' },
+  aboutInstructors: {
+    fr: 'Si vous utilisez ce simulateur en cours, vous restez responsable de votre enseignement. Il illustre des principes (saturation, paliers, réactions des ordinateurs) mais ne remplace ni le manuel de l’ordinateur réel de chaque élève, ni les procédures, tables et contenus de formation de votre fédération. Vérifiez ce que vous présentez dans le manuel officiel du modèle, et rappelez aux élèves que leur propre ordinateur peut se comporter autrement.',
+    en: 'If you use this simulator in class, you remain responsible for your teaching. It illustrates principles (tissue loading, stops, how computers react) but does not replace the manual of each student’s real computer, nor your agency’s procedures, tables and training material. Check what you present against the model’s official manual, and remind students that their own computer may behave differently.',
+  },
+  termsTitle: { fr: 'Conditions d’utilisation', en: 'Terms of use' },
+  termsUse: {
+    fr: 'Usage prévu : découverte et enseignement de la plongée, uniquement. Ne l’utilisez jamais pour planifier, conduire ou vérifier une vraie plongée, ni pour choisir ou régler un équipement.',
+    en: 'Intended use: learning and teaching diving, only. Never use it to plan, conduct or check a real dive, nor to choose or set up equipment.',
+  },
+  termsWarranty: {
+    fr: 'Absence de garantie : le simulateur est fourni gratuitement, « tel quel », sans garantie d’exactitude, de complétude ni d’adéquation à un usage particulier (GNU AGPL v3, articles 15 et 16). Dans les limites permises par la loi, ses auteurs ne sauraient être tenus responsables de son utilisation.',
+    en: 'No warranty: the simulator is provided free of charge, “as is”, with no warranty of accuracy, completeness or fitness for a particular purpose (GNU AGPL v3, sections 15 and 16). To the extent permitted by law, its authors cannot be held liable for its use.',
+  },
+  termsLimits: {
+    fr: 'Limites connues : les algorithmes marqués ≈ sont approchés et leurs valeurs diffèrent de l’appareil réel ; même un algorithme public (✓) peut être appliqué autrement par l’appareil réel (arrondis, hypothèses de calcul, marges non documentées) ; les écrans sont des interprétations ; seule une partie des modes et des fonctions est simulée ; les tissus sont communs à tous les ordinateurs comparés ; les fabricants peuvent modifier leurs appareils sans que le simulateur suive. Le détail par modèle est dans « Détails de la simulation » (onglet Réglages).',
+    en: 'Known limits: algorithms marked ≈ are approximated and their values differ from the real device; even a public algorithm (✓) may be applied differently by the real device (rounding, calculation assumptions, undocumented margins); displays are interpretations; only part of the modes and features is simulated; tissues are shared by every computer compared; manufacturers may change their devices without the simulator following. Details per model are in “Simulation details” (Settings tab).',
+  },
+  termsMn90: {
+    fr: 'Tables MN90 : transcription non officielle du livret FFESSM de juillet 2005, ni publiée ni approuvée par la FFESSM. Seul le livret fédéral fait foi.',
+    en: 'MN90 tables: unofficial transcription of the FFESSM booklet of July 2005, neither published nor endorsed by the FFESSM. Only the federal booklet prevails.',
+  },
+  termsReport: {
+    fr: 'Signaler une erreur : un écart avec un manuel ou un calcul erroné est corrigé dès que possible et noté dans le journal des corrections (CHANGELOG.md sur GitHub). Contact :',
+    en: 'Report an error: a gap with a manual or a wrong calculation is fixed as soon as possible and recorded in the change log (CHANGELOG.md on GitHub). Contact:',
   },
   aboutSource: { fr: 'Code source :', en: 'Source code:' },
   helpSource: { fr: 'Code source, suggestions et signalements sur GitHub :', en: 'Source code, suggestions and issues on GitHub:' },

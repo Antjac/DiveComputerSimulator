@@ -9,6 +9,8 @@ Interface disponible en français et en anglais, unités métriques ou impérial
 > [!WARNING]
 > **Outil pédagogique uniquement. Ne l'utilisez jamais pour planifier ou conduire une vraie plongée.**
 > Les calculs sont des approximations et peuvent différer sensiblement de ceux d'un ordinateur réel. Suivez toujours votre formation, vos tables et les instructions du fabricant de votre équipement.
+>
+> **Encadrants :** vous restez responsables de votre enseignement. Le simulateur illustre des principes ; il ne remplace ni le manuel de l'ordinateur réel de chaque élève, ni les procédures et tables de votre fédération. Voir [Pour les encadrants](#pour-les-encadrants) et [Conditions d'utilisation](#conditions-dutilisation).
 
 ## Ordinateurs simulés
 
@@ -16,24 +18,26 @@ Interface disponible en français et en anglais, unités métriques ou impérial
 | --- | --- | --- |
 | Aqualung i330R (mode Dive) | Bühlmann ZHL-16C + GF | Approximation (≈) : l'appareil réel ajoute une marge non documentée (paliers plus longs de 2 à 3 min qu'en GF 90/90 lors de comparaisons réelles), non simulée |
 | Aqualung i770R (mode Dive) | Pelagic Z+ | Approximation (≈) |
-| Azoth Systems Odyssey (circuit ouvert) | Bühlmann ZHL-16C + GF | Approximation (≈) : première plongée reproduite ; la majoration brevetée des plongées successives (Standard par défaut) n'est pas publiée, non simulée |
-| Shearwater Perdix 2 (modes Nitrox, 3 GasNx et OC Tec) | Bühlmann ZHL-16C + GF | Algorithme public, reproduit |
-| Shearwater Peregrine TX (modes Air / Nitrox et 3 GasNx) | Bühlmann ZHL-16C + GF | Algorithme public, reproduit |
-| Garmin Descent Mk3i (modes Single-Gas et Multi-Gas) | Bühlmann ZHL-16C + GF | Algorithme public, reproduit |
+| Azoth Systems Odyssey (circuit ouvert) | Bühlmann ZHL-16C + GF | Approximation (≈) : première plongée avec les paramètres publiés ; la majoration brevetée des plongées successives (Standard par défaut) n'est pas publiée, non simulée |
+| Shearwater Perdix 2 (modes Nitrox, 3 GasNx et OC Tec) | Bühlmann ZHL-16C + GF | Algorithme public, paramètres publiés |
+| Shearwater Peregrine TX (modes Air / Nitrox et 3 GasNx) | Bühlmann ZHL-16C + GF | Algorithme public, paramètres publiés |
+| Garmin Descent Mk3i (modes Single-Gas et Multi-Gas) | Bühlmann ZHL-16C + GF | Algorithme public, paramètres publiés |
 | Suunto D5 | Fused RGBM 2 | Approximation (≈) |
 | Suunto Zoop Novo | Suunto RGBM | Approximation (≈) |
-| Suunto Nautic (modes Single gas et Multigas) | Suunto Bühlmann 16 GF (ZHL-16C + GF) | Algorithme public, reproduit |
+| Suunto Nautic (modes Single gas et Multigas) | Suunto Bühlmann 16 GF (ZHL-16C + GF) | Algorithme public, paramètres publiés |
 | Mares Puck Pro | Mares RGBM | Approximation (≈) |
-| Mares Quad Ci | Bühlmann ZH-L16C + GF | Algorithme public, reproduit (R1, R2, T1, T2 interpolés) |
-| Mares Quad 2 | Bühlmann ZH-L16C + GF | Algorithme public, reproduit (R1, R2, T1, T2 repris des autres Mares) |
+| Mares Quad Ci | Bühlmann ZH-L16C + GF | Algorithme public, paramètres publiés (R1, R2, T1, T2 interpolés) |
+| Mares Quad 2 | Bühlmann ZH-L16C + GF | Algorithme public, paramètres publiés (R1, R2, T1, T2 repris des autres Mares) |
 | Mares Quad Air | Mares RGBM | Approximation (≈) |
-| Mares Genius | Bühlmann ZH-L16C + GF | Algorithme public, reproduit (R2, T1, T2 interpolés) |
+| Mares Genius | Bühlmann ZH-L16C + GF | Algorithme public, paramètres publiés (R2, T1, T2 interpolés) |
 | Scubapro Galileo 2 (G2) | ZH-L16 ADT MB | Approximation (≈) |
-| Scubapro Luna 2.0 AI | ZH-L16 ADT MB ou ZH-L16C + GF | Approximation (≈) pour ADT MB, reproduit pour ZH-L16C + GF |
+| Scubapro Luna 2.0 AI | ZH-L16 ADT MB ou ZH-L16C + GF | Approximation (≈) pour ADT MB, paramètres publiés pour ZH-L16C + GF |
 | Cressi Goa | Cressi RGBM | Approximation (≈) |
 | Cressi Donatello | Cressi RGBM | Approximation (≈) |
 
-Les algorithmes propriétaires (RGBM, ZH-L16 ADT MB, Pelagic Z+) ne sont pas publiés : ils sont approchés à partir de Bühlmann ZHL-16C avec des facteurs de gradient et des pénalités calibrés sur des valeurs publiées. L'Aqualung i330R annonce Bühlmann ZHL-16C + GF mais s'en écarte d'une façon non documentée : il est simulé ici avec ses facteurs de gradient publiés, marqué ≈. De même, l'Azoth Systems Odyssey majore les plongées successives d'une façon non publiée : sa première plongée est un Bühlmann + GF pur, les suivantes ne sont pas majorées ici. Les écrans et les règles (alarmes, paliers, verrouillages…) s'inspirent des manuels utilisateurs publics de chaque modèle.
+Les algorithmes propriétaires (RGBM, ZH-L16 ADT MB, Pelagic Z+) ne sont pas publiés : ils sont approchés à partir de Bühlmann ZHL-16C avec des facteurs de gradient et des pénalités calibrés sur des valeurs publiées. L'Aqualung i330R annonce Bühlmann ZHL-16C + GF mais s'en écarte d'une façon non documentée : il est simulé ici avec ses facteurs de gradient publiés, marqué ≈. De même, l'Azoth Systems Odyssey majore les plongées successives d'une façon non publiée : sa première plongée est un Bühlmann + GF pur, les suivantes ne sont pas majorées ici.
+
+**Algorithme public ne veut pas dire valeurs identiques.** Pour les modèles marqués « algorithme public » (✓), le simulateur applique Bühlmann ZHL-16C avec les facteurs de gradient publiés par le fabricant. L'appareil réel peut toutefois s'en écarter : arrondis des paliers et des durées, vitesse de remontée supposée par le calcul, profondeur du dernier palier, plafond continu ou paliers de 3 m, densité de l'eau et pression de surface, définition du NDL, marges de sécurité non documentées, mises à jour du firmware. Des écarts de quelques minutes sur les paliers sont donc normaux. Quand un écart est constaté et documenté (comme pour l'Aqualung i330R), le modèle passe en ≈ avec une explication, et le changement est noté dans le [journal des corrections](CHANGELOG.md). Les écrans et les règles (alarmes, paliers, verrouillages…) s'inspirent des manuels utilisateurs publics de chaque modèle.
 
 Dans l'application, un avertissement s'affiche à chaque visite (usage pédagogique, algorithmes approchés, absence d'affiliation) et une légende ✓ / ≈ au-dessus de chaque ordinateur rappelle qu'il s'agit d'une interprétation non officielle. Dans l'onglet Comparer, la profondeur et la durée du palier et la DTR des ordinateurs ≈ ne sont pas affichées en décompression (seulement « Palier obligatoire », avec l'estimation extrapolée non vérifiée au survol) : seul leur temps sans palier est calé sur des valeurs publiées ; on compare donc leurs réactions, pas les minutes.
 
@@ -85,6 +89,9 @@ Le bloc n'est pas rempli automatiquement entre deux plongées. Cinq secondes apr
 
 ## Tables MN90
 
+> [!NOTE]
+> Transcription non officielle, ni publiée ni approuvée par la FFESSM : seul le livret fédéral fait foi.
+
 Le bouton **MN90** (dans l’en-tête, à côté de la liste des ordinateurs) ouvre à tout moment les tables fédérales à l’air (tables FFESSM établies à partir des MN90 de la Marine nationale, livret de juillet 2005) et montre où en est le plongeur (la plongée est en pause tant qu’elle est ouverte et reprend à la fermeture), sous forme d’un livre dont on tourne les pages (◀ ▶ ou flèches du clavier) : d’abord la plongée (type, profondeur, durée, résultat), puis chaque table utilisée dans l’ordre de lecture — tableau I (GPS de la plongée précédente × intervalle de surface → azote résiduel), tableau II (azote résiduel × profondeur de la 2ᵉ plongée → majoration) pour une plongée successive, puis la table de la profondeur (ligne → paliers, DTR, GPS) — avec la ligne, la colonne et la valeur lue en surbrillance et la lecture expliquée (valeur immédiatement supérieure ou inférieure, comme le veut le livret). En plongée : les paliers si le plongeur quittait le fond maintenant et le passage à la ligne suivante ; en surface : la dernière plongée et les tables à lire avant de replonger. Règles du livret appliquées : durée comptée jusqu’au départ du fond, toute minute entamée compte ; une remontée plus lente que 15 m/min ajoute sa durée jusqu’au premier palier (remontée lente), la durée s’arrête donc à l’arrivée au premier palier (en surface sans palier) ; plongées consécutives (moins de 15 min) : durées additionnées, profondeur la plus grande ; successives (15 min à 12 h) : majoration ; nitrox : profondeur équivalente ; avertissements pour les tables de secours au-delà de 60 m, une plongée précédente sans GPS (*), hors table, plus de deux plongées en 24 heures, remontée rapide. Non simulés : procédures de remontée rapide et de palier interrompu, paliers à l’oxygène pur, tableau III (oxygène en surface), altitude. L’onglet Comparer a aussi une ligne MN90 pour la plongée en cours : temps sans palier restant, premier palier, DTR (colonne TTS) et GPS ; un clic ouvre les tables. Une case vide du tableau I est lue comme « plus d’azote résiduel à compter » (le livret ne le précise pas).
 
 ## Vue 3D
@@ -104,9 +111,29 @@ src/styles/      feuilles de style de la page (celles des ordinateurs sont à c�
 scripts/         scripts de calibration, de scénarios et de non-régression (snapshot)
 ```
 
+## Pour les encadrants
+
+De nombreux encadrants utilisent le simulateur en cours. Dans ce cas :
+
+- **Vous restez responsable de votre enseignement.** Le simulateur illustre des principes (saturation, paliers, réactions des ordinateurs à une erreur) ; il ne remplace ni le manuel de l'ordinateur réel de chaque élève, ni les procédures, tables et contenus de formation de votre fédération.
+- **Vérifiez ce que vous présentez** dans le manuel officiel du modèle affiché (la fenêtre « ⓘ Détails de la simulation » liste, pour chaque modèle, ce qui est simulé, supposé ou non simulé).
+- **Rappelez aux élèves** que leur propre ordinateur peut se comporter autrement (firmware, réglages, modèle), et que les durées de palier des ordinateurs ≈ ne sont qu'approchées.
+- Signalez tout écart constaté (issue ou e-mail) : il sera corrigé et noté dans le [journal des corrections](CHANGELOG.md).
+
+## Conditions d'utilisation
+
+Ces conditions sont aussi affichées dans l'application (À propos › Conditions d'utilisation).
+
+- **Usage prévu :** découverte et enseignement de la plongée, uniquement. N'utilisez jamais le simulateur pour planifier, conduire ou vérifier une vraie plongée, ni pour choisir ou régler un équipement.
+- **Absence de garantie :** le simulateur est fourni gratuitement, « tel quel », sans garantie d'exactitude, de complétude ni d'adéquation à un usage particulier (GNU AGPL v3, articles 15 et 16). Dans les limites permises par la loi, ses auteurs ne sauraient être tenus responsables de son utilisation.
+- **Limites connues :** les algorithmes marqués ≈ sont approchés et leurs valeurs diffèrent de l'appareil réel ; même un algorithme public (✓) peut être appliqué autrement par l'appareil réel (arrondis, hypothèses de calcul, marges non documentées) ; les écrans sont des interprétations ; seule une partie des modes et des fonctions est simulée ; les tissus sont communs à tous les ordinateurs comparés ; les fabricants peuvent modifier leurs appareils sans que le simulateur suive.
+- **Tables MN90 :** transcription non officielle du livret FFESSM de juillet 2005, ni publiée ni approuvée par la FFESSM. Seul le livret fédéral fait foi.
+- **Corrections :** une erreur signalée (écart avec un manuel, calcul erroné) est corrigée dès que possible et notée dans le [journal des corrections](CHANGELOG.md).
+- **Contact :** [antoalex@free.fr](mailto:antoalex@free.fr) ou une issue GitHub.
+
 ## Marques et affiliation
 
-Ce projet est indépendant et **n'est ni affilié, ni approuvé, ni sponsorisé** par les fabricants cités. Aqualung, Aqua Lung, Shearwater, Perdix, Peregrine, Garmin, Descent, Suunto, Zoop, Nautic, Mares, Puck, Quad, Genius, Scubapro, Galileo, Luna, Cressi, Goa et Donatello sont des marques de leurs propriétaires respectifs ; elles sont citées uniquement pour identifier les modèles dont les interfaces sont inspirées. Aucun logo, code ou élément graphique des fabricants n'est inclus.
+Ce projet est indépendant et **n'est ni affilié, ni approuvé, ni sponsorisé** par les fabricants cités. Aqualung, Aqua Lung, Azoth Systems, Odyssey, Shearwater, Perdix, Peregrine, Garmin, Descent, Suunto, Zoop, Nautic, Mares, Puck, Quad, Genius, Scubapro, Galileo, Luna, Cressi, Goa et Donatello sont des marques de leurs propriétaires respectifs ; elles sont citées uniquement pour identifier les modèles dont les interfaces sont inspirées. Aucun logo, code ou élément graphique des fabricants n'est inclus.
 
 Si vous représentez l'un de ces fabricants et souhaitez qu'un élément soit modifié ou retiré, ouvrez une issue.
 

@@ -27,7 +27,18 @@ export function showIntro(): void {
 }
 
 export function setupDialogs(): void {
-  $('about-open').addEventListener('click', () => $<HTMLDialogElement>('about').showModal());
+  // Opens at the top: the autofocused Close button, at the bottom, would otherwise scroll the dialog down.
+  const openAbout = () => {
+    const dlg = $<HTMLDialogElement>('about');
+    dlg.showModal();
+    dlg.scrollTop = 0;
+  };
+  $('about-open').addEventListener('click', openAbout);
+  // "Terms of use" links (welcome notice, Settings tab): the About dialog, opened at the top too.
+  document.querySelectorAll<HTMLAnchorElement>('[data-terms]').forEach((a) => a.addEventListener('click', (e) => {
+    e.preventDefault();
+    openAbout();
+  }));
   // Close when clicking the backdrop.
   $('about').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) $<HTMLDialogElement>('about').close();
