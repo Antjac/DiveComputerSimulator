@@ -41,4 +41,8 @@ export const app = {
   tips: true,
   /** Analog pressure gauge also shown with a transmitter (a backup gauge on the regulator). */
   spgWithTx: false,
+  /** Alert explanations (app/alertHelp.ts): off, bubble, or bubble + pause on serious alerts. */
+  alertHelp: 'bubble' as 'off' | 'bubble' | 'pause',
+  /** Alarms the user asked not to explain again. */
+  alertHelpMuted: [] as string[],
 };

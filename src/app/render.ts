@@ -6,6 +6,7 @@ import { ProfileChart, TissueChart } from '../ui/charts';
 import { renderGauge } from '../ui/gauge';
 import { Scene } from '../ui/scene';
 import { depthLabel, depthUnit, depthVal, rateLabel } from '../units';
+import { alarmSeverity, alertMarkers, explainMarker, updateAlertHelp } from './alertHelp';
 import { updateAlertSounds } from './alertSounds';
 import { updateBoat } from './boat';
 import { renderCompare } from './compare';
@@ -20,6 +21,7 @@ import { renderTissues } from './tissues';
 
 export const scene = new Scene($<HTMLCanvasElement>('scene'), session);
 export const profileChart = new ProfileChart($<HTMLCanvasElement>('profile'), $('profile-tip'));
+profileChart.onMarker = explainMarker;
 export const tissueChart = new TissueChart($<HTMLCanvasElement>('tissues'), $('tissue-tip'));
 
 function fmtClock(sec: number): string {
@@ -72,11 +74,12 @@ export function refresh(full = false): void {
   // Alarms under the device
   setHtml($('device-alarms'), v.alarms
     .map((a) => {
-      const sev = ['ASCENT', 'CEILING', 'PPO2_HIGH', 'LOCKED', 'OUT_OF_GAS'].includes(a) ? 'crit' : a === 'DECO' ? 'serious' : 'warn';
+      const sev = alarmSeverity(a);
       const icon = sev === 'crit' ? '⛔' : '⚠';
-      return `<span class="alarm ${sev}">${icon} ${t(a as I18nKey)}</span>`;
+      return `<span class="alarm ${sev}" data-alarm="${a}">${icon} ${t(a as I18nKey)}</span>`;
     })
     .join(''));
+  updateAlertHelp(v);
 
   // Every computer is computed only while the comparison is on screen.
   if (paneShown('compare')) renderCompare(computers.map((c) => [c, c === app.active ? v : c.compute(session)] as const));
@@ -116,6 +119,7 @@ export function refresh(full = false): void {
       ? session.log[app.selectedLog].profile
       : [];
   profileChart.unit = depthUnit();
+  profileChart.markers = alertMarkers(depthVal);
   const shown = samples.map((p) => ({ t: p.t, depth: depthVal(p.depth), ceiling: depthVal(p.ceiling) }));
   if ($('profile').clientWidth > 0) profileChart.draw(shown);
   if (paneShown('tissues')) renderTissues(v);

@@ -22,6 +22,8 @@ interface Prefs {
   advanced: boolean;
   sound: boolean;
   tips: boolean;
+  alertHelp: 'off' | 'bubble' | 'pause';
+  alertHelpMuted: string[];
 }
 
 function loadPrefs(): Partial<Prefs> {
@@ -51,6 +53,8 @@ export function savePrefs(): void {
     advanced: $<HTMLDetailsElement>('advanced').open,
     sound: app.sound,
     tips: app.tips,
+    alertHelp: app.alertHelp,
+    alertHelpMuted: app.alertHelpMuted,
   };
   try {
     localStorage.setItem('divesim.prefs', JSON.stringify(prefs));
@@ -84,4 +88,6 @@ export function applyPrefs(): void {
   $<HTMLDetailsElement>('advanced').open = prefs.advanced === true;
   app.sound = prefs.sound === true;
   app.tips = prefs.tips !== false; // on unless turned off
+  app.alertHelp = prefs.alertHelp === 'off' || prefs.alertHelp === 'pause' ? prefs.alertHelp : 'bubble'; // bubble unless changed
+  app.alertHelpMuted = Array.isArray(prefs.alertHelpMuted) ? prefs.alertHelpMuted.filter((a) => typeof a === 'string') : [];
 }

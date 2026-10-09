@@ -5,9 +5,17 @@
 .tour-open { flex: none; padding: 3px 9px; font-size: 12px; border-color: var(--accent); color: var(--accent); }
 .tour-open .icon { display: none; }
 /* Alarm sounds on / off: icon only. */
-#tips-toggle, #sound-toggle { width: 38px; padding-left: 0; padding-right: 0; flex: none; font-size: 16px; line-height: 1; }
+#tips-toggle, #sound-toggle, #alert-help-toggle { width: 38px; padding-left: 0; padding-right: 0; flex: none; font-size: 16px; line-height: 1; }
 #tips-toggle[aria-pressed='true'], #sound-toggle[aria-pressed='true'] { border-color: var(--accent); }
 #tips-toggle[aria-pressed='false'] .icon { opacity: 0.4; }
+/* Alert explanations (app/alertHelp.ts): off (dimmed), bubble, bubble + pause (small ⏸ badge). */
+#alert-help-toggle { position: relative; }
+#alert-help-toggle[aria-pressed='true'] { border-color: var(--accent); }
+#alert-help-toggle[aria-pressed='false'] .icon { opacity: 0.4; }
+#alert-help-toggle[data-mode='pause']::after {
+  content: '⏸'; position: absolute; right: -4px; bottom: -4px; font-size: 9px; line-height: 1;
+  padding: 1px 2px; border-radius: 4px; background: var(--accent); color: var(--bg, #000);
+}
 /* Tooltips are for the mouse only (device.ts): no toggle on touch screens. */
 @media (hover: none), (pointer: coarse) { #tips-toggle { display: none; } }
 @media (max-width: 640px), (max-height: 500px) and (orientation: landscape) {

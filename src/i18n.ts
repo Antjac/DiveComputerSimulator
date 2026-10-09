@@ -300,6 +300,11 @@ const dict = {
     fr: 'La vue 3D place le plongeur dans un décor (récif, épave, tombant) : glissez verticalement pour la profondeur, horizontalement pour tourner.',
     en: 'The 3D view puts the diver in a setting (reef, wreck, wall): drag vertically for depth, horizontally to turn.',
   },
+  tourAlertHelpT: { fr: 'Les explications des alertes', en: 'Alert explanations' },
+  tourAlertHelpB: {
+    fr: 'Quand une alarme se déclenche, une bulle explique ce qui se passe et ce qu’il faut faire. Ce bouton passe de <b>bulles</b> à <b>bulles + pause</b> (la simulation s’arrête sur les alertes graves : remontée rapide, palier manqué, ppO₂…), puis à <b>désactivé</b>. Chaque alerte est expliquée une fois par plongée, jamais pendant un exercice.',
+    en: 'When an alarm goes off, a bubble explains what is happening and what to do. This button switches from <b>bubbles</b> to <b>bubbles + pause</b> (the simulation stops on serious alerts: fast ascent, missed stop, ppO₂…), then to <b>off</b>. Each alert is explained once per dive, never during an exercise.',
+  },
   tourDeviceT: { fr: 'L’écran de l’ordinateur', en: 'The computer display' },
   tourDeviceB: {
     fr: 'Il affiche ce que montrerait le modèle choisi : profondeur, durée, NDL, paliers… Survolez un <b>bouton</b> de l’ordinateur à la souris pour voir sa fonction ; maintenez-le pour un appui long. Les alarmes s’affichent juste en dessous.',
@@ -307,8 +312,8 @@ const dict = {
   },
   tourProfileT: { fr: 'Profil de plongée', en: 'Dive profile' },
   tourProfileB: {
-    fr: 'La profondeur et le plafond de décompression au fil du temps. Survolez la courbe pour lire les valeurs.',
-    en: 'Depth and decompression ceiling over time. Hover over the curve to read the values.',
+    fr: 'La profondeur et le plafond de décompression au fil du temps. Survolez la courbe pour lire les valeurs. Les <b>triangles</b> marquent les alertes de l’ordinateur : cliquez-en un pour son explication (aussi pour les plongées du carnet).',
+    en: 'Depth and decompression ceiling over time. Hover over the curve to read the values. The <b>triangles</b> mark the computer’s alerts: click one for its explanation (logbook dives too).',
   },
   tourSettingsT: { fr: 'Réglages', en: 'Settings' },
   tourSettingsB: {
@@ -424,6 +429,112 @@ const dict = {
   DECO: { fr: 'Paliers obligatoires', en: 'Mandatory stops' },
   SAFETY_STOP: { fr: 'Palier de sécurité', en: 'Safety stop' },
   LOCKED: { fr: 'Ordinateur verrouillé (violation de déco)', en: 'Computer locked (deco violation)' },
+  // Alert explanations (app/alertHelp.ts): what happens and what to do, for every computer. What a
+  // given model does on top (lock, penalties…) comes from its own alertHelp().
+  ahOff: { fr: 'Explications des alertes désactivées (cliquer pour les afficher dans une bulle)', en: 'Alert explanations off (click to show them in a bubble)' },
+  ahBubble: { fr: 'Explications des alertes affichées dans une bulle (cliquer pour aussi mettre en pause sur les alertes graves)', en: 'Alert explanations shown in a bubble (click to also pause on serious alerts)' },
+  ahPause: { fr: 'Explications des alertes, avec pause sur les alertes graves (cliquer pour les désactiver)', en: 'Alert explanations, pausing on serious alerts (click to turn them off)' },
+  ahWhatT: { fr: 'Ce qui se passe', en: 'What is happening' },
+  ahDoT: { fr: 'Que faire', en: 'What to do' },
+  ahOnModel: { fr: 'Sur cet ordinateur', en: 'On this computer' },
+  ahPaused: { fr: 'Alerte grave : la simulation est en pause.', en: 'Serious alert: the simulation is paused.' },
+  ahNote: {
+    fr: 'Conseils généraux de formation : sur un vrai appareil, suivez son manuel et les consignes de votre moniteur.',
+    en: 'General training advice: on a real device, follow its manual and your instructor’s guidance.',
+  },
+  ahMute: { fr: 'Ne plus expliquer cette alerte', en: 'Don’t explain this alert again' },
+  ahOk: { fr: 'Compris', en: 'Got it' },
+  ahResume: { fr: 'Reprendre la plongée', en: 'Resume the dive' },
+  ahProfileHint: { fr: 'Cliquer pour l’explication', en: 'Click for the explanation' },
+  ahAt: { fr: 'à', en: 'at' },
+  ahWhat_ASCENT: {
+    fr: 'Vous remontez plus vite que la vitesse maximale admise par l’ordinateur (souvent 9 à 10 m/min, parfois moins près de la surface). L’azote dissous dans les tissus risque de former des bulles : c’est la première cause d’accident de décompression.',
+    en: 'You are ascending faster than the maximum rate the computer allows (often 9 to 10 m/min, sometimes less near the surface). The nitrogen dissolved in the tissues may form bubbles: the leading cause of decompression sickness.',
+  },
+  ahDo_ASCENT: {
+    fr: 'Ralentissez immédiatement, stabilisez-vous quelques instants, puis reprenez la remontée à la vitesse indiquée. Selon le modèle, une remontée trop rapide peut ajouter un palier ou une pénalité.',
+    en: 'Slow down at once, hold your depth for a moment, then resume the ascent at the indicated rate. Depending on the model, a fast ascent may add a stop or a penalty.',
+  },
+  ahWhat_ASCENT_WARN: {
+    fr: 'Votre vitesse de remontée approche de la limite admise par l’ordinateur.',
+    en: 'Your ascent rate is close to the limit the computer allows.',
+  },
+  ahDo_ASCENT_WARN: {
+    fr: 'Ralentissez un peu : une remontée lente et régulière, surtout dans les derniers mètres, limite la formation de bulles.',
+    en: 'Slow down a little: a slow, steady ascent, especially in the last metres, limits bubble formation.',
+  },
+  ahWhat_CEILING: {
+    fr: 'Vous êtes au-dessus de la profondeur du palier obligatoire (ou du plafond de décompression). Vos tissus contiennent trop d’azote pour une pression aussi faible : le risque d’accident de décompression augmente.',
+    en: 'You are shallower than the mandatory stop depth (or the decompression ceiling). Your tissues hold too much nitrogen for such a low pressure: the risk of decompression sickness rises.',
+  },
+  ahDo_CEILING: {
+    fr: 'Redescendez sans attendre sous la profondeur du palier affichée et effectuez tous les paliers. Selon le modèle, rester trop longtemps au-dessus peut ajouter une pénalité ou verrouiller l’ordinateur pendant 24 à 48 h. Après la plongée, surveillez l’apparition de symptômes.',
+    en: 'Go back down below the displayed stop depth at once and complete every stop. Depending on the model, staying above it too long may add a penalty or lock the computer for 24 to 48 h. After the dive, watch for symptoms.',
+  },
+  ahWhat_PPO2_HIGH: {
+    fr: 'La pression partielle d’oxygène du gaz respiré dépasse la limite (1,6 bar au plus). Au-delà, l’oxygène devient toxique pour le système nerveux : une crise convulsive sous l’eau peut entraîner la noyade.',
+    en: 'The oxygen partial pressure of the gas breathed is above the limit (1.6 bar at most). Beyond it oxygen becomes toxic to the nervous system: a seizure underwater can lead to drowning.',
+  },
+  ahDo_PPO2_HIGH: {
+    fr: 'Remontez au-dessus de la profondeur maximale d’utilisation (MOD) de votre gaz. Vérifiez que vous respirez le bon gaz (un gaz de déco trop riche pris trop profond, par exemple).',
+    en: 'Ascend above the maximum operating depth (MOD) of your gas. Check that you are breathing the right gas (e.g. a rich deco gas switched to too deep).',
+  },
+  ahWhat_CNS: {
+    fr: 'La toxicité de l’oxygène accumulée sur le système nerveux (CNS) atteint 80 % de la limite admise.',
+    en: 'The oxygen toxicity accumulated on the nervous system (CNS) has reached 80 % of the allowed limit.',
+  },
+  ahDo_CNS: {
+    fr: 'Réduisez l’exposition : remontez moins profond et terminez la plongée en respectant les paliers. Attendez un intervalle de surface suffisant avant de replonger (le CNS diminue de moitié en 90 min environ).',
+    en: 'Reduce the exposure: move shallower and end the dive with the stops. Wait for a long enough surface interval before diving again (CNS halves in about 90 min).',
+  },
+  ahWhat_NDL_LOW: {
+    fr: 'Il ne reste que quelques minutes avant la limite sans palier : au-delà, la remontée directe ne sera plus permise et des paliers deviendront obligatoires.',
+    en: 'Only a few minutes are left before the no-decompression limit: beyond it, a direct ascent is no longer allowed and stops become mandatory.',
+  },
+  ahDo_NDL_LOW: {
+    fr: 'Si vous ne prévoyez pas de paliers, commencez à remonter : quelques mètres plus haut, la limite s’allonge.',
+    en: 'If you did not plan stops, start ascending: a few metres shallower, the limit gets longer.',
+  },
+  ahWhat_DECO: {
+    fr: 'Vous avez dépassé la limite sans palier : vous ne pouvez plus remonter directement en surface. L’ordinateur affiche la profondeur et la durée du premier palier, et la durée totale de remontée (TTS, DTR…).',
+    en: 'You went past the no-decompression limit: you can no longer ascend straight to the surface. The computer shows the depth and duration of the first stop, and the total ascent time (TTS, DTR…).',
+  },
+  ahDo_DECO: {
+    fr: 'Vérifiez que votre gaz suffit pour la remontée et les paliers. Remontez à la vitesse indiquée jusqu’au palier, restez juste sous sa profondeur jusqu’à la fin, puis passez au suivant. Ne remontez jamais au-dessus du palier.',
+    en: 'Check that your gas is enough for the ascent and the stops. Ascend at the indicated rate to the stop, stay just below its depth until it ends, then move to the next one. Never go above the stop.',
+  },
+  ahWhat_LOCKED: {
+    fr: 'L’ordinateur a constaté une violation grave (palier manqué le plus souvent). Il ne calcule plus de décompression fiable : il passe en mode profondimètre ou se bloque pendant 24 à 48 h selon le modèle.',
+    en: 'The computer detected a serious violation (most often a missed stop). It no longer computes a reliable decompression: it switches to gauge mode or locks for 24 to 48 h depending on the model.',
+  },
+  ahDo_LOCKED: {
+    fr: 'Encore sous l’eau : remontez lentement et faites des paliers de prudence aussi longs que votre gaz le permet. En surface : ne replongez pas avant la fin du verrouillage, surveillez les symptômes et, au moindre doute, respirez de l’oxygène et appelez les secours.',
+    en: 'Still underwater: ascend slowly and make precautionary stops as long as your gas allows. At the surface: do not dive again before the lock ends, watch for symptoms and, if in doubt, breathe oxygen and call for help.',
+  },
+  ahWhat_LOW_GAS: {
+    fr: 'La pression du bloc a atteint la réserve : le gaz restant est prévu pour la remontée, les paliers et un éventuel incident.',
+    en: 'The tank pressure has reached the reserve: the gas left is meant for the ascent, the stops and a possible incident.',
+  },
+  ahDo_LOW_GAS: {
+    fr: 'Prévenez votre binôme et commencez la remontée, sans oublier les paliers. La consommation augmente avec la profondeur et l’effort.',
+    en: 'Tell your buddy and start the ascent, stops included. Gas use rises with depth and effort.',
+  },
+  ahWhat_OUT_OF_GAS: {
+    fr: 'Le bloc est vide : vous ne pouvez plus respirer sur votre détendeur.',
+    en: 'The tank is empty: you can no longer breathe from your regulator.',
+  },
+  ahDo_OUT_OF_GAS: {
+    fr: 'Faites le signe « panne d’air » à votre binôme et respirez sur sa source de secours (octopus), puis remontez ensemble, sans dépasser la vitesse de remontée. Sans binôme à portée : remontée d’urgence en expirant en continu.',
+    en: 'Give your buddy the out-of-air signal and breathe from their alternate air source, then ascend together without exceeding the ascent rate. With no buddy at hand: emergency ascent, exhaling all the way.',
+  },
+  ahWhat_STAGE_EMPTY: {
+    fr: 'Le bloc relais du gaz de déco est vide : vous respirez de nouveau le gaz du bloc principal.',
+    en: 'The stage tank of the deco gas is empty: you are breathing the main tank’s gas again.',
+  },
+  ahDo_STAGE_EMPTY: {
+    fr: 'Vérifiez que l’ordinateur calcule avec le gaz réellement respiré : les paliers s’allongent sans le gaz de déco. Gardez assez de gaz principal pour les terminer.',
+    en: 'Check that the computer computes with the gas actually breathed: the stops get longer without the deco gas. Keep enough main gas to complete them.',
+  },
   help: { fr: 'Aide', en: 'Help' },
   helpFree: {
     fr: 'Cet outil est gratuit. Remarques et suggestions bienvenues par e-mail :',

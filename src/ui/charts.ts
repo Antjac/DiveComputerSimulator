@@ -33,27 +33,65 @@ export interface ProfileLabels {
   time: string;
   depth: string;
   ceiling: string;
+  /** Under a hovered alert marker ("click for the explanation"). */
+  alertHint: string;
 }
 
-/** Depth-vs-time profile with the deco ceiling as a shaded area, plus a crosshair tooltip. */
+/** An alert on the profile (debrief, app/alertHelp.ts): where it started, its colour and name. */
+export interface ProfileMarker {
+  t: number; // s
+  depth: number; // in the chart's unit
+  level: 'crit' | 'serious' | 'warn';
+  label: string;
+  /** Passed back to onMarker when the marker is clicked. */
+  id: string;
+}
+
+const MARKER = { crit: '#ff5c5c', serious: '#ff8a3d', warn: '#f5b83d' };
+const MARKER_R = 5;
+/** Distance (px) from the pointer within which a marker is hovered or clicked. */
+const MARKER_HIT = 11;
+
+/** Depth-vs-time profile with the deco ceiling as a shaded area, the alerts as markers, plus a crosshair tooltip. */
 export class ProfileChart {
   private samples: ProfileSample[] = [];
   private hoverX: number | null = null;
+  private hoverY: number | null = null;
   private pad = { l: 44, r: 12, t: 10, b: 26 };
-  labels: ProfileLabels = { time: 'Time', depth: 'Depth', ceiling: 'Ceiling' };
+  /** Marker positions of the last drawing (px), for hovering and clicks. */
+  private placed: { x: number; y: number; m: ProfileMarker }[] = [];
+  labels: ProfileLabels = { time: 'Time', depth: 'Depth', ceiling: 'Ceiling', alertHint: '' };
   /** Unit of the depth values passed to draw(). */
   unit = 'm';
+  markers: ProfileMarker[] = [];
+  /** A marker was clicked (or tapped). */
+  onMarker: (m: ProfileMarker) => void = () => {};
 
   constructor(private canvas: HTMLCanvasElement, private tip: HTMLElement) {
     canvas.addEventListener('pointermove', (e) => {
       this.hoverX = e.offsetX;
+      this.hoverY = e.offsetY;
       this.draw(this.samples);
     });
     canvas.addEventListener('pointerleave', () => {
-      this.hoverX = null;
+      this.hoverX = this.hoverY = null;
       this.tip.hidden = true;
       this.draw(this.samples);
     });
+    canvas.addEventListener('click', (e) => {
+      const hit = this.markerAt(e.offsetX, e.offsetY);
+      if (hit) this.onMarker(hit.m);
+    });
+  }
+
+  private markerAt(px: number, py: number): (typeof this.placed)[number] | null {
+    let best: (typeof this.placed)[number] | null = null;
+    let bestD = MARKER_HIT;
+    for (const p of this.placed) {
+      const d = Math.hypot(p.x - px, p.y - py);
+      if (d <= bestD) [best, bestD] = [p, d];
+    }
+    return best;
   }
 
   draw(samples: ProfileSample[]): void {
@@ -85,7 +123,11 @@ export class ProfileChart {
       ctx.fillText(`${m}'`, x(m * 60) - 6, h - 8);
     }
 
-    if (samples.length < 2) return;
+    this.placed = [];
+    if (samples.length < 2) {
+      this.canvas.style.cursor = '';
+      return;
+    }
 
     // Ceiling area
     ctx.fillStyle = CEIL;
@@ -110,6 +152,38 @@ export class ProfileChart {
     ctx.beginPath();
     samples.forEach((p, i) => (i ? ctx.lineTo(x(p.t), y(p.depth)) : ctx.moveTo(x(p.t), y(p.depth))));
     ctx.stroke();
+
+    // Alert markers, the most serious drawn last (on top).
+    const rank = { warn: 0, serious: 1, crit: 2 };
+    for (const m of [...this.markers].sort((a, b) => rank[a.level] - rank[b.level])) {
+      if (m.t > maxT) continue;
+      const mx = x(m.t);
+      const my = y(m.depth);
+      ctx.fillStyle = MARKER[m.level];
+      ctx.strokeStyle = '#0d1520';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(mx, my - MARKER_R - 1);
+      ctx.lineTo(mx + MARKER_R, my + MARKER_R - 1);
+      ctx.lineTo(mx - MARKER_R, my + MARKER_R - 1);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fill();
+      this.placed.push({ x: mx, y: my, m });
+    }
+    const hit = this.hoverX !== null && this.hoverY !== null ? this.markerAt(this.hoverX, this.hoverY) : null;
+    this.canvas.style.cursor = hit ? 'pointer' : '';
+    if (hit) {
+      // A hovered marker: its alert instead of the crosshair.
+      const mm = Math.floor(hit.m.t / 60);
+      const ss = String(Math.floor(hit.m.t % 60)).padStart(2, '0');
+      this.tip.hidden = false;
+      this.tip.innerHTML = `<b>${mm}:${ss}</b> · ${hit.m.depth.toFixed(this.unit === 'm' ? 1 : 0)} ${this.unit}<br><span class="tip-alert ${hit.m.level}"></span>${hit.m.label}${this.labels.alertHint ? `<br><i>${this.labels.alertHint}</i>` : ''}`;
+      const tipX = hit.x + 12 + 200 > w ? hit.x - 210 : hit.x + 12;
+      this.tip.style.left = `${Math.max(0, tipX)}px`;
+      this.tip.style.top = `${Math.max(0, hit.y - 20)}px`;
+      return;
+    }
 
     // Crosshair + tooltip
     if (this.hoverX !== null && this.hoverX >= l && this.hoverX <= w - r) {

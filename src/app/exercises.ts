@@ -175,6 +175,11 @@ function finish(phase: 'success' | 'failed', why: Bi | null = null): void {
   renderControls();
 }
 
+/** An exercise is open (prepared, running or debriefed): the alert explanations would give the answer. */
+export function exerciseBusy(): boolean {
+  return run.phase !== 'list';
+}
+
 /** Called at each refresh with the shown computer's view: records its signals, checks the exercise. */
 export function updateExercise(v: ComputerView): void {
   if (run.phase === 'ready' && !app.paused) {

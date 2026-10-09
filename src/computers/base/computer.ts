@@ -3,7 +3,7 @@ import { sacBarPerMin } from '../../engine/gas';
 import { DiveSession } from '../../engine/session';
 import type { Lang } from '../../i18n';
 import { depthInt, depthUnit } from '../../units';
-import type { AlarmCode, AlertCue, ButtonHelp, ComputerView, SafetyState, SafetyStopDef, SettingDef } from './types';
+import type { AlarmCode, AlertCue, Bi, ButtonHelp, ComputerView, SafetyState, SafetyStopDef, SettingDef } from './types';
 import { desaturationTime } from './tissues';
 
 /** Key of the real session behind a computer's view of it (see DiveComputer.sees). */
@@ -398,6 +398,14 @@ export abstract class DiveComputer {
   /** How the alerts sound on this model (and with its current settings): beeps, vibration or both. */
   get soundKind(): AlertCue['kind'] {
     return 'beep';
+  }
+
+  /**
+   * What this model does on alarm `code`, shown under the generic explanation of the alert bubble
+   * (app/alertHelp.ts): lock, penalty, required action… from its manual (cite the section). None by default.
+   */
+  alertHelp(_code: AlarmCode): Bi | null {
+    return null;
   }
 
   /** Sounds or vibrations of the alerts active in `v`, per the model's manual (none by default). */

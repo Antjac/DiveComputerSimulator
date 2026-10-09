@@ -1,7 +1,8 @@
 // Guided tour: the page is dimmed except for a spotlight on the element being explained, with a
 // bubble next to it. The spotlight glides from one element to the next and follows it if the
 // layout moves (sheet opening, resize). While the tour runs it takes the keyboard (← → Esc) so the
-// simulation shortcuts don't fire, and blocks clicks on the page.
+// simulation shortcuts don't fire, and blocks clicks on the page. A passive tour (alert explanations)
+// only points: no dimming, the page keeps its clicks and its keyboard.
 
 export interface TourStep {
   /** Elements to highlight (the spotlight covers all of them); none or all hidden → centred bubble. */
@@ -12,6 +13,31 @@ export interface TourStep {
   before?: () => void;
   /** Skip the step when its targets are not visible in this layout (ex. profile hidden on tablets). */
   optional?: boolean;
+  /** Buttons shown instead of the previous / next navigation (see TourOptions.onAction). */
+  actions?: () => TourAction[];
+}
+
+export interface TourAction {
+  id: string;
+  label: string;
+  primary?: boolean;
+}
+
+export interface TourOptions {
+  /**
+   * The page is neither dimmed nor blocked and the keyboard is left to it: the spotlight and the
+   * bubble only point at the targets while the user goes on (alert explanations, app/alertHelp.ts).
+   */
+  passive?: boolean;
+  /** A button of the step's `actions` was clicked. */
+  onAction?: (id: string) => void;
+  /** Extra class of the tour's root (styling). */
+  className?: string;
+  /**
+   * When the bubble fits on no side of the spotlight (phones), it is shortened to the larger free
+   * space above or below and scrolls, instead of covering the targets (the computer's display).
+   */
+  fitBeside?: boolean;
 }
 
 export interface TourLabels {
@@ -26,6 +52,7 @@ export interface TourLabels {
 const PAD = 6; // spotlight margin around the target
 const GAP = 12; // spotlight ↔ bubble
 const EDGE = 12; // bubble ↔ viewport edge
+const MIN_FIT = 170; // smallest shortened bubble (TourOptions.fitBeside)
 
 function visible(el: Element | null): el is HTMLElement {
   if (!(el instanceof HTMLElement) || el.closest('[hidden]')) return false;
@@ -61,6 +88,7 @@ export class Tour {
   private raf = 0;
   private last = '';
   private onEnd: () => void = () => {};
+  private opts: TourOptions = {};
 
   constructor(private labels: () => TourLabels) {}
 
@@ -68,14 +96,15 @@ export class Tour {
     return this.root !== null;
   }
 
-  start(steps: TourStep[], onEnd: () => void): void {
+  start(steps: TourStep[], onEnd: () => void, opts: TourOptions = {}): void {
     if (this.root) return;
     this.steps = steps;
     this.onEnd = onEnd;
+    this.opts = opts;
     this.root = document.createElement('div');
-    this.root.className = 'tour';
+    this.root.className = ['tour', opts.passive ? 'passive' : '', opts.className ?? ''].filter(Boolean).join(' ');
     this.root.innerHTML = `<div class="tour-hole"></div>
-      <div class="tour-bubble" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-body"></div>`;
+      <div class="tour-bubble" role="dialog" aria-modal="${!opts.passive}" aria-labelledby="tour-title" aria-describedby="tour-body"></div>`;
     this.hole = this.root.querySelector('.tour-hole')!;
     this.bubble = this.root.querySelector('.tour-bubble')!;
     this.bubble.addEventListener('click', (e) => {
@@ -83,9 +112,10 @@ export class Tour {
       if (act === 'prev') this.go(this.i - 1, -1);
       else if (act === 'next') this.go(this.i + 1, 1);
       else if (act === 'close') this.end();
+      else if (act?.startsWith('act:')) this.opts.onAction?.(act.slice(4));
     });
     document.body.append(this.root);
-    window.addEventListener('keydown', this.onKey, true);
+    if (!opts.passive) window.addEventListener('keydown', this.onKey, true);
     this.go(0, 1);
     this.raf = requestAnimationFrame(this.follow);
   }
@@ -129,16 +159,18 @@ export class Tour {
     const shown = this.steps.filter((x) => !x.optional || this.targets(x).length);
     const n = shown.length;
     const lastStep = this.i === this.steps.length - 1;
+    const nav = s.actions
+      ? s.actions().map((a) => `<button class="btn${a.primary ? ' primary' : ''}" data-tour="act:${a.id}">${a.label}</button>`).join('')
+      : `<span class="tour-count">${L.counter(shown.indexOf(s) + 1, n)}</span>
+        <button class="btn" data-tour="prev" ${this.i === 0 ? 'disabled' : ''}>← ${L.prev}</button>
+        <button class="btn primary" data-tour="${lastStep ? 'close' : 'next'}">${lastStep ? L.done : `${L.next} →`}</button>`;
     this.bubble.innerHTML = `
       <button class="tour-x" data-tour="close" aria-label="${L.close}" title="${L.close}">✕</button>
       <h2 id="tour-title">${s.title()}</h2>
       <div id="tour-body" class="tour-body">${s.body()}</div>
-      <div class="tour-nav">
-        <span class="tour-count">${L.counter(shown.indexOf(s) + 1, n)}</span>
-        <button class="btn" data-tour="prev" ${this.i === 0 ? 'disabled' : ''}>← ${L.prev}</button>
-        <button class="btn primary" data-tour="${lastStep ? 'close' : 'next'}">${lastStep ? L.done : `${L.next} →`}</button>
-      </div>`;
-    this.bubble.querySelector<HTMLElement>('.btn.primary')!.focus();
+      <div class="tour-nav${s.actions ? ' actions' : ''}">${nav}</div>`;
+    // A passive bubble leaves the focus where it is (the simulation's keyboard shortcuts keep working).
+    if (!this.opts.passive) this.bubble.querySelector<HTMLElement>('.btn.primary')?.focus();
   }
 
   // The layout can move under the spotlight (sheet opening, device re-render, resize): follow it.
@@ -160,7 +192,8 @@ export class Tour {
     }
     if (box) box = { l: Math.max(2, box.l - PAD), t: Math.max(2, box.t - PAD), r: Math.min(vw - 2, box.r + PAD), b: Math.min(vh - 2, box.b + PAD) };
     const bw = this.bubble.offsetWidth;
-    const bh = this.bubble.offsetHeight;
+    // Natural height (the bubble may be shortened below, see TourOptions.fitBeside).
+    const bh = this.opts.fitBeside ? this.bubble.scrollHeight + 2 : this.bubble.offsetHeight;
     const key = box ? `${box.l | 0},${box.t | 0},${box.r | 0},${box.b | 0},${bw},${bh},${vw},${vh}` : `c,${bw},${bh},${vw},${vh}`;
     if (key === this.last) return;
     this.last = key;
@@ -186,7 +219,13 @@ export class Tour {
       [box.r + GAP, cy, box.r + GAP + bw <= vw - EDGE],
       [box.l - GAP - bw, cy, box.l - GAP - bw >= EDGE],
     ];
-    const [x, y] = spots.find((s) => s[2]) ?? [(vw - bw) / 2, vh - bh - EDGE];
+    const spot = spots.find((s) => s[2]);
+    const below = vh - EDGE - (box.b + GAP);
+    const above = box.t - GAP - EDGE;
+    const fit = !spot && this.opts.fitBeside && Math.max(below, above) >= MIN_FIT;
+    this.bubble.style.maxHeight = fit ? `${Math.max(below, above)}px` : '';
+    this.bubble.classList.toggle('fit', !!fit);
+    const [x, y] = spot ?? (fit ? [cx, below >= above ? box.b + GAP : EDGE] : [(vw - bw) / 2, vh - bh - EDGE]);
     this.moveBubble(x, y);
   }
 

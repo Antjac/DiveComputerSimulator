@@ -1,4 +1,5 @@
 // Interface language: the static texts of the page (data-i18n attributes) and the FR / EN buttons.
+import { renderAlertHelp } from './alertHelp';
 import { renderSound } from './alertSounds';
 import { isI18nKey, lang, setLang, t } from '../i18n';
 import { renderTipsButton } from './device';
@@ -21,7 +22,7 @@ export function applyI18n(): void {
     }
   });
   document.querySelectorAll<HTMLButtonElement>('[data-lang]').forEach((b) => b.classList.toggle('on', b.dataset.lang === lang()));
-  profileChart.labels = { time: t('time'), depth: t('depth'), ceiling: t('ceiling') };
+  profileChart.labels = { time: t('time'), depth: t('depth'), ceiling: t('ceiling'), alertHint: t('ahProfileHint') };
   tissueChart.labels = lang() === 'fr'
     ? { compartment: 'Compartiment', halfTime: 'Période', inspired: 'Gaz inspiré', ofAmbient: 'de la pression ambiante' }
     : { compartment: 'Compartment', halfTime: 'Half-time', inspired: 'Inspired gas', ofAmbient: 'of ambient' };
@@ -35,6 +36,7 @@ export function setupLanguage(): void {
       setLang(b.dataset.lang as 'fr' | 'en');
       applyI18n();
       renderSound();
+      renderAlertHelp();
       renderTipsButton();
       refresh(true);
     }),

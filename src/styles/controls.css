@@ -84,6 +84,9 @@ td.deco { color: var(--warn); }
   padding: 6px 9px; font-size: 12px; color: var(--ink); white-space: nowrap;
   box-shadow: 0 6px 20px rgba(0,0,0,0.35);
 }
+.tip-alert { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.tip-alert.crit { background: var(--crit); } .tip-alert.serious { background: var(--serious); } .tip-alert.warn { background: var(--warn); }
+.tooltip i { color: var(--muted); font-style: normal; font-size: 11px; }
 .tip-ceil { display: inline-block; width: 8px; height: 8px; background: rgba(255, 99, 88, 0.6); border-radius: 2px; margin-right: 5px; }
 
 .btn.primary { border-color: var(--accent); color: var(--accent); }

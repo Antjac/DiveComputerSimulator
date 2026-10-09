@@ -33,6 +33,7 @@ const TOUR: TourStep[] = [
   { targets: () => [q('.scene-top')], title: () => t('tourViewT'), body: () => t('tourViewB') },
   { targets: () => [$('time-bar')], title: () => t('tourTimeT'), body: () => t('tourTimeB') },
   { targets: () => [$('device'), $('spg'), $('device-alarms')], title: () => t('tourDeviceT'), body: () => t('tourDeviceB') },
+  { targets: () => [$('alert-help-toggle')], title: () => t('tourAlertHelpT'), body: () => t('tourAlertHelpB') },
   { targets: () => [q('.profile-box')], optional: true, title: () => t('tourProfileT'), body: () => t('tourProfileB') },
   // Phones: the tab is in the bottom bar, below the sheet, and would stretch the spotlight over the
   // time controls (next step).
@@ -45,6 +46,10 @@ const TOUR: TourStep[] = [
   tabStep('exercises', 'tourExercisesT', 'tourExercisesB'),
   { targets: () => [$('tour-open')], title: () => t('tourEndT'), body: () => t('tourEndB') },
 ];
+
+export function tourRunning(): boolean {
+  return tour.running;
+}
 
 export function startTour(): void {
   if (tour.running) return;
