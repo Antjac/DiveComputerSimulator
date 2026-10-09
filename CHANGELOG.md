@@ -12,6 +12,11 @@ Format : `AAAA-MM-JJ` · modèle(s) · correction (FR) / fix (EN).
 
 ## 2026-10-09
 
+- Mares Quad 2, Quad Ci, Genius · PREDICTIVE : au retour sur un gaz moins riche au-dessus du MOD du
+  gaz quitté, ce gaz sort du calcul tout de suite, et non plus après 20 s (Quad 2) ou 30 s (Quad Ci,
+  Genius) ; comportement supposé, non décrit par les manuels (#19) / PREDICTIVE: back to a leaner
+  gas above the MOD of the gas left, that gas leaves the calculation at once, no longer after 20 s
+  (Quad 2) or 30 s (Quad Ci, Genius); assumed behaviour, not described by the manuals (#19).
 - Tous / All · Avertissement aux encadrants, conditions d'utilisation, mention « non officiel » sur
   les tables MN90 (pas une correction de calcul) / Notice for instructors, terms of use,
   "unofficial" notice on the MN90 tables (not a calculation fix).

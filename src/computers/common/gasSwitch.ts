@@ -85,8 +85,9 @@ export class GasPrompt {
   /**
    * Not described by the Mares manuals (assumed, from user feedback, issue #19): back from a richer gas
    * to a leaner one while shallower than the MOD of the richer gas, it leaves the plan after `delay`
-   * seconds, as when its prompt goes unanswered; no new offer is made above its MOD. Call after
-   * `update`. Returns the gas just excluded, or null.
+   * seconds (0: at once, as a switch to a richer gas is counted at once), as when its prompt goes
+   * unanswered; no new offer is made above its MOD. Call after `update`. Returns the gas just
+   * excluded, or null.
    */
   leave(s: DiveSession, mods: number[], delay: number): number | null {
     if (s.breathing !== this.lastBreathing) {
