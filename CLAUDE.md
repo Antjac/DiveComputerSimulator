@@ -172,6 +172,12 @@ pénalités de plongées successives, carnet.
 Reprendre **toute** la table des alarmes du manuel : texte exact, priorité, couleurs, acquittement
 par un bouton ou non.
 
+**Explication propre au modèle** (`alertHelp(code)` dans `rules.ts`, affichée sous le texte générique de
+la bulle d'explication, `src/app/alertHelp.ts`) : pour chaque `AlarmCode`, ce que fait **cet** appareil
+d'après son manuel (verrouillage et sa durée, pénalité, palier ajouté, mode profondimètre, acquittement…),
+en français et en anglais, avec la section citée en commentaire. Rien si le manuel ne dit rien.
+**À faire : aucun ordinateur ne l'implémente encore** (la méthode de base renvoie `null`).
+
 ## Vérifier avant de rendre la main
 
 1. `npm run build`.
