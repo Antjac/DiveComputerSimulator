@@ -63,6 +63,8 @@ npm run scenario  # rejoue un profil de plongée sur tous les ordinateurs
 npm run stops     # contrôle le comportement aux paliers de déco de chaque ordinateur
 ```
 
+Pour signaler un écart avec un manuel ou contribuer au code, voir [CONTRIBUTING.fr.md](CONTRIBUTING.fr.md).
+
 ## Commandes
 
 - Toucher ou cliquer (et glisser) dans l'eau, ou la molette, pour aller à une profondeur (à la dernière vitesse choisie ; 9 m/min en montée et 18 m/min en descente par défaut).

@@ -63,6 +63,8 @@ npm run scenario  # replays a dive profile on every computer
 npm run stops     # checks each computer's behaviour at deco stops
 ```
 
+To report a gap with a manual or contribute code, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Controls
 
 - Tap or click (and drag) in the water, or use the mouse wheel, to go to a depth (at the last chosen speed; 9 m/min ascending and 18 m/min descending by default).
