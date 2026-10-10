@@ -108,7 +108,6 @@ export function renderControls(): void {
   $('adv-summary').textContent = [
     // Same order as the fields: the dive, then the computer.
     units() === 'imperial' ? t('imperialShort') : '',
-    tankLabel(TANKS.find((k) => k.id === app.tankId)!),
     imperial() ? `${(session.rmv / 28.3168).toFixed(2)} cuft/min` : `${session.rmv} L/min`,
     ...advDefs.map(optLabel),
   ].filter(Boolean).join(' · ');

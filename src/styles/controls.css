@@ -31,12 +31,21 @@ select:disabled { opacity: 0.55; }
 .badge.approx { color: var(--warn); border-color: var(--warn); }
 .badge.small { padding: 0 5px; }
 .contents { display: contents; }
-.advanced { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+/* Advanced settings: many users missed the old discreet line, so the header looks like a button. */
+.advanced { border: 1px solid var(--accent); border-left-width: 3px; border-radius: 8px; background: rgba(76, 195, 255, 0.06); }
 .advanced[open] { padding-bottom: 10px; }
-.advanced summary { cursor: pointer; color: var(--ink-2); font-size: 13px; }
-.advanced[open] summary { margin-bottom: 8px; }
+.advanced > *:not(summary) { margin-left: 10px; margin-right: 10px; }
+.advanced summary { cursor: pointer; list-style: none; padding: 8px 10px; border-radius: 6px; }
+.advanced summary::-webkit-details-marker { display: none; }
+.advanced summary:hover { background: rgba(76, 195, 255, 0.12); }
+.advanced summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.advanced[open] summary { margin-bottom: 8px; border-bottom: 1px solid var(--line); border-radius: 6px 6px 0 0; }
+.adv-title { display: flex; align-items: center; gap: 8px; color: var(--accent); font-size: 14px; font-weight: 600; }
+.adv-icon { font-size: 15px; line-height: 1; }
+.adv-chevron { margin-left: auto; font-size: 13px; transition: transform .15s; }
+.advanced[open] .adv-chevron { transform: rotate(180deg); }
 .advanced[open] .adv-sum { display: none; }
-.adv-sum { display: block; margin-top: 2px; font-size: 11px; color: var(--muted); }
+.adv-sum { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); }
 /* Advanced settings by theme; the alert settings have long names: one per row, name beside its value. */
 .adv-group + .adv-group, .adv-group + #computer-settings-adv > .adv-group { margin-top: 12px; }
 #computer-settings-adv > .adv-group { margin-top: 12px; }
