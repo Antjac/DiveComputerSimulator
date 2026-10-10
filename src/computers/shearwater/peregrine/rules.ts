@@ -1,7 +1,8 @@
 import { type DecoParams, ndl, SURFACE_PRESSURE } from '../../../engine/buhlmann';
 import type { DiveSession } from '../../../engine/session';
 import { remainingTime } from '../../../engine/gas';
-import { type AlertCue, type ComputerView, DiveComputer, SettingDef } from '../../base';
+import { type AlertCue, type AlertExplain, type ComputerView, DiveComputer, SettingDef } from '../../base';
+import { shearwaterExplain } from '../alerts';
 import { Notices } from '../../common/notices';
 import { ppo2Setting } from '../../common/ppo2';
 import { pressureSetting } from '../../common/tank';
@@ -352,6 +353,22 @@ export abstract class PeregrineRules extends DiveComputer {
     return true;
   }
 
+  /**
+   * Alert bubble (app/alertHelp.ts): §4.10 notifications (HIGH PPO2 above the PPO2 limit for 30 s,
+   * MISSED DECO STOP, FAST ASCENT, HIGH / VERY HIGH CNS), §4.9 Low NDL / Depth / Time alerts, §12.3
+   * T1 CRITICAL PRES, §5.1–5.2 safety and deco stops, §4.4 ascent arrows; §4.8: dismissed with either button.
+   */
+  alertExplain(key: string): AlertExplain | null {
+    return shearwaterExplain(key, {
+      dismiss: { fr: 'l’un ou l’autre bouton', en: 'either button' },
+      safetyBottom: 8.3,
+      ppo2Limit: { fr: 'la MOD PPO2 (ou la PPO2 de déco pour les gaz de déco)', en: 'the MOD PPO2 (or the deco PPO2 for deco gases)' },
+      arrows: { fr: 'Chaque flèche vaut 3 m/min : jaunes au-delà de 9 m/min, rouges clignotantes au-delà de 18 m/min.', en: 'Each arrow is 3 m/min: yellow beyond 9 m/min, flashing red beyond 18 m/min.' },
+      // §5.2 "Significant stop violations": threshold not given, 10 s above the stop assumed.
+      missedWhen: { fr: 'après un dépassement « significatif » du palier (seuil non précisé : 10 s dans le simulateur)', en: 'after a “significant” stop violation (threshold not given: 10 s in the simulator)' },
+    });
+  }
+
   get soundKind(): AlertCue['kind'] {
     return 'buzz';
   }
@@ -361,8 +378,8 @@ export abstract class PeregrineRules extends DiveComputer {
    * primary notification vibrates when it first occurs and every 10 seconds until acknowledged. The
    * Peregrine TX has no buzzer.
    */
-  alertCues(v: ComputerView): AlertCue[] {
-    if (this.settings.vibration === 'off' || !v.inDive) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if ((!all && this.settings.vibration === 'off') || !v.inDive) return [];
     const cues: AlertCue[] = [];
     const st = v.safety.state;
     if (st === 'active' || st === 'paused' || st === 'done') cues.push({ key: `safety-${st}`, kind: 'buzz', level: 'info', until: 'once' });

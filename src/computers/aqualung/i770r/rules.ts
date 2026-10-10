@@ -30,6 +30,16 @@ export abstract class I770rRules extends PelagicRules {
   readonly ackButton = 'select'; // "acknowledged and silenced by pressing the SELECT button"
   readonly fastRate = 9.2; // ASC bar graph: 5 segments "> 9.2 (> 30)", "all segments flash"
 
+  /** Alarm banners of the figures (index.ts). */
+  protected alarmScreen(k: PelagicAlarm): string {
+    const t: Partial<Record<PelagicAlarm, string>> = {
+      violation: 'VIOLATION', 'too-deep': 'TOO DEEP', 'down-to-stop': 'DOWN TO STOP', 'deco-entry': 'DECO ENTRY', 'high-po2': 'ALARM',
+      'o2-alarm': 'ALARM', 'o2-warning': 'WARNING', 'too-fast': 'TOO FAST', depth: 'DEPTH', 'dive-t': 'DIVE TIME', turn: 'TURN PRESSURE',
+      end: 'END PRESSURE', n2bar: 'NITROGEN', dtr: 'NO DECO TIME / O2 TIME',
+    };
+    return t[k] ?? '';
+  }
+
   /** Set Gas: "OFF for Gas 2, 3, and 4": four gases. */
   get maxGases(): number {
     return 4;

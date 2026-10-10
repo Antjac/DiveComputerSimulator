@@ -3,7 +3,7 @@ import { sacBarPerMin } from '../../engine/gas';
 import { DiveSession } from '../../engine/session';
 import type { Lang } from '../../i18n';
 import { depthInt, depthUnit } from '../../units';
-import type { AlarmCode, AlertCue, Bi, ButtonHelp, ComputerView, SafetyState, SafetyStopDef, SettingDef } from './types';
+import type { AlarmCode, AlertCue, AlertExplain, ButtonHelp, ComputerView, SafetyState, SafetyStopDef, SettingDef } from './types';
 import { desaturationTime } from './tissues';
 
 /** Key of the real session behind a computer's view of it (see DiveComputer.sees). */
@@ -401,15 +401,25 @@ export abstract class DiveComputer {
   }
 
   /**
-   * What this model does on alarm `code`, shown under the generic explanation of the alert bubble
-   * (app/alertHelp.ts): lock, penalty, required action… from its manual (cite the section). None by default.
+   * Alert messages on display, set by the model's render (alerts with no sound of their own, banners):
+   * read by the alert bubble as `msg:<text>` keys of alertExplain().
    */
-  alertHelp(_code: AlarmCode): Bi | null {
+  screenAlerts: string[] = [];
+
+  /**
+   * Explanation of an alert of this model (app/alertHelp.ts): `key` is the key of one of its alert
+   * cues (alertCues) or a common alarm code (ComputerView.alarms). From its manual (cite the section);
+   * null when it has nothing to add.
+   */
+  alertExplain(_key: string): AlertExplain | null {
     return null;
   }
 
-  /** Sounds or vibrations of the alerts active in `v`, per the model's manual (none by default). */
-  alertCues(_v: ComputerView): AlertCue[] {
+  /**
+   * Sounds or vibrations of the alerts active in `v`, per the model's manual (none by default).
+   * `all`: every alert, even with the model's sounds turned off (the alert explanations use them).
+   */
+  alertCues(_v: ComputerView, _all = false): AlertCue[] {
     return [];
   }
 

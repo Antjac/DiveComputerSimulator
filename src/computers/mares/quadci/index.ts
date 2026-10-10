@@ -220,6 +220,7 @@ export class MaresQuadCi extends QuadCiRules {
   }
 
   render(el: HTMLElement, v: ComputerView, s: DiveSession, _lang: Lang): void {
+    this.screenAlerts = [];
     this.lastView = v;
     let html: string;
     let layout = 'qc-dive';
@@ -239,6 +240,8 @@ export class MaresQuadCi extends QuadCiRules {
       const now = performance.now();
       if ((screen === 'profile' || screen === 'stops') && now - this.screenChangedAt > 5000) this.setScreen((screen = 'ez', 0));
       const alarm = this.alarm(v, s);
+      // Alert bubble (app/alertHelp.ts): the messages on display.
+      this.screenAlerts = [alarm?.text, this.gasMsgs.current, this.deep.shown ? 'DEEP STOP' : null, this.gfSurfBlink ? 'GF @SURF' : null].filter((m): m is string => !!m);
       if (alarm && screen !== 'ez' && screen !== 'full') this.setScreen(SCREENS.indexOf((screen = 'full')));
       if (alarm?.full && screen === 'ez') screen = 'full';
       html = this.gasTable !== null ? this.gasTableScreen(v, s)

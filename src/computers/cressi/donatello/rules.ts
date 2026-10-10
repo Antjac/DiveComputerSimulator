@@ -92,8 +92,8 @@ export abstract class DonatelloRules extends CressiRules {
     return this.deepState === 'pending' || this.deepState === 'active';
   }
 
-  alertCues(v: ComputerView): AlertCue[] {
-    const cues = super.alertCues(v);
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    const cues = super.alertCues(v, all);
     if (!v.inDive) return cues;
     // DEPTH (p. 17): "three consecutive audible beeps", the depth flashes until back above the threshold.
     const max = this.depthAlarm();

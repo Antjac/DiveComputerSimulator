@@ -1,7 +1,7 @@
 import type { DecoParams } from '../../engine/buhlmann';
 import type { DiveSession } from '../../engine/session';
 import { remainingTime } from '../../engine/gas';
-import { type AlertCue, type ComputerView, DiveComputer, SettingDef } from '../base';
+import { type AlertCue, type AlertExplain, type ComputerView, DiveComputer, SettingDef } from '../base';
 import { GasPrompt } from '../common/gasSwitch';
 import { ppo2Setting } from '../common/ppo2';
 import { pressureSetting } from '../common/tank';
@@ -282,6 +282,172 @@ export abstract class DescentRules extends DiveComputer {
   }
 
 
+  /**
+   * Alert bubble (app/alertHelp.ts): the manual's "Dive Alerts" and "Transceiver Alerts" tables, as
+   * the pop-ups of index.ts word them (`msg:` keys: the pop-up on display) and as the alert cues
+   * name them. Each pop-up comes with a tone and a vibration and stays about 5 s (simulator).
+   */
+  alertExplain(key: string): AlertExplain | null {
+    const msg = key.startsWith('msg:') ? key.slice(4) : null;
+    if (key === 'ndl-10' || key === 'ndl-5' || msg === 'Approaching NDL') {
+      return {
+        id: 'ndl', screen: 'Approaching NDL', code: 'NDL_LOW',
+        what: { fr: 'Fenêtre affichée quand il reste 10 min de NDL, puis de nouveau à 5 min.', en: 'Pop-up shown with 10 minutes of NDL left, then again at 5 minutes.' },
+      };
+    }
+    if (key === 'deco' || msg?.startsWith('NDL exceeded')) {
+      return {
+        id: 'deco', screen: 'NDL exceeded. Decompression now required.', code: 'DECO',
+        what: {
+          fr: 'Fenêtre affichée au passage en décompression. Ensuite, « Approaching Deco Stop » prévient à moins de 3 m du palier, et « Decompression Cleared » annonce la fin des paliers. On est au palier jusqu’à 0,6 m plus profond.',
+          en: 'Pop-up shown when decompression becomes required. Then “Approaching Deco Stop” warns within 3 m of the stop, and “Decompression Cleared” announces the end of the stops. You are at the stop down to 0.6 m deeper.',
+        },
+      };
+    }
+    if (msg === 'Approaching Deco Stop') {
+      return {
+        screen: msg,
+        what: { fr: 'Fenêtre affichée en arrivant à moins de 3 m sous le palier.', en: 'Pop-up shown when coming within 3 m below the stop.' },
+        todo: { fr: 'Ralentissez et stabilisez-vous à la profondeur du palier, sans la dépasser.', en: 'Slow down and settle at the stop depth, without going above it.' },
+      };
+    }
+    if (msg === 'Decompression Cleared') {
+      return {
+        screen: msg,
+        what: { fr: 'Fenêtre affichée quand le dernier palier obligatoire est terminé.', en: 'Pop-up shown when the last mandatory stop is complete.' },
+        todo: { fr: 'Faites encore le palier de sécurité si possible, puis remontez lentement.', en: 'Still make the safety stop if you can, then ascend slowly.' },
+      };
+    }
+    if (key === 'fast-ascent' || msg?.startsWith('Ascending too fast')) {
+      return {
+        id: 'fast-ascent', screen: 'Ascending too fast. Slow your ascent.', code: 'ASCENT',
+        what: {
+          fr: 'Fenêtre rouge affichée après plus de 5 s au-dessus de 9,1 m/min. L’indicateur de vitesse est vert sous 7,9 m/min, jaune jusqu’à 10,1 m/min, rouge au-delà.',
+          en: 'Red pop-up shown after more than 5 s faster than 9.1 m/min. The rate gauge is green below 7.9 m/min, yellow up to 10.1 m/min, red beyond.',
+        },
+      };
+    }
+    if (key === 'ceiling' || msg === 'Descend below deco ceiling.') {
+      return {
+        id: 'ceiling', screen: 'Descend below deco ceiling.', code: 'CEILING',
+        what: {
+          fr: 'Fenêtre rouge affichée à plus de 0,6 m au-dessus du palier ; le chronomètre du palier s’arrête. Après 3 min au-dessus, la montre se verrouille (« DECO LOCKOUT »).',
+          en: 'Red pop-up shown more than 0.6 m above the stop; the stop timer halts. After 3 min above it, the watch locks (“DECO LOCKOUT”).',
+        },
+      };
+    }
+    if (key === 'LOCKED') {
+      return {
+        screen: 'DECO LOCKOUT',
+        what: { fr: 'Verrouillage de déco après 3 min au-dessus du plafond : la montre ne donne plus de paliers.', en: 'Decompression lockout after 3 min above the ceiling: the watch no longer gives stops.' },
+      };
+    }
+    if (key === 'po2' || msg?.startsWith('PO2 is high')) {
+      return {
+        id: 'po2', screen: 'PO2 is high. Ascend or switch to lower O2 gas.', code: 'PPO2_HIGH',
+        what: {
+          fr: 'Fenêtre rouge au-dessus du seuil « PO2 Critical » (1,6 bar supposé, non donné par le manuel), répétée toutes les 30 s, 3 fois au plus. Au-dessus du seuil « PO2 Warning » (1,4 bar supposé), la valeur clignote seulement en jaune.',
+          en: 'Red pop-up above the “PO2 Critical” threshold (1.6 bar assumed, not given by the manual), repeated every 30 s, 3 times at most. Above the “PO2 Warning” threshold (1.4 bar assumed), the value only flashes yellow.',
+        },
+      };
+    }
+    if (msg === 'CNS toxicity at 80%.') {
+      return {
+        id: 'cns80', screen: msg, code: 'CNS',
+        what: { fr: 'Fenêtre affichée quand le CNS atteint 80 %.', en: 'Pop-up shown when the CNS reaches 80 %.' },
+      };
+    }
+    if (msg?.startsWith('CNS toxicity')) {
+      return {
+        id: 'cns100', screen: 'CNS toxicity at …%. End your dive now.', code: 'CNS',
+        what: { fr: 'Fenêtre rouge à partir de 100 % de CNS, répétée toutes les 2 min, 3 fois au plus.', en: 'Red pop-up from 100 % CNS, repeated every 2 minutes, 3 times at most.' },
+        todo: { fr: 'Terminez la plongée : la limite de toxicité de l’oxygène est dépassée.', en: 'End the dive: the oxygen toxicity limit is exceeded.' },
+      };
+    }
+    if (msg?.includes('OTU accumulated')) {
+      const end = msg.includes('End your dive');
+      return {
+        id: end ? 'otu300' : 'otu250', screen: end ? '… OTU accumulated. End your dive now.' : msg,
+        what: end
+          ? { fr: 'Fenêtre rouge à partir de 300 OTU (unités de toxicité pulmonaire de l’oxygène), répétée toutes les 2 min, 3 fois au plus.', en: 'Red pop-up from 300 OTU (oxygen pulmonary toxicity units), repeated every 2 minutes, 3 times at most.' }
+          : { fr: 'Fenêtre affichée à 250 OTU : l’exposition des poumons à l’oxygène s’accumule (longues plongées au nitrox ou à l’oxygène).', en: 'Pop-up shown at 250 OTU: the lungs’ oxygen exposure builds up (long nitrox or oxygen dives).' },
+        todo: end
+          ? { fr: 'Terminez la plongée et limitez l’exposition à l’oxygène les heures suivantes.', en: 'End the dive and limit the oxygen exposure in the following hours.' }
+          : { fr: 'Surveillez l’exposition, surtout sur plusieurs plongées dans la journée.', en: 'Watch the exposure, especially over several dives a day.' },
+      };
+    }
+    if (msg?.startsWith('Safety Stop Started')) {
+      return {
+        screen: msg,
+        what: {
+          fr: 'Fenêtre affichée en remontant au-dessus de 6 m après un passage sous 11 m, sans autre consigne de déco. Le palier se fait à 5 m : le décompte court à 1 m près, il s’arrête plus de 3 m au-dessus et repart de zéro sous 11 m.',
+          en: 'Pop-up shown when ascending above 6 m after going below 11 m, with no other decompression guidance. The stop is at 5 m: the countdown runs within 1 m of it, halts more than 3 m above and starts over below 11 m.',
+        },
+        todo: { fr: 'Restez stable vers 5 m jusqu’à la fin du décompte.', en: 'Stay steady around 5 m until the countdown ends.' },
+      };
+    }
+    if (msg === 'Descend to complete safety stop.') {
+      return {
+        screen: msg,
+        what: { fr: 'Fenêtre orange : vous êtes remonté trop haut pendant le palier de sécurité, le décompte est en pause.', en: 'Orange pop-up: you went too shallow during the safety stop, the countdown is paused.' },
+        todo: { fr: 'Redescendez vers 5 m pour le terminer.', en: 'Go back down to about 5 m to finish it.' },
+      };
+    }
+    if (msg?.startsWith('Safety Stop Cleared')) {
+      return {
+        screen: msg,
+        what: { fr: 'Fenêtre affichée à la fin du palier de sécurité.', en: 'Pop-up shown when the safety stop is complete.' },
+        todo: { fr: 'Terminez la remontée lentement.', en: 'Finish the ascent slowly.' },
+      };
+    }
+    if (key === 'tank-reserve' || msg === 'T1 is below reserve pressure.') {
+      return {
+        id: 'tank-reserve', screen: 'T1 is below reserve pressure.', code: 'LOW_GAS',
+        what: { fr: 'Fenêtre orange de l’émetteur T1 sous la pression de réserve réglée (50 bar supposé, non donné par le manuel). La montre n’a pas d’alerte de demi-bloc.', en: 'Orange pop-up from the T1 transmitter below the set reserve pressure (50 bar assumed, not given by the manual). The watch has no half tank alert.' },
+      };
+    }
+    if (key === 'tank-critical' || msg === 'T1 pressure is critically low.') {
+      return {
+        id: 'tank-critical', screen: 'T1 pressure is critically low.', code: 'LOW_GAS',
+        what: { fr: 'Fenêtre rouge sous la plus grande valeur entre 21 bar et la moitié de la réserve.', en: 'Red pop-up below the larger of 21 bar or half the reserve.' },
+        todo: { fr: 'Pression critique : remontez sans attendre avec votre binôme.', en: 'Critical pressure: ascend at once with your buddy.' },
+      };
+    }
+    if (key.startsWith('switch-')) {
+      return {
+        id: 'switch', screen: 'Safe to switch to … Switch now?',
+        what: {
+          fr: 'En mode Multi-Gas, à la MOD/Deco PO2 d’un gaz plus riche pendant la remontée, la montre propose d’y passer. Elle ne change jamais de gaz d’elle-même.',
+          en: 'In Multi-Gas mode, at the MOD/Deco PO2 of a richer gas during the ascent, the watch offers to switch to it. It never switches gases by itself.',
+        },
+        todo: {
+          fr: 'UP / DOWN puis START : Yes (changer), Not Now (le gaz devient un gaz de secours, hors du calcul) ou Never (plus d’invite pour ce gaz). Vérifiez le détendeur et le gaz avant de valider.',
+          en: 'UP / DOWN then START: Yes (switch), Not Now (the gas becomes a backup gas, out of the calculation) or Never (no more prompt for that gas). Check the regulator and the gas before confirming.',
+        },
+      };
+    }
+    if (msg?.startsWith('Continuing on')) {
+      return {
+        id: 'switch-not-now', screen: 'Continuing on … Switch at any time.',
+        what: { fr: 'Changement de gaz refusé (Not Now) ou invite ignorée (30 s supposées) : le gaz proposé devient un gaz de secours et sort du calcul jusqu’à ce que vous le choisissiez.', en: 'Gas switch declined (Not Now) or prompt ignored (30 s assumed): the offered gas becomes a backup gas and leaves the calculation until you select it.' },
+        todo: { fr: 'Pour l’utiliser quand même : START > Gas.', en: 'To use it anyway: START > Gas.' },
+      };
+    }
+    if (msg?.startsWith('Depth Alert')) {
+      return {
+        id: 'depth-alert', screen: 'Depth Alert',
+        what: { fr: 'Alerte personnalisée : vous avez atteint la profondeur choisie (texte non donné par le manuel, déduit). Aucune n’est réglée par défaut.', en: 'Custom alert: you reached the chosen depth (wording not given by the manual, deduced). None is set by default.' },
+      };
+    }
+    if (msg?.startsWith('Time Alert')) {
+      return {
+        id: 'time-alert', screen: 'Time Alert',
+        what: { fr: 'Alerte personnalisée : un intervalle de la durée choisie s’est écoulé (texte non donné par le manuel, déduit). Aucune n’est réglée par défaut.', en: 'Custom alert: an interval of the chosen length has elapsed (wording not given by the manual, deduced). None is set by default.' },
+      };
+    }
+    return null;
+  }
+
   get soundKind(): AlertCue['kind'] {
     return 'both';
   }
@@ -299,8 +465,8 @@ export abstract class DescentRules extends DiveComputer {
     return Math.max(21, this.reservePressure() / 2);
   }
 
-  alertCues(v: ComputerView): AlertCue[] {
-    if (this.settings.silent === 'on' || !v.inDive) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if ((!all && this.settings.silent === 'on') || !v.inDive) return [];
     const cues: AlertCue[] = [];
     const pop = (key: string, level: AlertCue['level']) => cues.push({ key, kind: 'both', level, until: 'once' });
     if (!v.inDeco && v.ndl <= 10) pop(v.ndl <= 5 ? 'ndl-5' : 'ndl-10', 'info');

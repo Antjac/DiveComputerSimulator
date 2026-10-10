@@ -1,7 +1,8 @@
 import { type DecoParams, ndl, planAscent, pressureToDepth } from '../../../engine/buhlmann';
 import { GasPrompt } from '../../common/gasSwitch';
 import type { DiveSession } from '../../../engine/session';
-import { type AlertCue, ComputerView, SettingDef } from '../../base';
+import { type AlertCue, type AlertExplain, type Bi, ComputerView, SettingDef } from '../../base';
+import { IDEAL, SOS, STAGE } from '../alerts';
 import { ScubaproRules, idealAscent, levelParams, reserveSetting } from '../common';
 import { pressureSetting, pressureValue } from '../../common/tank';
 import { ppo2Setting } from '../../common/ppo2';
@@ -279,14 +280,62 @@ export abstract class G2Rules extends ScubaproRules {
   }
 
   /**
+   * Alert bubble (app/alertHelp.ts): §3.6 alarms (red bar: ascent, MOD, missed stop, CNS 100 %, tank
+   * reserve, RBT 0), §3.5 warnings (yellow bar, OFF / VISUAL / AUDIBLE / BOTH), §1.6 SOS, §3.4.2 gas
+   * switch; `msg:` keys: the bar on display (see screenAlerts), the others the alert cues.
+   */
+  alertExplain(key: string): AlertExplain | null {
+    const msg = key.startsWith('msg:') ? key.slice(4) : null;
+    const w = key.startsWith('w-') ? key.split('-')[1] : null;
+    const warn = (fr: string, en: string): Bi => ({ fr: `${fr} Avertissement (bandeau jaune 12 s), réglable sur OFF, VISUAL, AUDIBLE ou BOTH.`, en: `${en} Warning (yellow bar for 12 s), settable to OFF, VISUAL, AUDIBLE or BOTH.` });
+    // The 'ascent' cue also beeps below the alarm (yellow, > 110 %): only the red bar is explained here.
+    if (msg === 'ASCENT TOO FAST') {
+      return { screen: 'ASCENT TOO FAST', code: 'ASCENT', what: { fr: `La vitesse s’affiche en % de la vitesse idéale : jaune au-delà de 110 %, alarme rouge au-delà de 140 % ; les bips s’accélèrent avec l’excès. ${IDEAL.fr}`, en: `The rate is shown as a % of the ideal rate: yellow beyond 110 %, red alarm beyond 140 %; the beeps speed up with the excess. ${IDEAL.en}` } };
+    }
+    if (key === 'missed-stop' || msg === 'MISSED DECO STOP!') {
+      return { id: 'missed-stop', screen: 'MISSED DECO STOP!', code: 'CEILING', what: { fr: `Alarme rouge et bips à plus de 0,5 m au-dessus du palier. ${SOS.fr}`, en: `Red alarm and beeps more than 0.5 m above the stop. ${SOS.en}` } };
+    }
+    if (key === 'LOCKED') return { screen: 'SOS', what: SOS };
+    if (key === 'mod' || msg === 'MOD EXCEEDED') return { id: 'mod', screen: 'MOD EXCEEDED', code: 'PPO2_HIGH', what: { fr: 'Alarme rouge ; les bips continuent tant que vous êtes sous la MOD.', en: 'Red alarm; the beeps go on while you are below the MOD.' } };
+    if (key === 'cns' || msg === 'CNS O2 = 100%') return { id: 'cns', screen: 'CNS O2 = 100%', code: 'CNS', what: { fr: 'Alarme rouge : bips pendant 12 s, puis 5 s chaque minute.', en: 'Red alarm: beeps for 12 s, then 5 s every minute.' }, todo: { fr: 'Terminez la plongée.', en: 'End the dive.' } };
+    if (key === 'reserve' || msg === 'TANK RESERVE REACHED') return { id: 'reserve', screen: 'TANK RESERVE REACHED', code: 'LOW_GAS', what: { fr: 'Alarme rouge : la pression atteint la réserve réglée (de 20 à 120 bar, 50 bar ici). C’est aussi le « bloc vide » du calcul du RBT.', en: 'Red alarm: the pressure reaches the set reserve (20 to 120 bar, 50 bar here). It is also the “empty tank” of the RBT calculation.' } };
+    if (msg === 'RBT = 0 MIN') return { screen: msg, code: 'LOW_GAS', what: { fr: 'Alarme rouge : le temps restant (RBT, temps au fond qui laisse assez de gaz pour remonter à la vitesse idéale, paliers compris, avec la réserve) est épuisé.', en: 'Red alarm: the remaining time (RBT, bottom time that leaves enough gas to ascend at the ideal rate, stops included, with the reserve) has run out.' }, todo: { fr: 'Remontez maintenant.', en: 'Ascend now.' } };
+    if (key.startsWith('switch-')) {
+      return { id: 'switch', screen: 'SWITCH TO GAS T2', what: { fr: 'Multigaz PMG (à activer) : à la MOD d’un autre gaz pendant la remontée, un signal et le bandeau vert « SWITCH TO GAS T2 ».', en: 'PMG multi-gas (to be turned on): at the MOD of another gas during the ascent, a sound and the green “SWITCH TO GAS T2” banner.' }, todo: { fr: 'SAVE (bouton de gauche) confirme ; la flèche (milieu) propose un autre gaz. Sans réponse en 30 s : « EXCLUDING GAS T2 », le gaz sort du calcul.', en: 'SAVE (left button) confirms; the arrow (middle) offers another gas. No answer within 30 s: “EXCLUDING GAS T2”, the gas leaves the calculation.' } };
+    }
+    if (msg?.startsWith('EXCLUDING GAS')) return { id: 'excluding', screen: 'EXCLUDING GAS T…', what: { fr: 'Changement de gaz non confirmé en 30 s : le gaz sort du calcul pour le reste de la plongée, sauf si vous y passez à la main (BOOK maintenu).', en: 'Gas switch not confirmed within 30 s: the gas leaves the calculation for the rest of the dive, unless you switch to it by hand (BOOK held).' } };
+    const kind = w ?? ({
+      'MAX DEPTH REACHED': 'depth', 'CNS O2 = 75%': 'cns75', 'NO STOP = 2 MINUTES': 'nostop', 'ENTERING DECO': 'deco', 'TIME LIMIT REACHED': 'time',
+      'TURN-AROUND TIME': 'turn', 'RBT = 3 MINUTES': 'rbt3', 'ENTERING LEVEL STOPS': 'levelStops', 'MB STOP IGNORED': 'mbIgnored',
+      'MB LEVEL REDUCED': 'mbReduced', 'L0 NO-STOP = 2MIN': 'l0Nostop', 'ENTERING DECO AT L0': 'l0Deco',
+    } as Record<string, string>)[msg ?? ''] ?? (msg?.endsWith(' REACHED') && /^\d/.test(msg) ? 'tank' : null);
+    switch (kind) {
+      case 'depth': return { id: 'w-depth', screen: 'MAX DEPTH REACHED', what: warn('Vous avez atteint la profondeur réglée.', 'You reached the set depth.'), todo: { fr: 'Remontez au-dessus de la profondeur prévue.', en: 'Ascend above the planned depth.' } };
+      case 'cns75': return { id: 'w-cns75', screen: 'CNS O2 = 75%', code: 'CNS', what: warn('Le CNS atteint 75 % ; il reste affiché tant qu’il ne redescend pas.', 'The CNS reaches 75 %; it stays shown until it drops back.') };
+      case 'nostop': return { id: 'w-nostop', screen: 'NO STOP = 2 MINUTES', code: 'NDL_LOW', what: warn('Il reste 2 min de temps sans palier (celui affiché, L0 ou niveau MB).', '2 minutes of no-stop time are left (the one on display, L0 or MB level).') };
+      case 'deco': return { id: 'w-deco', screen: 'ENTERING DECO', code: 'DECO', what: warn('Entrée en décompression (texte déduit, sans figure dans le manuel).', 'Decompression begins (wording deduced, no figure in the manual).') };
+      case 'time': return { id: 'w-time', screen: 'TIME LIMIT REACHED', what: warn('La durée réglée est atteinte.', 'The set dive time is reached.'), todo: { fr: 'Remontez.', en: 'Ascend.' } };
+      case 'turn': return { id: 'w-turn', screen: 'TURN-AROUND TIME', what: warn('La moitié de la durée réglée est écoulée.', 'Half the set dive time has elapsed.'), todo: { fr: 'Faites demi-tour.', en: 'Turn the dive around.' } };
+      case 'tank': return { id: 'w-tank', screen: '100BAR REACHED', what: warn('Avec l’émetteur : la pression atteint la valeur réglée (souvent la moitié du bloc).', 'With the transmitter: the pressure reaches the set value (often half the tank).'), todo: { fr: 'Repère classique pour faire demi-tour.', en: 'The usual cue to turn the dive around.' } };
+      case 'rbt3': return { id: 'w-rbt3', screen: 'RBT = 3 MINUTES', code: 'LOW_GAS', what: warn('Il ne reste que 3 min de temps au fond avant de devoir remonter avec la réserve (RBT).', 'Only 3 minutes of bottom time are left before you must ascend to keep the reserve (RBT).'), todo: { fr: 'Préparez la remontée.', en: 'Get ready to ascend.' } };
+      case 'levelStops': return { id: 'w-levelStops', screen: 'ENTERING LEVEL STOPS', what: warn(`Le niveau MB choisi demande des paliers. ${STAGE.fr}`, `The chosen MB level requires stops. ${STAGE.en}`) };
+      case 'mbIgnored': return { id: 'w-mbIgnored', screen: 'MB STOP IGNORED', what: warn(`Vous êtes au-dessus du palier le plus profond du niveau MB. ${STAGE.fr}`, `You are above the deepest stop of the MB level. ${STAGE.en}`) };
+      case 'mbReduced': return { id: 'w-mbReduced', screen: 'MB LEVEL REDUCED', what: warn('Palier MB ignoré de plus de 1,5 m : le niveau MB actif a été abaissé.', 'MB stop ignored by more than 1.5 m: the active MB level has been lowered.') };
+      case 'l0Nostop': return { id: 'w-l0Nostop', screen: 'L0 NO-STOP = 2MIN', code: 'NDL_LOW', what: warn('Avec un niveau MB : il reste 2 min avant la décompression obligatoire (L0).', 'With an MB level: 2 minutes are left before mandatory decompression (L0).') };
+      case 'l0Deco': return { id: 'w-l0Deco', screen: 'ENTERING DECO AT L0', code: 'DECO', what: warn('Avec un niveau MB : la décompression obligatoire (L0) commence.', 'With an MB level: mandatory decompression (L0) begins.') };
+      default: return null;
+    }
+  }
+
+  /**
    * Audible alarms (user manual §3.6 and following): ascent above 110 % of the ideal rate, the beeps
    * getting faster as the excess grows; MOD exceeded, beeping incessantly while deeper; missed deco
    * stop, a sequence of beeps while more than 0.5 m above; CNS O2 100 %, beeps for 12 s, then 5 s in
    * 1-minute intervals. Warnings set to AUDIBLE or BOTH beep once when they occur (§3.5.1; pattern not
    * described). Silenced by the all-silent mode (§2.2.9).
    */
-  alertCues(v: ComputerView): AlertCue[] {
-    if (this.settings.sound === 'off' || !v.inDive) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if ((!all && this.settings.sound === 'off') || !v.inDive) return [];
     const cues: AlertCue[] = [];
     if (v.ascentLevel >= 1) {
       const excess = v.ascentRate / idealAscent(v.depth) - 1.1;
@@ -300,7 +349,7 @@ export abstract class G2Rules extends ScubaproRules {
     // §3.4.2: "An audible sequence is played" with SWITCH TO GAS T2.
     if (this.prompt.offer !== null) cues.push({ key: `switch-${this.prompt.offer}`, kind: 'beep', level: 'info', until: 'once' });
     for (const [k, since] of this.activeWarnings) {
-      if (['audible', 'both'].includes(this.settings[WARNING_KEY[k]])) cues.push({ key: `w-${k}-${since}`, kind: 'beep', level: 'warning', until: 'once' });
+      if (all || ['audible', 'both'].includes(this.settings[WARNING_KEY[k]])) cues.push({ key: `w-${k}-${since}`, kind: 'beep', level: 'warning', until: 'once' });
     }
     return cues;
   }

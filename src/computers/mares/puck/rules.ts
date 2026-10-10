@@ -1,7 +1,8 @@
 import { ceilingDepth, depthToPressure, ndl, pressureToDepth, type DecoParams } from '../../../engine/buhlmann';
 import { type DiveSession } from '../../../engine/session';
-import { type AlertCue, type ComputerView, DiveComputer, SettingDef } from '../../base';
+import { type AlertCue, type ComputerView, DiveComputer, SettingDef, type AlertExplain } from '../../base';
 import { FastAscentRgbm, GasSequence, MissedStop, maresCues, maresRgbmParams } from '../common';
+import { CNS100, RGBM_ASCENT, gasSwitch } from '../alerts';
 import { GasPrompt } from '../../common/gasSwitch';
 import { ppo2Setting } from '../../common/ppo2';
 
@@ -186,11 +187,46 @@ export abstract class PuckRules extends DiveComputer {
 
 
   /**
+   * Alert bubble (app/alertHelp.ts): §3.2.1 ascent ("slow", "fast"), §3.2.2 MOD, §3.2.3 CNS, §3.2.4
+   * missed stop (desaturation halted) and §3.2.4.1 violation (hourglass), deep stop, §3.5.2 gas switch;
+   * `msg:` keys: what the screen shows with no sound of its own (see screenAlerts).
+   */
+  alertExplain(key: string): AlertExplain | null {
+    switch (key) {
+      case 'fast-ascent':
+        return { screen: 'slow', code: 'ASCENT', what: { fr: `« slow » clignote avec la vitesse. ${RGBM_ASCENT.fr}`, en: `“slow” blinks with the rate. ${RGBM_ASCENT.en}` } };
+      case 'msg:fast':
+        return { screen: 'fast', what: { fr: '« fast » clignote : plus de 12 m/min depuis une profondeur de plus de 12 m. Poursuivie sur les deux tiers de cette profondeur, c’est une violation : « fast » reste allumé et les plongées suivantes se font en profondimètre seulement (24 h).', en: '“fast” blinks: faster than 12 m/min from deeper than 12 m. Kept over two thirds of that depth, it is a violation: “fast” stays on and the following dives run as a depth gauge only (24 h).' }, todo: { fr: 'Ralentissez tout de suite.', en: 'Slow down at once.' } };
+      case 'msg:fast-violation':
+        return { screen: 'fast', title: { fr: 'Violation : remontée incontrôlée', en: 'Violation: uncontrolled ascent' }, critical: true, what: { fr: '« fast » reste allumé : les plongées des 24 h suivantes se font en profondimètre seulement.', en: '“fast” stays on: the dives of the next 24 h run as a depth gauge only.' }, todo: { fr: 'Faites un palier de prudence et surveillez les symptômes.', en: 'Make a precautionary stop and watch for symptoms.' } };
+      case 'missed-stop':
+        return { code: 'CEILING', what: { fr: 'À plus de 0,3 m au-dessus du palier : flèche ▼ et profondeur clignotantes, alarme ; la désaturation des tissus s’arrête jusqu’au retour au palier. Plus de 1 m au-dessus pendant plus de 3 min : violation (sablier ⧗, profondimètre seulement pendant 24 h).', en: 'More than 0.3 m above the stop: blinking ▼ arrow and depth, alarm; tissue desaturation halts until you are back at the stop. More than 1 m above for more than 3 min: violation (hourglass ⧗, depth gauge only for 24 h).' } };
+      case 'msg:missed-violation':
+        return { screen: '⧗', title: { fr: 'Violation : palier manqué', en: 'Violation: missed stop' }, critical: true, what: { fr: 'Sablier : palier manqué plus de 3 min ; les plongées des 24 h suivantes se font en profondimètre seulement.', en: 'Hourglass: stop missed for more than 3 minutes; the dives of the next 24 h run as a depth gauge only.' }, todo: { fr: 'Terminez les paliers autant que possible et surveillez les symptômes.', en: 'Complete the stops as far as you can and watch for symptoms.' } };
+      case 'LOCKED':
+        return { what: { fr: 'Profondimètre seulement pendant 24 h après une violation ; « fast » ou le sablier restent affichés.', en: 'Depth gauge only for 24 h after a violation; “fast” or the hourglass stay on.' } };
+      case 'mod':
+        return { code: 'PPO2_HIGH', what: { fr: 'Alarme sonore, profondeur clignotante et MOD affichée en haut à droite.', en: 'Audible alarm, blinking depth and MOD shown top right.' } };
+      case 'msg:cns':
+        return { screen: 'cns', code: 'CNS', what: { fr: 'Dès 75 %, le CNS s’affiche et clignote en bas à droite.', en: 'From 75 %, the CNS is shown and blinks bottom right.' } };
+      case 'cns-100':
+        return CNS100;
+      case 'msg:deep':
+        return { screen: 'deep deco', what: { fr: 'Palier profond facultatif, proposé à l’approche de la limite sans palier sur une plongée de plus de 20 m : à la profondeur de la moitié de la pression absolue maximale, 2 min. Sa profondeur s’affiche à gauche ; on y est à ±1 m.', en: 'Optional deep stop, suggested as the no-deco limit approaches on a dive deeper than 20 m: at the depth of half the maximum absolute pressure, 2 minutes. Its depth is shown on the left; you are at it within ±1 m.' }, todo: { fr: 'Arrêtez-vous à sa profondeur pendant le décompte, ou continuez la remontée.', en: 'Stop at its depth during the countdown, or carry on ascending.' } };
+      default:
+        if (key.startsWith('switch-')) {
+          return gasSwitch('O2 %', { fr: 'L’O2 % de G1 clignote 20 s. Appui : G2 proposé (O2 % clignotant, MOD en haut à droite) ; appui long : confirmer ; appui : annuler.', en: 'The O2 % of G1 blinks for 20 s. Press: G2 offered (O2 % blinking, MOD top right); hold: confirm; press: cancel.' });
+        }
+        return null;
+    }
+  }
+
+  /**
    * Audible alarms (instruction manual §3.2): fast ascent, MOD exceeded and missed deco stop sound while they last;
    * CNS 100 %: 5 s in one-minute intervals. §2.2.1.7 ALRM turns the audible alarms off (on by default, assumed).
    */
-  alertCues(v: ComputerView): AlertCue[] {
-    if (this.settings.alrm === 'off' || !v.inDive) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if ((!all && this.settings.alrm === 'off') || !v.inDive) return [];
     const cues = maresCues(v);
     // §3.5.2: "Puck Pro sounds an audible signal" at the MOD of G2.
     if (this.prompt.offer !== null) cues.push({ key: `switch-${this.prompt.offer}`, kind: 'beep', level: 'info', until: 'once' });

@@ -176,6 +176,7 @@ export class MaresGenius extends GeniusRules {
 
   render(el: HTMLElement, view: ComputerView, s: DiveSession, _lang: Lang): void {
     this.lastView = view;
+    this.screenAlerts = [];
     const html = !view.inDive ? this.surface(view, s) : view.depth < 1.2 ? this.surfacing(view, s) : this.dive(view, s);
     el.innerHTML = `
       <div class="dev gn">
@@ -270,6 +271,9 @@ export class MaresGenius extends GeniusRules {
     const x = Number(this.settings.ttsx) || 5;
     const tts5 = v.inDeco ? this.ttsPlus(v, s, x) : 0;
     const msg = this.messages(v, s, tts5);
+    // Alert bubble (app/alertHelp.ts): the messages on display.
+    this.screenAlerts = [msg.mid, msg.bot, this.gasMsgs.current, this.deep.shown ? 'DEEP STOP' : '']
+      .filter((m): m is string => !!m).map((m) => m.replace(/<br>/g, ' '));
     // An alarm kicks out of the graphic displays (§8.5 note).
     if (msg.mid || msg.bot) this.mode = 'std';
     if (this.locked) return this.bottomTimer(v, s);

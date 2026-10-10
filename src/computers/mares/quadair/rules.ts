@@ -1,10 +1,11 @@
 import { ceilingDepth, depthToPressure, pressureToDepth, type DecoParams } from '../../../engine/buhlmann';
 import { type DiveSession } from '../../../engine/session';
-import { type AlertCue, ComputerView, DiveComputer, SettingDef } from '../../base';
+import { type AlertCue, ComputerView, DiveComputer, SettingDef, type AlertExplain } from '../../base';
 import { imperial } from '../../../units';
 import { standardNoFly } from '../../common/dives';
 import { ttsAfter } from '../../common/predict';
 import { FastAscentRgbm, GasSequence, MissedStop, maresCues, maresRgbmParams } from '../common';
+import { CNS100, RGBM_ASCENT, gasSwitch } from '../alerts';
 import { GasPrompt } from '../../common/gasSwitch';
 import { ppo2Setting } from '../../common/ppo2';
 import { pressureSetting } from '../../common/tank';
@@ -264,13 +265,53 @@ export abstract class QuadAirRules extends DiveComputer {
     return imperial() ? this.reservePressure() : Math.max(50, this.reservePressure());
   }
 
+  /**
+   * Alert bubble (app/alertHelp.ts): §3.2.1 ascent (SLOW, uncontrolled ascent icon), §3.2.2 MOD,
+   * §3.2.3 CNS, §3.2.4 missed stop (desaturation halted) and §3.2.4.1 violation, §3.2.5 tank alarms,
+   * §3.3.1 runaway deco, §3.5.2 gas switch; `msg:` keys: what the screen shows with no sound of its own.
+   */
+  alertExplain(key: string): AlertExplain | null {
+    const untilBtn = { fr: 'L’alarme sonne jusqu’à l’appui sur un bouton.', en: 'The alarm sounds until a button is pressed.' };
+    switch (key) {
+      case 'fast-ascent':
+        return { screen: 'SLOW', code: 'ASCENT', what: { fr: `« SLOW » s’affiche au milieu de l’écran (vitesse montrée après 0,8 m de remontée). ${RGBM_ASCENT.fr} (réglage FASt, désactivable)`, en: `“SLOW” is shown across the middle row (rate shown after 0.8 m of ascent). ${RGBM_ASCENT.en} (FASt setting, can be turned off)` } };
+      case 'msg:fast':
+        return { title: { fr: 'Remontée incontrôlée en cours', en: 'Uncontrolled ascent under way' }, what: { fr: 'L’icône de remontée rapide clignote : plus de 12 m/min depuis une profondeur de plus de 12 m. Poursuivie sur les deux tiers de cette profondeur, c’est une violation (profondimètre seulement pendant 24 h).', en: 'The fast ascent icon blinks: faster than 12 m/min from deeper than 12 m. Kept over two thirds of that depth, it is a violation (depth gauge only for 24 h).' }, todo: { fr: 'Ralentissez tout de suite.', en: 'Slow down at once.' } };
+      case 'msg:fast-violation':
+        return { title: { fr: 'Violation : remontée incontrôlée', en: 'Violation: uncontrolled ascent' }, critical: true, what: { fr: 'L’icône de remontée rapide reste allumée : les plongées des 24 h suivantes se font en profondimètre seulement.', en: 'The fast ascent icon stays on: the dives of the next 24 h run as a depth gauge only.' }, todo: { fr: 'Faites un palier de prudence et surveillez les symptômes.', en: 'Make a precautionary stop and watch for symptoms.' } };
+      case 'missed-stop':
+        return { code: 'CEILING', what: { fr: 'À plus de 0,3 m au-dessus du palier : flèche ▼, profondeur clignotante et alarme ; la désaturation des tissus est arrêtée jusqu’au retour au palier. Plus de 1 m au-dessus pendant plus de 3 min : violation (profondimètre seulement pendant 24 h).', en: 'More than 0.3 m above the stop: ▼ arrow, blinking depth and alarm; tissue desaturation is halted until you are back at the stop. More than 1 m above for more than 3 min: violation (depth gauge only for 24 h).' } };
+      case 'msg:missed-violation':
+        return { title: { fr: 'Violation : palier manqué', en: 'Violation: missed stop' }, critical: true, what: { fr: 'L’icône de palier manqué reste allumée : les plongées des 24 h suivantes se font en profondimètre seulement.', en: 'The missed stop icon stays on: the dives of the next 24 h run as a depth gauge only.' }, todo: { fr: 'Terminez les paliers autant que possible et surveillez les symptômes.', en: 'Complete the stops as far as you can and watch for symptoms.' } };
+      case 'LOCKED':
+        return { what: { fr: 'Profondimètre seulement pendant 24 h après une violation (remontée incontrôlée ou palier manqué) ; son icône reste affichée.', en: 'Depth gauge only for 24 h after a violation (uncontrolled ascent or missed stop); its icon stays on.' } };
+      case 'mod':
+        return { code: 'PPO2_HIGH', what: { fr: 'Alarme sonore, profondeur clignotante et MOD affichée en haut à droite.', en: 'Audible alarm, blinking depth and MOD shown top right.' } };
+      case 'cns-100':
+        return CNS100;
+      case 'msg:rUn AWAY':
+        return { screen: 'rUn AWAY', what: { fr: `La décompression s’emballe : en restant 5 min de plus, la durée de remontée (ASC+5, qui clignote) augmenterait de 10 min ou plus (réglage run AWAy dECO : 10, 15 ou 20). ${untilBtn.fr}`, en: `Decompression is running away: staying 5 more minutes, the ascent time (ASC+5, blinking) would grow by 10 minutes or more (run AWAy dECO setting: 10, 15 or 20). ${untilBtn.en}` }, todo: { fr: 'Commencez la remontée.', en: 'Start the ascent.' } };
+      case 'ttr':
+        return { screen: 'TTR', code: 'LOW_GAS', what: { fr: `Avec le module de bloc, en décompression : le temps restant avant la réserve (TTR, qui clignote) est plus court que la durée de remontée. ${untilBtn.fr}`, en: `With the tank module, in decompression: the time left before the reserve (TTR, blinking) is shorter than the ascent time. ${untilBtn.en}` }, todo: { fr: 'Commencez la remontée tout de suite et prévenez votre binôme.', en: 'Start the ascent at once and tell your buddy.' } };
+      case 'reserve':
+        return { code: 'LOW_GAS', what: { fr: `Avec le module de bloc : la pression atteint la réserve (tANK RSRV, au moins 50 bar). ${untilBtn.fr}`, en: `With the tank module: the pressure reaches the reserve (tANK RSRV, at least 50 bar). ${untilBtn.en}` } };
+      case 'half':
+        return { title: { fr: 'Demi-bloc (tANK WARN)', en: 'Half tank (tANK WARN)' }, what: { fr: `Avec le module de bloc : la pression atteint tANK WARN (100 bar par défaut). ${untilBtn.fr}`, en: `With the tank module: the pressure reaches tANK WARN (100 bar by default). ${untilBtn.en}` }, todo: { fr: 'Repère classique pour faire demi-tour.', en: 'The usual cue to turn the dive around.' } };
+      default:
+        if (key.startsWith('switch-')) {
+          return gasSwitch('SWITCH', { fr: '« SWITCH » et l’O2 % de G1 clignotent 20 s. Bouton du bas : gaz suivant (O2 % et MOD clignotants), appui long : confirmer.', en: '“SWITCH” and the O2 % of G1 blink for 20 s. Lower button: next gas (O2 % and MOD blinking), hold: confirm.' });
+        }
+        return null;
+    }
+  }
+
   /** §2.2.1.6 tANK WARN (bar). */
   halfTank(): number {
     return Number(this.settings.halfTank) || 100;
   }
 
-  alertCues(v: ComputerView): AlertCue[] {
-    if (this.settings.alrm === 'off' || !v.inDive) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if ((!all && this.settings.alrm === 'off') || !v.inDive) return [];
     const cues = maresCues(v);
     // Gas switch prompt: "sounds an audible signal" (once).
     if (this.prompt.offer !== null) cues.push({ key: `switch-${this.prompt.offer}`, kind: 'beep', level: 'info', until: 'once' });

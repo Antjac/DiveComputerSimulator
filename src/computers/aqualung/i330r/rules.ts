@@ -1,6 +1,6 @@
 import type { DecoParams } from '../../../engine/buhlmann';
 import type { SettingDef } from '../../base';
-import { PelagicRules, pelagicSettings } from '../common';
+import { type PelagicAlarm, PelagicRules, pelagicSettings } from '../common';
 
 // "9. Conservative Factor": OFF (GF: 90-90), MORE (GF: 85-35), MOST (GF: 70-35) — written GF high-low.
 export const CF_GF: Record<string, [number, number]> = { off: [90, 90], more: [35, 85], most: [35, 70] };
@@ -22,6 +22,16 @@ export abstract class I330rRules extends PelagicRules {
   readonly undocumentedVariant = true;
   readonly ackButton = 'down'; // "(Down) ... to acknowledge an alarm"
   readonly fastRate = 9; // "faster than the recommended 9 mpm (30 fpm)"
+
+  /** Alarm messages of the figures (index.ts, message()). */
+  protected alarmScreen(k: PelagicAlarm): string {
+    const t: Partial<Record<PelagicAlarm, string>> = {
+      violation: 'GO UP', 'too-deep': 'TOO DEEP', 'down-to-stop': 'DOWN TO STOP', 'deco-entry': 'DECO ENTRY', 'high-po2': 'PO2 = …',
+      'o2-alarm': 'O2 SAT 100%', 'o2-warning': 'O2 SAT …%', 'too-fast': 'TOO FAST', depth: 'DEPTH ALARM', 'dive-t': 'DIVE TIME … MIN',
+      n2bar: 'NITROGEN', dtr: 'NO DECO TIME / O2 TIME',
+    };
+    return t[k] ?? '';
+  }
 
   /** Set Gas: "Gas 1 ... OFF for Gas 2 and 3": three gases. */
   get maxGases(): number {

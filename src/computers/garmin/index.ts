@@ -1,7 +1,7 @@
 import type { DiveSession } from '../../engine/session';
 import type { Lang } from '../../i18n';
 import { depthInt, depthUnit, pressText, pressUnit, tempUnit, tempVal } from '../../units';
-import { ButtonHelp, ComputerView, clockOfDay, depthStr, hmm, leadingOnGas, mmss } from '../base';
+import { type AlertCue, ButtonHelp, ComputerView, clockOfDay, depthStr, hmm, leadingOnGas, mmss } from '../base';
 import { DescentRules } from './rules';
 
 const C = 150; // centre of the 300×300 viewBox
@@ -455,6 +455,24 @@ export class GarminDescent extends DescentRules {
       <text x="200" y="168" class="gm-t gm-lbl">NO FLY</text>
       <text x="200" y="200" class="gm-t gm-mid">${v.noFly > 0 ? hmm(v.noFly) : '--'}</text>
       <text x="150" y="245" class="gm-t gm-small">${v.locked ? 'DECO LOCKOUT' : `CNS ${Math.round(v.cns)}%`}</text>`;
+  }
+
+  /** With `all` (alert bubble), also the pop-up on display, explained by alertExplain (`msg:` keys). */
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    const cues = super.alertCues(v, all);
+    if (all && v.inDive) {
+      const shown = this.bannerMessage(v);
+      if (shown) cues.push({ key: `msg:${shown}`, kind: 'both', level: 'info', until: 'once' });
+    }
+    return cues;
+  }
+
+  /** The pop-up message on display (without taking the next queued one). */
+  private bannerMessage(v: ComputerView): string {
+    if (this.ascentAlarm || v.ceilingViolation === 2) return '';
+    if (v.tank.ai && v.tank.pressure < v.tank.reserve) return '';
+    if (v.safety.state === 'paused' && v.depth < this.safetyStop.top) return 'Descend to complete safety stop.';
+    return this.prompt.offer === null && this.toast && performance.now() < this.toast.until ? this.toast.msg : '';
   }
 
   /** The event pop-up on display (each for 5 s, queued ones next), if any. */

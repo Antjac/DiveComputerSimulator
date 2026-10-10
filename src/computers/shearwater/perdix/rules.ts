@@ -1,7 +1,8 @@
 import { type DecoParams, ndl, SURFACE_PRESSURE } from '../../../engine/buhlmann';
 import type { DiveSession } from '../../../engine/session';
 import { remainingTime } from '../../../engine/gas';
-import { type AlertCue, type ComputerView, DiveComputer, SettingDef } from '../../base';
+import { type AlertCue, type AlertExplain, type ComputerView, DiveComputer, SettingDef } from '../../base';
+import { shearwaterExplain } from '../alerts';
 import { Notices } from '../../common/notices';
 import { ppo2Setting } from '../../common/ppo2';
 import { pressureSetting } from '../../common/tank';
@@ -404,6 +405,22 @@ export abstract class PerdixRules extends DiveComputer {
   }
 
 
+  /**
+   * Alert bubble (app/alertHelp.ts): §10 errors table (HIGH PPO2 above 1.65 for 30 s, MISSED DECO
+   * STOP, FAST ASCENT), §4.10 HIGH / VERY HIGH CNS, §4.9 Low NDL / Depth / Time alerts, §12.3 T1
+   * CRITICAL PRES, §6.1–6.2 safety and deco stops; dismissed with SELECT (§10).
+   */
+  alertExplain(key: string): AlertExplain | null {
+    return shearwaterExplain(key, {
+      dismiss: { fr: 'bouton SELECT, à droite', en: 'SELECT, the right button' },
+      safetyBottom: 7,
+      ppo2Limit: { fr: '1,65', en: '1.65' },
+      // Each arrow is 3 m/min (index.ts / ascentLevel).
+      arrows: { fr: 'Chaque flèche vaut 3 m/min : jaunes à partir de 4 (12 m/min), rouges à 6 (18 m/min).', en: 'Each arrow is 3 m/min: yellow from 4 (12 m/min), red at 6 (18 m/min).' },
+      missedWhen: { fr: 'dès qu’on remonte au-dessus du palier', en: 'as soon as you ascend above the stop' },
+    });
+  }
+
   get soundKind(): AlertCue['kind'] {
     return 'buzz';
   }
@@ -418,8 +435,8 @@ export abstract class PerdixRules extends DiveComputer {
    * than 30 s), Missed Stop, Fast Ascent (sustained faster than 10 m/min), High CNS (above 90 %);
    * dismissed with SELECT (right button).
    */
-  alertCues(v: ComputerView): AlertCue[] {
-    if (this.settings.vibration === 'off' || !v.inDive) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if ((!all && this.settings.vibration === 'off') || !v.inDive) return [];
     const cues: AlertCue[] = [];
     const st = v.safety.state;
     if (st === 'active' || st === 'paused' || st === 'done') cues.push({ key: `safety-${st}`, kind: 'buzz', level: 'info', until: 'once' });

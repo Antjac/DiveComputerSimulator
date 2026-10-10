@@ -1,15 +1,17 @@
-// Alert explanations: when an alarm of the shown computer appears, a bubble points at the computer
-// and the alarm under it, and says what is happening and what to do (generic texts in i18n.ts, plus
-// what this model does, from its alertHelp()). Header button, three positions saved with the
-// preferences: off / bubble / bubble + pause on serious alerts. Each alert is explained once per
-// dive; "don't explain again" mutes it until the explanations are turned off and on again. Never
-// during an exercise (it would give the answer), the guided tour or a rescue alert.
-// Debrief: every alert of the shown computer is also recorded with its time and depth, drawn as a
-// marker on the dive profile (during the dive and for the logbook's dives); clicking one explains it.
-import type { AlarmCode, ComputerView } from '../computers/base';
-import type { ProfileMarker } from '../ui/charts';
+// Alert explanations: when an alert of the shown computer appears, a bubble points at the computer
+// and says what is happening and what to do. Two sources: the common alarms (ComputerView.alarms,
+// generic texts in i18n.ts) and the model's own alerts (its alert cues, explained by its
+// alertExplain(), from its manual); a model alert that is the device's form of a common alarm shows
+// both texts in one bubble. Header button, three positions saved with the preferences: off / bubble
+// / bubble + pause on serious alerts. Each alert is explained once per dive; "don't explain again"
+// mutes it until the explanations are turned off and on again. Never during an exercise (it would
+// give the answer), the guided tour or a rescue alert.
+// Debrief: every alert is also recorded with its time and depth, drawn as a marker on the dive
+// profile (during the dive and for the logbook's dives); clicking one explains it.
+import type { AlarmCode, AlertExplain, ComputerView, DiveComputer } from '../computers/base';
 import { lang, t, type I18nKey } from '../i18n';
 import { depthLabel } from '../units';
+import type { ProfileMarker } from '../ui/charts';
 import { Tour } from '../ui/tour';
 import { exerciseBusy } from './exercises';
 import { tourRunning } from './guidedTour';
@@ -18,42 +20,85 @@ import { renderControls } from './settings';
 import { $, app, computers, q, session } from './state';
 
 export type AlertHelpMode = 'off' | 'bubble' | 'pause';
+type Severity = 'crit' | 'serious' | 'warn' | 'info';
 
-/** Severity of an alarm: the colour of its label under the computer, and whether it pauses. */
+/** Severity of a common alarm: the colour of its label under the computer, and whether it pauses. */
 export function alarmSeverity(a: AlarmCode): 'crit' | 'serious' | 'warn' {
   return ['ASCENT', 'CEILING', 'PPO2_HIGH', 'LOCKED', 'OUT_OF_GAS'].includes(a) ? 'crit' : a === 'DECO' ? 'serious' : 'warn';
 }
 
-const RANK = { crit: 2, serious: 1, warn: 0 };
+const RANK: Record<Severity, number> = { crit: 3, serious: 2, warn: 1, info: 0 };
+const ICON: Record<Severity, string> = { crit: '⛔', serious: '⚠', warn: '⚠', info: 'ℹ' };
+
+/** An alert active on a computer: a common alarm, or one of the model's own alerts. */
+interface Item {
+  /** Unique among the computers: the alarm code, or "computer:id" for a model alert. */
+  id: string;
+  /** The alert cue key (model alert) or the alarm code: what alertExplain() takes. */
+  key: string;
+  code: AlarmCode | null;
+  severity: Severity;
+  computer: string;
+}
+
+/** The alerts active on computer `c`, each with its explanation (model alerts without one are left out). */
+function activeItems(c: DiveComputer, v: ComputerView): Item[] {
+  const items: Item[] = [];
+  const keys = [...c.alertCues(v, true), ...c.screenAlerts.map((m) => ({ key: `msg:${m}`, level: 'info' as const }))];
+  for (const cue of keys) {
+    const e = c.alertExplain(cue.key);
+    if (!e) continue;
+    const id = `${c.id}:${e.id ?? cue.key}`;
+    if (items.some((i) => i.id === id)) continue;
+    // A cue below the alarm level (a pre-warning sharing the alarm's code) does not count as critical.
+    const fromCode = e.code ? alarmSeverity(e.code) : null;
+    const downgraded = fromCode === 'crit' && !cue.key.startsWith('msg:') && cue.level !== 'alarm';
+    const severity: Severity = e.critical ? 'crit' : fromCode ? (downgraded ? 'warn' : fromCode) : cue.level === 'alarm' ? 'serious' : cue.level === 'warning' ? 'warn' : 'info';
+    items.push({ id, key: cue.key, code: e.code ?? null, severity, computer: c.id });
+  }
+  // The common alarms not already shown in the model's own form.
+  for (const a of v.alarms) {
+    const shown = items.find((i) => i.code === a);
+    // The common alarm being on keeps its severity (the model's cue may be a lower-level one).
+    if (shown) shown.severity = RANK[alarmSeverity(a)] > RANK[shown.severity] ? alarmSeverity(a) : shown.severity;
+    else items.push({ id: a, key: a, code: a, severity: alarmSeverity(a), computer: c.id });
+  }
+  return items;
+}
+
+/** The alert's name: as the device shows it, with the common alarm's name when it differs. */
+function itemLabel(it: Item, e: AlertExplain | null): string {
+  const common = it.code ? t(it.code as I18nKey) : e?.title?.[lang()] ?? '';
+  if (!e?.screen) return common;
+  return common ? `${e.screen} · ${common}` : e.screen;
+}
 
 const tour = new Tour(() => ({ prev: '', next: '', done: '', close: t('close'), counter: () => '' }));
 
-/** An alert shown by the computer on screen during a dive. */
+/** An alert shown by a computer during a dive. */
 interface AlertEvent {
   /** Dive time (s) and depth (m) when it appeared. */
   t: number;
   depth: number;
-  code: AlarmCode;
-  /** Id of the computer that showed it. */
-  computer: string;
+  item: Item;
 }
 
 /** Alerts of each dive, by the dive's start (session clock): the current one and the logbook's. */
 const events = new Map<number, AlertEvent[]>();
 /** An alert back within this many seconds of its end is the same one (no new marker). */
 const MERGE = 30;
-/** Dive time each alarm was last seen at, in the current dive. */
-let lastSeen = new Map<AlarmCode, number>();
-let activeNow = new Set<AlarmCode>();
+/** Dive time each alert was last seen at, in the current dive. */
+let lastSeen = new Map<string, number>();
+let activeNow = new Set<string>();
 
-/** Alarms already explained during this dive. */
-let explained = new Set<AlarmCode>();
+/** Alerts already explained during this dive. */
+let explained = new Set<string>();
 let wasInDive = false;
 /**
- * Alarm of the bubble on screen (null: none), the recorded alert when it was opened from the
+ * Alert of the bubble on screen (null: none), the recorded alert when it was opened from the
  * profile, and whether it paused the simulation.
  */
-let showing: AlarmCode | null = null;
+let showing: Item | null = null;
 let showingEvent: AlertEvent | null = null;
 let pausedByUs = false;
 /** The bubble is being replaced: its end must not resume the dive. */
@@ -63,37 +108,52 @@ function close(): void {
   tour.end();
 }
 
-/** Explains `code`: live (pointing at the computer, may pause), or from a profile marker (`ev`). */
-function open(code: AlarmCode, ev: AlertEvent | null = null): void {
-  const sev = alarmSeverity(code);
-  const pause = !ev && app.alertHelp === 'pause' && sev === 'crit';
+const mmss = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+
+function bodyHtml(it: Item, c: DiveComputer, e: AlertExplain | null): string {
+  const L = lang();
+  // The model's text for the common alarm itself, when the bubble comes from one of its own alerts.
+  const forCode = it.code && it.key !== it.code ? c.alertExplain(it.code) : null;
+  const model = [e?.what[L], forCode?.what[L]].filter(Boolean).join(' ');
+  const todo = [e?.todo?.[L], forCode?.todo?.[L]].filter(Boolean).join(' ');
+  const parts: string[] = [];
+  if (it.code) {
+    parts.push(`<p><b>${t('ahWhatT')} :</b> ${t(`ahWhat_${it.code}` as I18nKey)}</p>`);
+    if (model) parts.push(`<p class="ah-model"><b>${t('ahOnModel')} (${c.name}) :</b> ${model}</p>`);
+    parts.push(`<p><b>${t('ahDoT')} :</b> ${t(`ahDo_${it.code}` as I18nKey)}${todo ? ` ${todo}` : ''}</p>`);
+  } else {
+    parts.push(`<p class="ah-model"><b>${t('ahWhatT')} (${c.name}) :</b> ${model}</p>`);
+    if (todo) parts.push(`<p><b>${t('ahDoT')} :</b> ${todo}</p>`);
+  }
+  return parts.join('');
+}
+
+/** Explains alert `it`: live (pointing at the computer, may pause), or from a profile marker (`ev`). */
+function open(it: Item, ev: AlertEvent | null = null): void {
+  const pause = !ev && app.alertHelp === 'pause' && it.severity === 'crit';
   if (tour.running) {
-    // A more serious alarm replaces the bubble; the pause stays if it was ours.
+    // A more serious alert replaces the bubble; the pause stays if it was ours.
     replacing = true;
     tour.end();
     replacing = false;
   }
-  showing = code;
+  showing = it;
   showingEvent = ev;
-  if (!ev) explained.add(code);
+  if (!ev) explained.add(it.id);
   if (pause && !app.paused) {
     app.paused = true;
     pausedByUs = true;
     renderControls();
   }
-  const computer = (ev && computers.find((c) => c.id === ev.computer)) || app.active;
-  const model = computer.alertHelp(code)?.[lang()];
-  const icon = sev === 'crit' ? '⛔' : '⚠';
+  const computer = computers.find((c) => c.id === it.computer) ?? app.active;
+  const e = computer.alertExplain(it.key);
   const when = ev ? ` <span class="ah-when">${mmss(ev.t)} · ${depthLabel(ev.depth)}</span>` : '';
   tour.start(
     [
       {
-        targets: () => (ev ? [$('profile')] : [$('device').firstElementChild, q(`#device-alarms [data-alarm="${code}"]`)]),
-        title: () => `${icon} ${t(code as I18nKey)}${when}`,
-        body: () => `<div class="ah-body">
-          <p><b>${t('ahWhatT')} :</b> ${t(`ahWhat_${code}` as I18nKey)}</p>
-          <p><b>${t('ahDoT')} :</b> ${t(`ahDo_${code}` as I18nKey)}</p>
-          ${model ? `<p class="ah-model"><b>${t('ahOnModel')} (${computer.name}) :</b> ${model}</p>` : ''}
+        targets: () => (ev ? [$('profile')] : [$('device').firstElementChild, it.code ? q(`#device-alarms [data-alarm="${it.code}"]`) : null]),
+        title: () => `${ICON[it.severity]} ${itemLabel(it, e)}${when}`,
+        body: () => `<div class="ah-body">${bodyHtml(it, computer, e)}
           ${pausedByUs ? `<p><b>${t('ahPaused')}</b></p>` : ''}
           <p class="ah-note">${t('ahNote')}</p></div>`,
         actions: () => [
@@ -113,10 +173,10 @@ function open(code: AlarmCode, ev: AlertEvent | null = null): void {
     {
       passive: !pausedByUs,
       fitBeside: true,
-      className: sev === 'crit' ? 'crit' : undefined,
+      className: it.severity === 'crit' ? 'crit' : undefined,
       onAction: (id) => {
         if (id === 'mute') {
-          app.alertHelpMuted = [...new Set([...app.alertHelpMuted, code])];
+          app.alertHelpMuted = [...new Set([...app.alertHelpMuted, it.id])];
           savePrefs();
         }
         close();
@@ -125,19 +185,17 @@ function open(code: AlarmCode, ev: AlertEvent | null = null): void {
   );
 }
 
-const mmss = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
-
 /** Records the alerts that appear on the shown computer during a dive (profile markers). */
-function record(v: ComputerView): void {
+function record(items: Item[]): void {
   if (!session.inDive) return;
   let list = events.get(session.diveStart);
   if (!list) events.set(session.diveStart, (list = []));
   const now = session.diveTime;
-  for (const a of v.alarms) {
-    if (!activeNow.has(a) && now - (lastSeen.get(a) ?? -Infinity) > MERGE) list.push({ t: now, depth: session.depth, code: a, computer: app.active.id });
-    lastSeen.set(a, now);
+  for (const it of items) {
+    if (!activeNow.has(it.id) && now - (lastSeen.get(it.id) ?? -Infinity) > MERGE) list.push({ t: now, depth: session.depth, item: it });
+    lastSeen.set(it.id, now);
   }
-  activeNow = new Set(v.alarms);
+  activeNow = new Set(items.map((i) => i.id));
 }
 
 /** Called on every refresh with the active computer's view. */
@@ -150,7 +208,8 @@ export function updateAlertHelp(v: ComputerView): void {
     events.set(session.diveStart, []);
   }
   wasInDive = session.inDive;
-  record(v);
+  const items = activeItems(app.active, v);
+  record(items);
   const blocked = app.alertHelp === 'off' || exerciseBusy() || tourRunning() || !!session.emergency;
   if (blocked) {
     // An exercise or the guided tour starting, or the explanations turned off: the live bubble goes
@@ -158,11 +217,11 @@ export function updateAlertHelp(v: ComputerView): void {
     if (tour.running && !pausedByUs && !showingEvent) close();
     return;
   }
-  const fresh = v.alarms.filter((a) => !explained.has(a) && !app.alertHelpMuted.includes(a));
+  const fresh = items.filter((i) => !explained.has(i.id) && !app.alertHelpMuted.includes(i.id));
   if (!fresh.length) return;
-  const next = fresh.reduce((a, b) => (RANK[alarmSeverity(b)] > RANK[alarmSeverity(a)] ? b : a));
+  const next = fresh.reduce((a, b) => (RANK[b.severity] > RANK[a.severity] ? b : a));
   // Several at once: the most serious first, the others once the bubble is closed (if still active).
-  if (showing && RANK[alarmSeverity(next)] <= RANK[alarmSeverity(showing)]) return;
+  if (showing && RANK[next.severity] <= RANK[showing.severity]) return;
   open(next);
 }
 
@@ -170,14 +229,18 @@ export function updateAlertHelp(v: ComputerView): void {
 export function alertMarkers(depthOf: (m: number) => number): ProfileMarker[] {
   const start = session.inDive ? session.diveStart : session.log[app.selectedLog]?.start;
   const list = start === undefined ? [] : (events.get(start) ?? []);
-  return list.map((e, i) => ({ t: e.t, depth: depthOf(e.depth), level: alarmSeverity(e.code), label: t(e.code as I18nKey), id: `${start}:${i}` }));
+  return list.map((ev, i) => {
+    const c = computers.find((x) => x.id === ev.item.computer) ?? app.active;
+    const level = ev.item.severity === 'info' ? 'warn' : ev.item.severity;
+    return { t: ev.t, depth: depthOf(ev.depth), level, label: itemLabel(ev.item, c.alertExplain(ev.item.key)), id: `${start}:${i}` };
+  });
 }
 
 /** A profile marker was clicked: its explanation, pointing at the profile. */
 export function explainMarker(m: ProfileMarker): void {
   const [start, i] = m.id.split(':').map(Number);
   const ev = events.get(start)?.[i];
-  if (ev) open(ev.code, ev);
+  if (ev) open(ev.item, ev);
 }
 
 function renderButton(): void {
@@ -206,12 +269,12 @@ export function renderAlertHelp(): void {
   renderButton();
   if (showing) {
     // The bubble in the new language.
-    const code = showing;
+    const it = showing;
     const ev = showingEvent;
     replacing = true;
     tour.end();
     replacing = false;
-    explained.delete(code);
-    open(code, ev);
+    explained.delete(it.id);
+    open(it, ev);
   }
 }

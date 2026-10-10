@@ -1,6 +1,6 @@
 import { type DecoParams, COMPARTMENTS, SURFACE_PRESSURE, Tissues, AIR, depthToPressure, ndl } from '../../../engine/buhlmann';
 import type { DiveSession } from '../../../engine/session';
-import { type AlertCue, type ComputerView, DiveComputer, SettingDef } from '../../base';
+import { type AlertCue, type ComputerView, DiveComputer, SettingDef, type AlertExplain } from '../../base';
 import { Notices } from '../../common/notices';
 import { ppo2Setting } from '../../common/ppo2';
 
@@ -284,6 +284,29 @@ export abstract class OdysseyRules extends DiveComputer {
     return r;
   }
 
+  /**
+   * Bulle d'explication (app/alertHelp.ts) : §8 (NDL, paliers, pas de verrouillage), §10 alertes
+   * (PO₂ fond, PN2, densité, bloc sous 50 bar), §10.3 vitesse de remontée.
+   */
+  alertExplain(key: string): AlertExplain | null {
+    switch (key) {
+      case 'ndl3':
+        return { code: 'NDL_LOW', what: { fr: 'Sous 3 min, la NDL passe en m’ss sur fond gris et l’Odyssey vibre (deux séries d’avertissement).', en: 'Below 3 minutes, the NDL switches to m’ss on a grey background and the Odyssey vibrates (two warning series).' } };
+      case 'low-gas':
+        return { code: 'LOW_GAS', what: { fr: 'Avec l’émetteur : la pression passe sous 50 bar, le champ du bloc devient rouge et l’Odyssey vibre.', en: 'With the transmitter: the pressure drops below 50 bar, the tank field turns red and the Odyssey vibrates.' } };
+      case 'pn2':
+        return { screen: 'PN2', what: { fr: 'Boîte « Alertes » : la pression partielle d’azote du gaz respiré dépasse celle de la profondeur d’alerte réglée (« Alerte PEN₂ », 50 m sur la figure) : risque de narcose. Elle reste affichée jusqu’à l’appui sur un bouton (vibration supposée).', en: '“Alertes” box: the nitrogen partial pressure of the gas breathed exceeds that of the set alert depth (“Alerte PEN₂”, 50 m on the figure): narcosis risk. It stays until a button is pressed (vibration assumed).' }, todo: { fr: 'Remontez de quelques mètres.', en: 'Ascend a few metres.' } };
+      case 'density':
+        return { screen: 'Densité', what: { fr: 'Boîte « Alertes » : la densité du gaz respiré dépasse l’alerte réglée (5,20 g/l sur la figure) ; un gaz trop dense augmente l’effort respiratoire et le CO₂. Elle reste affichée jusqu’à l’appui sur un bouton (vibration supposée).', en: '“Alertes” box: the density of the gas breathed exceeds the set alert (5.20 g/l on the figure); too dense a gas raises the breathing effort and CO₂. It stays until a button is pressed (vibration assumed).' }, todo: { fr: 'Remontez et réduisez l’effort.', en: 'Ascend and reduce the effort.' } };
+      case 'CEILING':
+        return { what: { fr: 'Surbrillance marron à plus de 10 cm au-dessus du palier, rouge à plus de 10 cm au-dessus du plafond. L’Odyssey ne se verrouille pas.', en: 'Brown highlight more than 10 cm above the stop, red more than 10 cm above the ceiling. The Odyssey does not lock.' } };
+      case 'ASCENT':
+        return { what: { fr: 'Flèches rouges au-delà de la consigne de vitesse VR (12 m/min sur la figure), sans vibration.', en: 'Red arrows beyond the set ascent rate VR (12 m/min on the figure), with no vibration.' } };
+      default:
+        return null;
+    }
+  }
+
   get soundKind(): AlertCue['kind'] {
     return 'buzz';
   }
@@ -293,8 +316,8 @@ export abstract class OdysseyRules extends DiveComputer {
    * bouteille faible « avec vibrations », vitesse de remontée « sans vibration » (légende des figures
    * du §10). Boîtes « Alertes » PN2 et densité : vibration supposée (non précisé), jusqu'à l'acquittement.
    */
-  alertCues(v: ComputerView): AlertCue[] {
-    if (this.settings.vibration === 'off' || !v.inDive) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if ((!all && this.settings.vibration === 'off') || !v.inDive) return [];
     const cues: AlertCue[] = [];
     if (!v.inDeco && v.ndl < 3 && v.depth > 1) cues.push({ key: 'ndl3', kind: 'buzz', level: 'warning', until: 'once', first: 2 });
     if (v.tank.ai && v.tank.pressure < 50) cues.push({ key: 'low-gas', kind: 'buzz', level: 'warning', until: 'once' });

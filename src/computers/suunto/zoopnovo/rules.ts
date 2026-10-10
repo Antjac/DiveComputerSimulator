@@ -1,6 +1,6 @@
 import { type DecoParams, COMPARTMENTS, ceilingDepth, depthToPressure, equilibriumDepth, pressureToDepth } from '../../../engine/buhlmann';
 import type { DiveSession } from '../../../engine/session';
-import { type AlertCue, ComputerView, DiveComputer, SettingDef, desaturationTime } from '../../base';
+import { type AlertCue, ComputerView, DiveComputer, SettingDef, desaturationTime, type AlertExplain } from '../../base';
 import { ppo2Setting } from '../../common/ppo2';
 import { PERSONAL } from '../d5/rules';
 
@@ -338,8 +338,8 @@ export abstract class ZoopNovoRules extends DiveComputer {
    * deepstop reached, OLF 80 / 100 %, depth and dive time (twice). The guidance beeps ('start
    * ascending' / 'descending') are part of each pattern here. No sound with Tones off (§3.25).
    */
-  alertCues(v: ComputerView): AlertCue[] {
-    if (this.settings.tones === 'off' || !v.inDive) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if ((!all && this.settings.tones === 'off') || !v.inDive) return [];
     const cues: AlertCue[] = [];
     if (v.depth > v.mod) cues.push({ key: 'po2', kind: 'beep', level: 'alarm', until: 'clear', every: 4.8 });
     if (v.alarms.includes('CEILING')) cues.push({ key: 'ceiling', kind: 'beep', level: 'alarm', until: 'clear', every: 4.8 });
@@ -350,6 +350,72 @@ export abstract class ZoopNovoRules extends DiveComputer {
     if (this.mandatoryViolated(v)) cues.push({ key: 'stop-violated', kind: 'beep', level: 'warning', until: 'clear', every: 4 });
     for (const k of this.pendingNotices()) cues.push({ key: `notice-${k}`, kind: 'beep', level: 'warning', until: 'once', first: 8 });
     return cues;
+  }
+
+  /**
+   * Alert bubble (app/alertHelp.ts): §3.2 alarm table and sounds, §3.4 ascent rate, §3.8 continuous
+   * decompression, §3.16 algorithm lock (Er), §3.19 safety, mandatory and deep stops (lengths from
+   * the Vyper Air guide, VA §5.9.2 / §5.10, assumed), §3.24.3 OLF.
+   */
+  alertExplain(key: string): AlertExplain | null {
+    const ack = { fr: 'La valeur concernée clignote jusqu’à l’appui sur un bouton.', en: 'The value concerned blinks until a button is pressed.' };
+    switch (key) {
+      case 'slow':
+        return {
+          screen: 'SLOW', code: 'ASCENT',
+          what: {
+            fr: '« SLOW » s’affiche dès que la remontée dépasse 10 m/min, avec 3 bips d’alarme ; les segments du bas de la barre de vitesse clignotent. Au-delà de 5 s, un palier de sécurité obligatoire est ajouté (sa durée dépend de la gravité, non précisée : 1 min par dépassement dans le simulateur).',
+            en: '“SLOW” is shown as soon as the ascent exceeds 10 m/min, with 3 alarm beeps; the lower segments of the rate bar blink. Beyond 5 s, a mandatory safety stop is added (its length depends on how serious it was, not given: 1 min per violation in the simulator).',
+          },
+        };
+      case 'ceiling':
+        return {
+          code: 'CEILING',
+          what: {
+            fr: 'Le Zoop Novo raisonne en plafond continu (zone du plafond jusqu’à 1,2 m plus profond). Au-dessus du plafond : flèche vers le bas, bips continus, « Er » à la place de la durée de remontée. Après plus de 3 min, l’algorithme se verrouille (« Er ») pour 48 h.',
+            en: 'The Zoop Novo works with a continuous ceiling (ceiling zone down to 1.2 m deeper). Above the ceiling: downward arrow, continuous beeping, “Er” in place of the ascent time. After more than 3 min, the algorithm locks (“Er”) for 48 h.',
+          },
+        };
+      case 'LOCKED':
+        return {
+          screen: 'Er',
+          what: { fr: 'Algorithme verrouillé 48 h : « Er » remplace les informations de décompression. Replonger dans cet état remet le verrouillage à 48 h à la sortie de l’eau.', en: 'Algorithm locked for 48 h: “Er” replaces the decompression information. Diving again in this state resets the lock to 48 h on surfacing.' },
+        };
+      case 'deco':
+        return {
+          code: 'DECO',
+          what: { fr: 'Décompression continue : plafond (« CEILING ») à gauche, durée de remontée (« ASC TIME ») à droite, 2 bips. Sous le « plancher » (où la décompression commence), une flèche vers le haut ; dans la zone du plafond, deux flèches.', en: 'Continuous decompression: ceiling (“CEILING”) on the left, ascent time (“ASC TIME”) on the right, 2 beeps. Below the “floor” (where decompression starts), an up arrow; in the ceiling zone, both arrows.' },
+          todo: { fr: 'Remontez jusqu’à la zone du plafond et restez-y jusqu’à ce qu’il disparaisse.', en: 'Ascend to the ceiling zone and stay there until it clears.' },
+        };
+      case 'po2':
+        return { code: 'PPO2_HIGH', what: { fr: 'Alarme quand la profondeur dépasse la MOD (PO2 réglée, 1,4 bar par défaut en Nitrox) : la PO2 clignote en bas à droite, bips d’alarme pendant 3 min au plus.', en: 'Alarm when the depth exceeds the MOD (set PO2, 1.4 bar by default in Nitrox): the PO2 blinks bottom right, alarm beeps for 3 min at most.' } };
+      case 'deep-reached':
+        return {
+          screen: 'DEEPSTOP',
+          what: { fr: 'Palier profond atteint (actifs par défaut, en dessous de 20 m) : « DEEPSTOP », sa profondeur et son décompte (2 min supposées). Le premier est à mi-chemin entre la profondeur maximale et le plafond, les suivants à mi-chemin vers le plafond.', en: 'Deep stop reached (on by default, below 20 m): “DEEPSTOP”, its depth and countdown (2 min assumed). The first is halfway between the maximum depth and the ceiling, the next ones halfway to the ceiling.' },
+          todo: { fr: 'Restez à ±1,5 m de sa profondeur jusqu’à la fin du décompte.', en: 'Stay within ±1.5 m of its depth until the countdown ends.' },
+        };
+      case 'deep-violated':
+        return {
+          screen: 'DEEPSTOP',
+          what: { fr: 'Palier profond non respecté : « DEEPSTOP » clignote, vous êtes plus de 1,5 m au-dessus. Abandonné (3 m au-dessus, supposé), il pénalise les plongées suivantes.', en: 'Deep stop violated: “DEEPSTOP” blinks, you are more than 1.5 m above it. Skipped (3 m above, assumed), it penalises the next dives.' },
+          todo: { fr: 'Redescendez à sa profondeur.', en: 'Go back down to its depth.' },
+        };
+      case 'stop-violated':
+        return {
+          title: { fr: 'Palier de sécurité obligatoire non respecté', en: 'Mandatory safety stop violated' },
+          what: { fr: 'Après une remontée trop rapide, le palier de sécurité obligatoire se fait entre 6 et 3 m ; vous êtes remonté au-dessus de 3 m. Bips pendant 3 min ; corrigé dans ce délai, il est sans effet, sinon la plongée suivante est pénalisée.', en: 'After a fast ascent, the mandatory safety stop is made between 6 and 3 m; you went above 3 m. Beeps for 3 min; corrected within that time it has no effect, otherwise the next dive is penalised.' },
+          todo: { fr: 'Redescendez entre 3 et 6 m dans les 3 minutes.', en: 'Go back down to 3–6 m within 3 minutes.' },
+        };
+      case 'notice-olf':
+        return { screen: 'OLF%', code: 'CNS', what: { fr: `En Nitrox, l’OLF (la plus grande valeur entre le CNS et l’OTU, en %) atteint 80 % puis 100 %. ${ack.fr}`, en: `In Nitrox, the OLF (the larger of CNS and OTU, in %) reaches 80 % then 100 %. ${ack.en}` } };
+      case 'notice-depth':
+        return { title: { fr: 'Alarme de profondeur', en: 'Depth alarm' }, what: { fr: `Vous dépassez la profondeur d’alarme (30 m par défaut). ${ack.fr}`, en: `You are deeper than the depth alarm (30 m by default). ${ack.en}` }, todo: { fr: 'Remontez au-dessus de la profondeur prévue.', en: 'Ascend above the planned depth.' } };
+      case 'notice-time':
+        return { screen: 'DIVE TIME', what: { fr: `La durée de plongée a atteint l’alarme réglée. ${ack.fr}`, en: `The dive time reached the alarm set. ${ack.en}` }, todo: { fr: 'Préparez la remontée.', en: 'Get ready to ascend.' } };
+      default:
+        return null;
+    }
   }
 
   /** Mandatory safety stop started and the diver above its ceiling (§3.2). */

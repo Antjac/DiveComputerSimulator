@@ -1,10 +1,11 @@
 import { ceilingDepth, depthToPressure, type DecoParams } from '../../../engine/buhlmann';
 import { type DiveSession } from '../../../engine/session';
-import { type AlertCue, ComputerView, DiveComputer, SettingDef } from '../../base';
+import { type AlertCue, ComputerView, DiveComputer, SettingDef, type AlertExplain } from '../../base';
 import { divingDays, standardNoFly } from '../../common/dives';
 import { surfGfAfter, ttsAfter } from '../../common/predict';
 import { GasPrompt } from '../../common/gasSwitch';
 import { DeepStop, FastAscentZhl, GasMessages, MissedStop, PRESETS, maresCues, maresWarningSettings, quadAscentLimit } from '../common';
+import { CNS100, ZHL_ASCENT, ZHL_MISSED, gasSwitch, zhlUncontrolled } from '../alerts';
 import { ppo2Setting } from '../../common/ppo2';
 import { pressureSetting } from '../../common/tank';
 
@@ -314,16 +315,96 @@ export abstract class GeniusRules extends DiveComputer {
     return Number(this.settings.halfTank) || 100;
   }
 
-  alertCues(v: ComputerView): AlertCue[] {
-    if (this.prompt.offer !== null && this.settings.silent !== 'on' && v.inDive) {
-      // §11.2: "Genius sounds an audible signal" with SWITCH TO GAS G2.
-      return [...this.cues(v), { key: `switch-${this.prompt.offer}`, kind: 'beep', level: 'info', until: 'once' }];
+  /**
+   * Alert bubble (app/alertHelp.ts): §8.5 alarms (SLOW DOWN!, BACK TO STOP DEPTH, violation and 48 h
+   * lock §8.5.4.2 / §12.1, MOD), §9.2 RUNAWAY DECO, §2.3 / §2.4 warnings, §2.9 deep stop, §11.2 gas
+   * switch, as the screen words them (`msg:` keys, see screenAlerts) and as the alert cues name them.
+   */
+  alertExplain(key: string): AlertExplain | null {
+    const msg = key.startsWith('msg:') ? key.slice(4) : null;
+    const untilBtn = { fr: 'Le message reste affiché jusqu’à l’appui sur un bouton.', en: 'The message stays until a button is pressed.' };
+    if (key === 'fast-ascent' || msg === 'SLOW DOWN!') {
+      return {
+        id: 'slow', screen: 'SLOW DOWN!', code: 'ASCENT',
+        what: { fr: `« SLOW DOWN! » au-delà de la vitesse permise ; chaque flèche de la barre de gauche vaut 20 % de celle-ci. ${ZHL_ASCENT.fr} ${zhlUncontrolled(48).fr} (réglage ASCENT VIOLATION, désactivable pour les moniteurs)`, en: `“SLOW DOWN!” beyond the allowed rate; each arrow of the left bar is 20 % of it. ${ZHL_ASCENT.en} ${zhlUncontrolled(48).en} (ASCENT VIOLATION setting, can be turned off for instructors)` },
+      };
     }
-    return this.cues(v);
+    if (key === 'missed-stop' || msg === 'BACK TO STOP DEPTH') {
+      return {
+        id: 'missed-stop', screen: 'BACK TO STOP DEPTH', code: 'CEILING',
+        what: { fr: `Message rouge à plus de 0,3 m au-dessus du palier, alarme sonore. ${ZHL_MISSED.fr} C’est alors une violation (« VIOLATION - DECO ») : verrouillage 48 h.`, en: `Red message more than 0.3 m above the stop, audible alarm. ${ZHL_MISSED.en} It is then a violation (“VIOLATION - DECO”): 48 h lock.` },
+      };
+    }
+    if (msg === 'VIOLATION - DECO') {
+      return {
+        screen: msg, critical: true,
+        what: { fr: 'Palier manqué : à la fin de la plongée, le Genius se verrouille 48 h (« LOCKED BY PREVIOUS DIVE », profondimètre seulement).', en: 'Missed stop: at the end of the dive, the Genius locks for 48 h (“LOCKED BY PREVIOUS DIVE”, bottom timer only).' },
+        todo: { fr: 'Terminez les paliers autant que possible, remontez lentement et surveillez les symptômes ; ne replongez pas avant la fin du verrouillage.', en: 'Complete the stops as far as you can, ascend slowly and watch for symptoms; do not dive again before the lock ends.' },
+      };
+    }
+    if (key === 'LOCKED') {
+      return { screen: 'LOCKED BY PREVIOUS DIVE', what: { fr: 'Verrouillage de 48 h après une violation : profondimètre seulement (profondeur, durée, chronomètre).', en: '48 h lock after a violation: bottom timer only (depth, time, stopwatch).' } };
+    }
+    if (msg === 'RUNAWAY DECO') {
+      return {
+        screen: msg,
+        what: { fr: 'La décompression s’emballe : en restant X minutes de plus (TTS @+X, 5 min par défaut), la durée de remontée augmenterait de plus de 2 fois X (réglage Runaway deco). Le TTS @+X s’affiche en haut à droite.', en: 'Decompression is running away: staying X more minutes (TTS @+X, 5 min by default), the ascent time would grow by more than 2 times X (Runaway deco setting). TTS @+X is shown top right.' },
+        todo: { fr: 'Commencez la remontée : chaque minute au fond ajoute beaucoup de paliers.', en: 'Start the ascent: each minute at depth adds a lot of stops.' },
+      };
+    }
+    if (key === 'mod' || msg === 'MOD EXCEEDED') {
+      return { id: 'mod', screen: 'MOD EXCEEDED', code: 'PPO2_HIGH', what: { fr: 'Alarme sonore, bandeau de profondeur rouge et MOD affichée en haut à droite : vous êtes sous la MOD du gaz.', en: 'Audible alarm, red depth band and MOD shown top right: you are below the gas MOD.' } };
+    }
+    if (key === 'cns-75' || msg === 'CNS > 75%') {
+      return { id: 'cns-75', screen: 'CNS > 75%', code: 'CNS', what: { fr: `Le CNS dépasse 75 % : message rouge et un signal sonore. ${untilBtn.fr}`, en: `The CNS exceeds 75 %: red message and one audible signal. ${untilBtn.en}` } };
+    }
+    if (key === 'cns-100') return CNS100;
+    if (key === 'reserve' || msg === 'TANK RESERVE REACHED') {
+      return { id: 'reserve', screen: 'TANK RESERVE REACHED', code: 'LOW_GAS', what: { fr: `Avec l’émetteur : la pression atteint la réserve réglée (50 bar par défaut), alarme sonore. ${untilBtn.fr}`, en: `With the transmitter: the pressure reaches the set reserve (50 bar by default), audible alarm. ${untilBtn.en}` } };
+    }
+    if (key === 'half' || msg === 'HALF TANK') {
+      return { id: 'half', screen: 'HALF TANK', what: { fr: `Avec l’émetteur : la pression atteint MID TANK WARNING (100 bar par défaut ; texte repris du Quad Ci, non vérifié). ${untilBtn.fr}`, en: `With the transmitter: the pressure reaches MID TANK WARNING (100 bar by default; wording taken from the Quad Ci, not verified). ${untilBtn.en}` }, todo: { fr: 'Repère classique pour faire demi-tour.', en: 'The usual cue to turn the dive around.' } };
+    }
+    if (msg === 'LOW TANK PRESSURE') {
+      return { screen: msg, code: 'LOW_GAS', what: { fr: 'Avec l’émetteur, en décompression : le temps restant avant la réserve (TTR) est plus court que la durée de remontée (TTS).', en: 'With the transmitter, in decompression: the time left before the reserve (TTR) is shorter than the ascent time (TTS).' }, todo: { fr: 'Commencez la remontée tout de suite et prévenez votre binôme.', en: 'Start the ascent at once and tell your buddy.' } };
+    }
+    if (msg === 'MAX DEPTH REACHED') {
+      return { screen: msg, what: { fr: 'Alarme de profondeur (WARNINGS > MAX DEPTH, désactivée par défaut) : le message reste tant que vous êtes plus profond que la limite.', en: 'Depth alarm (WARNINGS > MAX DEPTH, off by default): the message stays while you are deeper than the limit.' }, todo: { fr: 'Remontez au-dessus de la profondeur prévue.', en: 'Ascend above the planned depth.' } };
+    }
+    if (msg === 'TURN AROUND' || msg === 'TIME LIMIT') {
+      const limit = msg === 'TIME LIMIT';
+      return {
+        screen: msg,
+        what: limit
+          ? { fr: `La durée de plongée atteint la limite réglée (WARNINGS > DIVE TIME, désactivée par défaut). ${untilBtn.fr}`, en: `The dive time reaches the set limit (WARNINGS > DIVE TIME, off by default). ${untilBtn.en}` }
+          : { fr: `La moitié de la durée réglée (WARNINGS > DIVE TIME) est écoulée. ${untilBtn.fr}`, en: `Half the set dive time (WARNINGS > DIVE TIME) has elapsed. ${untilBtn.en}` },
+        todo: limit ? { fr: 'Remontez.', en: 'Ascend.' } : { fr: 'Faites demi-tour.', en: 'Turn the dive around.' },
+      };
+    }
+    if (msg === 'ENTERING DECO') return { screen: msg, code: 'DECO', what: { fr: `Avertissement à l’entrée en décompression (texte non donné par le manuel, déduit). ${untilBtn.fr}`, en: `Warning when decompression begins (wording not given by the manual, deduced). ${untilBtn.en}` } };
+    if (msg === 'NO STOP 2 MIN') return { screen: msg, code: 'NDL_LOW', what: { fr: `Avertissement à 2 min de la limite sans palier (texte non donné par le manuel, déduit). ${untilBtn.fr}`, en: `Warning 2 minutes before the no-stop limit (wording not given by the manual, deduced). ${untilBtn.en}` } };
+    if (msg === 'DEEP STOP') {
+      return { screen: 'DEEP', what: { fr: 'Palier profond facultatif (désactivé par défaut) : à la profondeur où le 5e compartiment (27 min) cesse de se charger, proposé à l’approche de la limite sans palier, 2 min (bandeau orange DEEP / TIMER).', en: 'Optional deep stop (off by default): at the depth where the 5th compartment (27 min) stops loading, suggested as the no-stop limit approaches, 2 minutes (orange DEEP / TIMER band).' }, todo: { fr: 'Restez à ±1,5 m de cette profondeur pendant le décompte, ou continuez la remontée.', en: 'Stay within ±1.5 m of that depth during the countdown, or carry on ascending.' } };
+    }
+    if (key.startsWith('switch-')) {
+      return gasSwitch('SWITCH TO GAS G2', { fr: 'Boutons NO / OK / OK (30 s) : OK pour changer (GAS SWITCH OK) ; NO ou sans réponse : GAS NOT SWITCHED, et avec PREDICTIVE le gaz sort du calcul (EXCLUDING GAS G2).', en: 'NO / OK / OK buttons (30 s): OK to switch (GAS SWITCH OK); NO or no answer: GAS NOT SWITCHED, and with PREDICTIVE the gas leaves the calculation (EXCLUDING GAS G2).' });
+    }
+    if (msg?.startsWith('EXCLUDING')) return { id: 'excluding', screen: 'EXCLUDING GAS G…', what: { fr: 'Avec PREDICTIVE : le gaz non pris sort du calcul ; paliers et TTS s’allongent.', en: 'With PREDICTIVE: the gas not taken leaves the calculation; stops and TTS get longer.' } };
+    if (msg?.startsWith('INCLUDING')) return { id: 'including', screen: 'INCLUDING GAS G… AGAIN', what: { fr: 'Redescendu sous sa MOD, le gaz exclu revient dans le calcul.', en: 'Back below its MOD, the excluded gas is counted again.' } };
+    if (msg === 'GAS NOT SWITCHED') return { screen: msg, what: { fr: 'Changement de gaz refusé ou invite restée sans réponse 30 s.', en: 'Gas switch declined or prompt unanswered for 30 s.' } };
+    return null;
   }
 
-  private cues(v: ComputerView): AlertCue[] {
-    if (this.settings.silent === 'on' || !v.inDive) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if (this.prompt.offer !== null && (all || this.settings.silent !== 'on') && v.inDive) {
+      // §11.2: "Genius sounds an audible signal" with SWITCH TO GAS G2.
+      return [...this.cues(v, all), { key: `switch-${this.prompt.offer}`, kind: 'beep', level: 'info', until: 'once' }];
+    }
+    return this.cues(v, all);
+  }
+
+  private cues(v: ComputerView, all: boolean): AlertCue[] {
+    if ((!all && this.settings.silent === 'on') || !v.inDive) return [];
     const cues = maresCues(v);
     if (v.cns >= 75 && v.cns < 100) cues.push({ key: 'cns-75', kind: 'beep', level: 'info', until: 'once' });
     // TANK RESERVE alarm (with a tank module; "alarms are both visual and audible"). How it is

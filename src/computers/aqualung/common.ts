@@ -3,7 +3,7 @@
 // deep stops, conditional and delayed violations, Violation Gauge Mode, audible alarms.
 import { type DecoParams, ceilingDepth, pressureToDepth } from '../../engine/buhlmann';
 import type { DiveSession } from '../../engine/session';
-import { type AlertCue, type ComputerView, DiveComputer, type SettingDef } from '../base';
+import { type AlertCue, type ComputerView, DiveComputer, type SettingDef, type AlertExplain } from '../base';
 
 const onOff = (on: string, off: string) => [{ value: 'on', label: { fr: on, en: 'ON' } }, { value: 'off', label: { fr: off, en: 'OFF' } }];
 
@@ -287,14 +287,72 @@ export abstract class PelagicRules extends DiveComputer {
     return id === this.ackButton;
   }
 
-  alertCues(v: ComputerView): AlertCue[] {
-    if (this.settings.audible === 'off' || !v.inDive || !this.lastSession) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if ((!all && this.settings.audible === 'off') || !v.inDive || !this.lastSession) return [];
     const k = this.shownAlarm(this.lastSession);
     // 1 beep per second for 10 seconds; the cue disappears once acknowledged (shownAlarm() is then empty).
     const cues: AlertCue[] = k ? [{ key: `pelagic-${k}-${this.alarmUntil.get(k)}`, kind: 'beep', level: 'alarm', until: 'once', first: 10 }] : [];
     // Gas Switch Alarm (listed with the audible alarms): the same 10 s sequence (assumed).
     if (this.switchWarn !== null) cues.push({ key: `gas-switch-${this.switchWarn}-${this.switchWarnAt}`, kind: 'beep', level: 'warning', until: 'once', first: 10 });
     return cues;
+  }
+
+  // --- Alert bubble -----------------------------------------------------------------------------
+
+  /** The alarm messages as this model words them (see each index.ts), when they differ from the common ones. */
+  protected abstract alarmScreen(k: PelagicAlarm): string;
+
+  /**
+   * Alert bubble (app/alertHelp.ts): the manual's audible / visual alarms (10 beeps, acknowledged with
+   * the alarm button), conditional and delayed violations, Violation Gauge Mode, gas switch warning.
+   */
+  alertExplain(key: string): AlertExplain | null {
+    const m = /^pelagic-(.+)-[-\d.]+$/.exec(key);
+    const btn = this.ackButton === 'down' ? '▼' : 'SELECT';
+    const ack = { fr: `Alarme : 1 bip par seconde pendant 10 s, message clignotant ; ${btn} l’acquitte.`, en: `Alarm: 1 beep per second for 10 s, flashing message; ${btn} acknowledges it.` };
+    if (key.startsWith('gas-switch-')) {
+      return { id: 'gas-switch', title: { fr: 'Changement de gaz conseillé', en: 'Gas switch advised' }, what: { fr: 'Près de la zone du palier, un gaz plus favorable est disponible : avertissement de changement de gaz (10 bips).', en: 'Near the stop zone, a better gas is available: gas switch warning (10 beeps).' }, todo: { fr: 'Passez au gaz proposé par le menu de changement de gaz, après avoir vérifié le détendeur.', en: 'Switch to the suggested gas from the gas switch menu, after checking the regulator.' } };
+    }
+    if (key === 'LOCKED') {
+      return { what: { fr: 'Violation Gauge Mode pendant 24 h après la sortie de l’eau : profondimètre seulement. Il suit un palier manqué plus de 5 min (DV1) ou un palier exigé plus profond que 21 m.', en: 'Violation Gauge Mode for 24 h after surfacing: depth gauge only. It follows a stop missed for more than 5 minutes (DV1) or a required stop deeper than 21 m.' } };
+    }
+    if (!m) return null;
+    const k = m[1] as PelagicAlarm;
+    const screen = this.alarmScreen(k);
+    switch (k) {
+      case 'violation':
+        return { id: k, screen, critical: true, what: { fr: `Violation : l’ordinateur passe en Violation Gauge Mode (profondimètre seulement, 24 h après la sortie de l’eau). ${ack.fr}`, en: `Violation: the computer switches to Violation Gauge Mode (depth gauge only, 24 h after surfacing). ${ack.en}` }, todo: { fr: 'Remontez lentement en faisant des paliers de prudence et surveillez les symptômes.', en: 'Ascend slowly with precautionary stops and watch for symptoms.' } };
+      case 'too-deep':
+        return { id: k, screen, what: { fr: `Vous dépassez la profondeur maximale de fonctionnement (100 m). ${ack.fr}`, en: `You are deeper than the maximum operating depth (100 m). ${ack.en}` }, todo: { fr: 'Remontez immédiatement.', en: 'Ascend at once.' } };
+      case 'down-to-stop':
+        return { id: k, screen, code: 'CEILING', what: { fr: `Violation conditionnelle dès que vous êtes au-dessus du palier : « DOWN TO STOP » reste affiché, aucun crédit de désaturation n’est donné et 1,5 min de pénalité s’ajoute par minute passée au-dessus. Plus de 5 min au-dessus (DV1) : Violation Gauge Mode après la plongée. ${ack.fr}`, en: `Conditional violation as soon as you are above the stop: “DOWN TO STOP” stays on, no off-gassing credit is given and 1.5 min of penalty is added per minute above it. More than 5 min above (DV1): Violation Gauge Mode after the dive. ${ack.en}` } };
+      case 'deco-entry':
+        return { id: k, screen, code: 'DECO', what: { fr: `Entrée en décompression : la barre N2 clignote, le palier (zone jusqu’à 3 m sous sa profondeur) et la durée totale de remontée s’affichent. ${ack.fr}`, en: `Decompression begins: the N2 bar flashes, the stop (zone down to 3 m below its depth) and the total ascent time are shown. ${ack.en}` } };
+      case 'deco-deep':
+        return { id: k, title: { fr: 'Palier exigé à 18–21 m', en: 'Stop required at 18–21 m' }, what: { fr: `La décompression exige un palier entre 18 et 21 m (DV2). Au-delà de 21 m, l’ordinateur passe en Violation Gauge Mode. ${ack.fr}`, en: `Decompression requires a stop between 18 and 21 m (DV2). Beyond 21 m, the computer switches to Violation Gauge Mode. ${ack.en}` }, todo: { fr: 'Remontez jusqu’au palier sans attendre et faites tous les paliers.', en: 'Ascend to the stop without delay and complete every stop.' } };
+      case 'high-po2':
+        return { id: k, screen, code: 'PPO2_HIGH', what: { fr: `La PO2 atteint l’alarme réglée pour le gaz (1,40 par défaut), ou dépasse 1,60 en décompression. ${ack.fr}`, en: `The PO2 reaches the alarm set for the gas (1.40 by default), or exceeds 1.60 in decompression. ${ack.en}` } };
+      case 'o2-alarm':
+        return { id: k, screen, code: 'CNS', what: { fr: `O2 SAT atteint 100 % (limite de 300 OTU par plongée ou par 24 h) ; le message reste jusqu’à la sortie de l’eau. ${ack.fr}`, en: `O2 SAT reaches 100 % (limit of 300 OTU per dive or per 24 hours); the message stays until surfacing. ${ack.en}` }, todo: { fr: 'Terminez la plongée.', en: 'End the dive.' } };
+      case 'o2-warning':
+        return { id: k, screen, code: 'CNS', what: { fr: `O2 SAT atteint 80 % de la limite de 300 OTU. ${ack.fr}`, en: `O2 SAT reaches 80 % of the 300 OTU limit. ${ack.en}` } };
+      case 'too-fast':
+        return { id: k, screen, code: 'ASCENT', what: { fr: `Vitesse de remontée supérieure à ${String(this.fastRate).replace('.', ',')} m/min : la barre ASC est pleine et clignote. ${ack.fr}`, en: `Ascent faster than ${this.fastRate} m/min: the ASC bar is full and flashes. ${ack.en}` } };
+      case 'depth':
+        return { id: k, screen, what: { fr: `Vous atteignez la profondeur d’alarme réglée. ${ack.fr}`, en: `You reach the set depth alarm. ${ack.en}` }, todo: { fr: 'Remontez au-dessus de la profondeur prévue.', en: 'Ascend above the planned depth.' } };
+      case 'dive-t':
+        return { id: k, screen, what: { fr: `La durée de plongée atteint l’alarme réglée. ${ack.fr}`, en: `The dive time reaches the set alarm. ${ack.en}` }, todo: { fr: 'Préparez la remontée.', en: 'Get ready to ascend.' } };
+      case 'n2bar':
+        return { id: k, screen, code: 'NDL_LOW', what: { fr: `La barre d’azote (N2) atteint le nombre de segments réglé. ${ack.fr}`, en: `The nitrogen (N2) bar reaches the set number of segments. ${ack.en}` } };
+      case 'dtr':
+        return { id: k, screen, code: 'NDL_LOW', what: { fr: `Le DTR (le plus court du temps sans palier et du temps O2 restant) descend à la valeur d’alarme réglée. ${ack.fr}`, en: `The DTR (the shorter of the no-deco time and the O2 time left) drops to the set alarm value. ${ack.en}` } };
+      case 'turn':
+        return { id: k, screen, what: { fr: `Avec l’émetteur : la pression atteint la pression de demi-tour réglée. ${ack.fr}`, en: `With the transmitter: the pressure reaches the set turn pressure. ${ack.en}` }, todo: { fr: 'Faites demi-tour.', en: 'Turn the dive around.' } };
+      case 'end':
+        return { id: k, screen, code: 'LOW_GAS', what: { fr: `Avec l’émetteur : la pression atteint la pression de fin réglée (la réserve, supposé). ${ack.fr}`, en: `With the transmitter: the pressure reaches the set end pressure (the reserve, assumed). ${ack.en}` } };
+      default:
+        return null;
+    }
   }
 
   protected lastSession: DiveSession | null = null;

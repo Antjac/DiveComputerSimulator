@@ -161,6 +161,7 @@ export class MaresQuadAir extends QuadAirRules {
     const v = this.withPausedDeco(view);
     this.lastView = view;
     this.lastSession = s;
+    this.screenAlerts = [];
     const lcd = !v.inDive ? this.surface(v, s) : this.locked ? this.bottomTimer(v, s) : this.dive(v, s);
     el.innerHTML = `
       <div class="dev qa">
@@ -263,6 +264,8 @@ export class MaresQuadAir extends QuadAirRules {
     // The message takes the middle row's alphanumeric cells: the fields under it are off (figures).
     if (msg) Object.assign(mid, { depth: '', r1: '', r2: '', labels: [] });
 
+    // Alert bubble (app/alertHelp.ts): what the screen shows with no sound of its own.
+    this.screenAlerts = [runaway ? 'rUn AWAY' : '', this.fastBlink && !this.fastViolation ? 'fast' : '', this.fastViolation ? 'fast-violation' : '', this.decoViolation ? 'missed-violation' : ''].filter((m) => !!m);
     const aboveStop = v.ceilingViolation === 2;
     const ceilingBlink = aboveStop ? 'blink' : '';
     return this.lcd({

@@ -1,9 +1,10 @@
 import { ceilingDepth, depthToPressure, pressureToDepth, stopDepthFor, type DecoParams } from '../../../engine/buhlmann';
 import { type DiveSession } from '../../../engine/session';
-import { type AlertCue, ComputerView, DiveComputer, SettingDef, desaturationTime } from '../../base';
+import { type AlertCue, ComputerView, DiveComputer, SettingDef, desaturationTime, type AlertExplain } from '../../base';
 import { GasPrompt } from '../../common/gasSwitch';
 import { divingDays } from '../../common/dives';
 import { DeepStop, FastAscentZhl, GasMessages, MissedStop, PRESETS, maresCues, maresWarningSettings, quadAscentLimit } from '../common';
+import { CNS100, ZHL_ASCENT, ZHL_MISSED, gasSwitch, zhlUncontrolled } from '../alerts';
 import { ppo2Setting } from '../../common/ppo2';
 import { pressureSetting } from '../../common/tank';
 
@@ -341,6 +342,122 @@ export abstract class QuadCiRules extends DiveComputer {
   }
 
 
+  /**
+   * Alert bubble (app/alertHelp.ts): alarms and warnings of the manual (§10.3 alarms: ascent, MOD,
+   * missed stop and ALT GF §10.3.4.2, CNS, tank §4.1; §3.2 warnings; §4.5 deep stop; §13.2 gas switch),
+   * as the screen words them (`msg:` keys, see screenAlerts) and as the alert cues name them.
+   */
+  alertExplain(key: string): AlertExplain | null {
+    const msg = key.startsWith('msg:') ? key.slice(4) : null;
+    const untilBtn = { fr: 'Le message reste affiché jusqu’à l’appui sur un bouton.', en: 'The message stays until a button is pressed.' };
+    if (key === 'fast-ascent' || msg === 'SLOW!') {
+      return {
+        id: 'slow', screen: 'SLOW!', code: 'ASCENT',
+        what: { fr: `« SLOW! » en rouge avec la vitesse (SPEED) au-delà de la vitesse permise ; avertissement dès 80 % de celle-ci. ${ZHL_ASCENT.fr} ${zhlUncontrolled(48).fr}`, en: `Red “SLOW!” with the rate (SPEED) beyond the allowed rate; warning from 80 % of it. ${ZHL_ASCENT.en} ${zhlUncontrolled(48).en}` },
+      };
+    }
+    if (key === 'missed-stop' || msg === 'DECO STOP!') {
+      return {
+        id: 'missed-stop', screen: 'DECO STOP!', code: 'CEILING',
+        what: { fr: `« DECO STOP! » en rouge à plus de 0,3 m au-dessus du palier. ${ZHL_MISSED.fr} L’ordinateur passe alors aux gradient factors de secours (ALT GF, « MAIN GF > ALT GF ») ; si leur palier ne convient pas à votre profondeur, ou si vous le manquez à son tour : « DECO VIOLATION! » et verrouillage 48 h.`, en: `Red “DECO STOP!” more than 0.3 m above the stop. ${ZHL_MISSED.en} The computer then switches to the alternate gradient factors (ALT GF, “MAIN GF > ALT GF”); if their stop does not suit your depth, or you miss it in turn: “DECO VIOLATION!” and a 48 h lock.` },
+      };
+    }
+    if (msg === 'MAIN GF > ALT GF') {
+      return {
+        screen: msg,
+        what: { fr: `Palier manqué : l’ordinateur calcule désormais avec les gradient factors de secours (ALT GF, R0 par défaut, jamais plus bas que les MAIN GF), ce qui raccourcit les paliers et peut vous éviter la violation. ${untilBtn.fr}`, en: `Missed stop: the computer now computes with the alternate gradient factors (ALT GF, R0 by default, never lower than the MAIN GF), which shortens the stops and may keep you out of a violation. ${untilBtn.en}` },
+        todo: { fr: 'Redescendez au palier affiché (celui des ALT GF) et terminez-le : le manquer à son tour est une violation.', en: 'Go back to the displayed stop (the ALT GF one) and complete it: missing it in turn is a violation.' },
+      };
+    }
+    if (msg === 'DECO VIOLATION!') {
+      return {
+        screen: msg, critical: true,
+        what: { fr: 'Violation de décompression : palier manqué alors que les ALT GF étaient déjà actifs, ou ALT GF incompatibles avec votre profondeur. L’ordinateur se verrouille 48 h.', en: 'Decompression violation: stop missed while the ALT GF were already in use, or ALT GF not suited to your depth. The computer locks for 48 h.' },
+        todo: { fr: 'Remontez lentement en faisant des paliers de prudence, ne replongez pas avant la fin du verrouillage et surveillez les symptômes.', en: 'Ascend slowly with precautionary stops, do not dive again before the lock ends and watch for symptoms.' },
+      };
+    }
+    if (key === 'LOCKED') {
+      return { what: { fr: 'Verrouillage de 48 h après une violation (remontée incontrôlée ou palier manqué) : profondimètre seulement.', en: '48 h lock after a violation (uncontrolled ascent or missed stop): depth gauge only.' } };
+    }
+    if (key === 'mod' || msg === 'MOD EXCEEDED!') {
+      return {
+        id: 'mod', screen: 'MOD EXCEEDED!', code: 'PPO2_HIGH',
+        what: { fr: 'Alarme sonore et « MOD EXCEEDED! » en rouge sous la MOD du gaz (ppO₂max réglable de 1,2 à 1,6 bar).', en: 'Audible alarm and red “MOD EXCEEDED!” below the gas MOD (ppO₂max settable from 1.2 to 1.6 bar).' },
+      };
+    }
+    if (msg === 'MAX DEPTH REACHED') {
+      return {
+        screen: msg,
+        what: { fr: 'Alarme de profondeur (WARNINGS > MAX DEPTH, désactivée par défaut) : vous avez atteint la profondeur choisie. Elle se comporte comme l’alarme de MOD.', en: 'Depth alarm (WARNINGS > MAX DEPTH, off by default): you reached the chosen depth. It behaves like the MOD alarm.' },
+        todo: { fr: 'Remontez au-dessus de la profondeur prévue.', en: 'Ascend above the planned depth.' },
+      };
+    }
+    if (key === 'cns-75' || msg === 'CNS > 75%') {
+      return { id: 'cns-75', screen: 'CNS > 75%', code: 'CNS', what: { fr: `Le CNS dépasse 75 % : message rouge et un signal sonore. ${untilBtn.fr}`, en: `The CNS exceeds 75 %: red message and one audible signal. ${untilBtn.en}` } };
+    }
+    if (key === 'cns-100') return CNS100;
+    if (msg === 'LOW TANK PRESSURE') {
+      return {
+        screen: msg, code: 'LOW_GAS',
+        what: { fr: 'Avec l’émetteur, en décompression : le temps restant avant la réserve (TTR) est plus court que la durée de remontée (TTS).', en: 'With the transmitter, in decompression: the time left before the reserve (TTR) is shorter than the ascent time (TTS).' },
+        todo: { fr: 'Commencez la remontée tout de suite et prévenez votre binôme : le gaz ne suffit pas pour tous les paliers en restant ici.', en: 'Start the ascent at once and tell your buddy: staying here, the gas is not enough for all the stops.' },
+      };
+    }
+    if (key === 'reserve' || msg === 'TANK RESERVE') {
+      return { id: 'reserve', screen: 'TANK RESERVE', code: 'LOW_GAS', what: { fr: `Avec l’émetteur : la pression atteint la réserve réglée (50 bar par défaut). Message rouge et alarme sonore. ${untilBtn.fr}`, en: `With the transmitter: the pressure reaches the set reserve (50 bar by default). Red message and audible alarm. ${untilBtn.en}` } };
+    }
+    if (key === 'half' || msg === 'HALF TANK') {
+      return {
+        id: 'half', screen: 'HALF TANK',
+        what: { fr: `Avec l’émetteur : la moitié du bloc est consommée (100 bar par défaut, désactivable). Message jaune. ${untilBtn.fr}`, en: `With the transmitter: half the tank is used (100 bar by default, can be turned off). Yellow message. ${untilBtn.en}` },
+        todo: { fr: 'Repère classique pour faire demi-tour.', en: 'The usual cue to turn the dive around.' },
+      };
+    }
+    if (msg === 'TURN AROUND' || msg === 'TIME LIMIT') {
+      const limit = msg === 'TIME LIMIT';
+      return {
+        screen: msg,
+        what: limit
+          ? { fr: `La durée de plongée atteint la limite réglée (WARNINGS > DIVE TIME, désactivée par défaut). ${untilBtn.fr}`, en: `The dive time reaches the set limit (WARNINGS > DIVE TIME, off by default). ${untilBtn.en}` }
+          : { fr: `La moitié de la durée réglée (WARNINGS > DIVE TIME) est écoulée. ${untilBtn.fr}`, en: `Half the set dive time (WARNINGS > DIVE TIME) has elapsed. ${untilBtn.en}` },
+        todo: limit ? { fr: 'Remontez.', en: 'Ascend.' } : { fr: 'Faites demi-tour.', en: 'Turn the dive around.' },
+      };
+    }
+    if (msg === 'ENTERING DECO') {
+      return { screen: msg, code: 'DECO', what: { fr: `Avertissement à l’entrée en décompression (texte non donné par le manuel, déduit). ${untilBtn.fr}`, en: `Warning when decompression begins (wording not given by the manual, deduced). ${untilBtn.en}` } };
+    }
+    if (msg === 'NO DECO 2 MIN') {
+      return { screen: msg, code: 'NDL_LOW', what: { fr: `Avertissement à 2 min de la limite sans palier (texte non donné par le manuel, déduit). ${untilBtn.fr}`, en: `Warning 2 minutes before the no-deco limit (wording not given by the manual, deduced). ${untilBtn.en}` } };
+    }
+    if (msg === 'GF @SURF') {
+      return {
+        title: { fr: 'GF @SURF clignotant', en: 'Blinking GF @SURF' },
+        what: { fr: 'GF @SURF (la sursaturation qu’auraient vos tissus en surface) atteint la valeur d’alerte réglée (désactivée par défaut) ; elle clignote jusqu’à l’appui sur un bouton.', en: 'GF @SURF (the supersaturation your tissues would have at the surface) reaches the set warning value (off by default); it blinks until a button is pressed.' },
+        todo: { fr: 'Au-delà de 100, une remontée directe dépasserait la limite : faites les paliers indiqués.', en: 'Above 100, a direct ascent would exceed the limit: make the indicated stops.' },
+      };
+    }
+    if (msg === 'DEEP STOP') {
+      return {
+        screen: msg,
+        what: { fr: 'Palier profond facultatif (désactivé par défaut) : à la profondeur où le 5e compartiment (27 min) cesse de se charger, proposé à l’approche de la limite sans palier, 2 min.', en: 'Optional deep stop (off by default): at the depth where the 5th compartment (27 min) stops loading, suggested as the no-deco limit approaches, 2 minutes.' },
+        todo: { fr: 'Restez à ±1,5 m de cette profondeur pendant le décompte, ou continuez la remontée.', en: 'Stay within ±1.5 m of that depth during the countdown, or carry on ascending.' },
+      };
+    }
+    if (key.startsWith('switch-')) {
+      return gasSwitch('SWITCH TO G2', { fr: 'TR ou BR : changer (GAS SWITCH OK) ; TL ou BL, ou 30 s sans réponse : GAS NOT SWITCHED, et avec PREDICTIVE le gaz sort du calcul (EXCLUDING G2).', en: 'TR or BR: switch (GAS SWITCH OK); TL or BL, or 30 s without an answer: GAS NOT SWITCHED, and with PREDICTIVE the gas leaves the calculation (EXCLUDING G2).' });
+    }
+    if (msg?.startsWith('EXCLUDING')) {
+      return { id: 'excluding', screen: 'EXCLUDING G…', what: { fr: 'Avec PREDICTIVE : le gaz non pris sort du calcul ; paliers et TTS s’allongent.', en: 'With PREDICTIVE: the gas not taken leaves the calculation; stops and TTS get longer.' } };
+    }
+    if (msg?.startsWith('INCLUDING')) {
+      return { id: 'including', screen: 'INCLUDING G… AGAIN', what: { fr: 'Redescendu sous sa MOD, le gaz exclu revient dans le calcul.', en: 'Back below its MOD, the excluded gas is counted again.' } };
+    }
+    if (msg === 'GAS NOT SWITCHED') {
+      return { screen: msg, what: { fr: 'Changement de gaz refusé ou invite restée sans réponse 30 s.', en: 'Gas switch declined or prompt unanswered for 30 s.' } };
+    }
+    return null;
+  }
+
   protected say(text: string): void {
     this.gasMsgs.say(text);
   }
@@ -368,8 +485,8 @@ export abstract class QuadCiRules extends DiveComputer {
     return Number(this.settings.halfTank) || 100;
   }
 
-  alertCues(v: ComputerView): AlertCue[] {
-    if (this.settings.silent === 'on' || !v.inDive) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if ((!all && this.settings.silent === 'on') || !v.inDive) return [];
     const cues = maresCues(v);
     // Gas switch prompt: "sounds an audible signal" (once).
     if (this.prompt.offer !== null) cues.push({ key: `switch-${this.prompt.offer}`, kind: 'beep', level: 'info', until: 'once' });

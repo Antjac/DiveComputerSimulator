@@ -153,6 +153,8 @@ export class MaresPuck extends PuckRules {
     if (this.fastViolation || (bottomTimer && this.lockedFast)) icons.push('<span class="mr-fast">fast</span>');
     else if (this.fast.active) icons.push('<span class="mr-fast blink">fast</span>');
     if (this.decoViolation || (bottomTimer && this.lockedDeco)) icons.push('<span class="mr-glass">⧗</span>');
+    // Alert bubble (app/alertHelp.ts): what the screen shows with no sound of its own.
+    this.screenAlerts = v.inDive && !bottomTimer ? [this.fast.active && !this.fastViolation ? 'fast' : '', this.fastViolation ? 'fast-violation' : '', this.decoViolation ? 'missed-violation' : '', cns ? 'cns' : '', showDeep ? 'deep' : ''].filter((m) => !!m) : [];
 
     el.innerHTML = `
       <div class="dev mr">

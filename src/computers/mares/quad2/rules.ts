@@ -1,10 +1,11 @@
 import { SURFACE_PRESSURE, ceilingDepth, pressureToDepth, stopDepthFor, type DecoParams } from '../../../engine/buhlmann';
 import { type DiveSession } from '../../../engine/session';
-import { type AlertCue, ComputerView, DiveComputer, SettingDef, desaturationTime } from '../../base';
+import { type AlertCue, ComputerView, DiveComputer, SettingDef, desaturationTime, type AlertExplain } from '../../base';
 import { GasPrompt } from '../../common/gasSwitch';
 import { divingDays, standardNoFly } from '../../common/dives';
 import { surfGfAfter, ttsAfter } from '../../common/predict';
 import { DeepStop, FastAscentZhl, GasSequence, MissedStop, PRESETS, maresCues, maresWarningSettings, quadAscentLimit } from '../common';
+import { CNS100, ZHL_ASCENT, ZHL_MISSED, gasSwitch, zhlUncontrolled } from '../alerts';
 import { ppo2Setting } from '../../common/ppo2';
 
 const onOff = [{ value: 'on', label: 'ON' }, { value: 'off', label: 'OFF' }];
@@ -487,13 +488,82 @@ export abstract class Quad2Rules extends DiveComputer {
    * (§10.2). The warnings of §2.4 are not said to sound: a single beep assumed. §2.11 ALL SILENT turns
    * them off.
    */
-  alertCues(v: ComputerView): AlertCue[] {
-    if (this.settings.silent === 'on' || !v.inDive || this.locked) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if ((!all && this.settings.silent === 'on') || !v.inDive || this.locked) return [];
     const cues = maresCues(v);
     if (this.prompt.offer !== null) cues.push({ key: `switch-${this.prompt.offer}`, kind: 'beep', level: 'info', until: 'once' });
     if (v.cns >= 75 && v.cns < 100) cues.push({ key: 'cns-75', kind: 'beep', level: 'info', until: 'once' });
     for (const w of this.activeWarnings(v)) cues.push({ key: `warn-${w}`, kind: 'beep', level: 'info', until: 'once' });
     return cues;
+  }
+
+  /**
+   * Alert bubble (app/alertHelp.ts): §7.3 alarms (ascent SLOW, MOD §7.3.2, CNS §7.3.3, missed stop and
+   * ALT GF §7.3.4.2, CEIL-CON §7.3.4.2.1, violation symbols and 48 h lock §11.1), §2.12 ascent violation,
+   * §2.4 warnings, §2.8 deep stop, §8.1.2 SAFETY STOP +, §10.2 gas switch; `msg:` keys: what the screen
+   * shows with no sound of its own (see screenAlerts).
+   */
+  alertExplain(key: string): AlertExplain | null {
+    const untilBtn = { fr: 'L’avertissement clignote jusqu’à l’appui sur un bouton.', en: 'The warning blinks until a button is pressed.' };
+    switch (key) {
+      case 'fast-ascent':
+        return {
+          screen: 'SLOW', code: 'ASCENT',
+          what: { fr: `« SLOW » et la vitesse clignotent au-delà de la vitesse permise. ${ZHL_ASCENT.fr} ${zhlUncontrolled(48).fr} (réglage ASCENT VIOLATION, désactivable)`, en: `“SLOW” and the rate blink beyond the allowed rate. ${ZHL_ASCENT.en} ${zhlUncontrolled(48).en} (ASCENT VIOLATION setting, can be turned off)` },
+        };
+      case 'missed-stop':
+        return {
+          code: 'CEILING',
+          what: { fr: `La profondeur et le palier clignotent à plus de 0,3 m au-dessus du palier. ${ZHL_MISSED.fr} L’ordinateur passe alors aux gradient factors de secours (« ALt » clignote en haut à droite) ; si leur palier ne convient pas à votre profondeur, ou si vous le manquez à son tour : symbole de violation et profondimètre seulement pendant 48 h. Avec CEIL-CON, c’est le plafond qui compte : « CEILING » clignote au-dessus, ALT GF après 1 min (jusqu’à 0,3 m) ou tout de suite (au-delà).`, en: `The depth and the stop blink more than 0.3 m above the stop. ${ZHL_MISSED.en} The computer then switches to the alternate gradient factors (“ALt” blinks top right); if their stop does not suit your depth, or you miss it in turn: violation symbol and depth gauge only for 48 h. With CEIL-CON, the ceiling is what counts: “CEILING” blinks above it, ALT GF after 1 min (up to 0.3 m) or at once (beyond).` },
+        };
+      case 'msg:ALt':
+        return {
+          screen: 'ALt',
+          what: { fr: `Palier manqué : l’ordinateur calcule désormais avec les gradient factors de secours (ALT GF), ce qui raccourcit les paliers et peut éviter la violation. ${untilBtn.fr}`, en: `Missed stop: the computer now computes with the alternate gradient factors (ALT GF), which shortens the stops and may avoid a violation. ${untilBtn.en}` },
+          todo: { fr: 'Redescendez au palier affiché (celui des ALT GF) et terminez-le : le manquer à son tour est une violation.', en: 'Go back to the displayed stop (the ALT GF one) and complete it: missing it in turn is a violation.' },
+        };
+      case 'msg:violation-deco':
+        return {
+          title: { fr: 'Violation : palier manqué', en: 'Violation: missed stop' }, critical: true,
+          what: { fr: 'Symbole de palier manqué (clignotant jusqu’à l’appui sur un bouton) : à la fin de la plongée, profondimètre seulement pendant 48 h.', en: 'Missed stop symbol (blinking until a button is pressed): at the end of the dive, depth gauge only for 48 h.' },
+          todo: { fr: 'Terminez les paliers autant que possible, remontez lentement et surveillez les symptômes.', en: 'Complete the stops as far as you can, ascend slowly and watch for symptoms.' },
+        };
+      case 'msg:violation-ascent':
+        return {
+          title: { fr: 'Violation : remontée incontrôlée', en: 'Violation: uncontrolled ascent' }, critical: true,
+          what: { fr: 'Symbole de remontée rapide (clignotant jusqu’à l’appui sur un bouton) : plus de 120 % de la vitesse permise sur plus de 20 m. À la fin de la plongée, profondimètre seulement pendant 48 h.', en: 'Fast ascent symbol (blinking until a button is pressed): more than 120 % of the allowed rate over more than 20 m. At the end of the dive, depth gauge only for 48 h.' },
+          todo: { fr: 'Ralentissez, faites un palier de prudence et surveillez les symptômes.', en: 'Slow down, make a precautionary stop and watch for symptoms.' },
+        };
+      case 'LOCKED':
+        return { what: { fr: 'Profondimètre seulement pendant 48 h après une violation (le symbole de la violation reste affiché).', en: 'Depth gauge only for 48 h after a violation (the violation symbol stays on).' } };
+      case 'mod':
+        return { code: 'PPO2_HIGH', what: { fr: 'Alarme sonore ; la MOD s’affiche en haut à droite et clignote.', en: 'Audible alarm; the MOD is shown top right and blinks.' } };
+      case 'cns-75':
+        return { code: 'CNS', what: { fr: 'Au-delà de 75 % de CNS, un signal sonore ; le CNS reste affiché en bas à droite (les autres valeurs ne restent que 4 s).', en: 'Beyond 75 % CNS, one audible signal; the CNS stays shown bottom right (other values only stay 4 s).' } };
+      case 'cns-100':
+        return CNS100;
+      case 'warn-max':
+        return { title: { fr: 'Alarme de profondeur (MAX DEPTH)', en: 'Depth warning (MAX DEPTH)' }, what: { fr: `Vous avez atteint la profondeur réglée (désactivée par défaut). ${untilBtn.fr}`, en: `You reached the set depth (off by default). ${untilBtn.en}` }, todo: { fr: 'Remontez au-dessus de la profondeur prévue.', en: 'Ascend above the planned depth.' } };
+      case 'warn-half':
+        return { title: { fr: 'Mi-durée (DIVE TIME)', en: 'Half time (DIVE TIME)' }, what: { fr: `La moitié de la durée réglée est écoulée (désactivée par défaut). ${untilBtn.fr}`, en: `Half the set dive time has elapsed (off by default). ${untilBtn.en}` }, todo: { fr: 'Faites demi-tour.', en: 'Turn the dive around.' } };
+      case 'warn-time':
+        return { title: { fr: 'Durée atteinte (DIVE TIME)', en: 'Time reached (DIVE TIME)' }, what: { fr: `La durée de plongée réglée est atteinte. ${untilBtn.fr}`, en: `The set dive time is reached. ${untilBtn.en}` }, todo: { fr: 'Remontez.', en: 'Ascend.' } };
+      case 'warn-nodeco':
+        return { code: 'NDL_LOW', what: { fr: `Avertissement NO DECO à 2 min de la limite (désactivé par défaut). ${untilBtn.fr}`, en: `NO DECO warning 2 minutes before the limit (off by default). ${untilBtn.en}` } };
+      case 'warn-deco':
+        return { code: 'DECO', what: { fr: `Avertissement à l’entrée en décompression (désactivé par défaut). ${untilBtn.fr}`, en: `Warning when decompression begins (off by default). ${untilBtn.en}` } };
+      case 'warn-gfsurf':
+        return { title: { fr: 'GF @SURF', en: 'GF @SURF' }, what: { fr: `GF @SURF (la sursaturation qu’auraient vos tissus en surface) atteint la valeur réglée (désactivée par défaut) et clignote en bas à droite. ${untilBtn.fr}`, en: `GF @SURF (the supersaturation your tissues would have at the surface) reaches the set value (off by default) and blinks bottom right. ${untilBtn.en}` } };
+      case 'msg:DEEP':
+        return { screen: 'DEEP', what: { fr: 'Palier profond facultatif (désactivé par défaut, air et nitrox) : à la profondeur où le 5e compartiment (27 min) cesse de se charger, proposé à l’approche de la limite sans palier, 2 min, affiché en haut à droite.', en: 'Optional deep stop (off by default, air and nitrox): at the depth where the 5th compartment (27 min) stops loading, suggested as the no-deco limit approaches, 2 minutes, shown top right.' }, todo: { fr: 'Restez à ±1,5 m de cette profondeur pendant le décompte, ou continuez la remontée.', en: 'Stay within ±1.5 m of that depth during the countdown, or carry on ascending.' } };
+      case 'msg:SAFETY STOP +':
+        return { screen: 'SAFETY STOP +', what: { fr: 'Après le palier de sécurité, un palier supplémentaire (réglage SAFETY STOP +) jusqu’à ce que GF @SURF passe sous la valeur choisie (70 ou 75).', en: 'After the safety stop, an extra stop (SAFETY STOP + setting) until GF @SURF drops below the chosen value (70 or 75).' }, todo: { fr: 'Restez entre 3 et 6 m jusqu’à la fin du décompte.', en: 'Stay between 3 and 6 m until the countdown ends.' } };
+      default:
+        if (key.startsWith('switch-')) {
+          return gasSwitch('SWITCH', { fr: '« SWITCH » et l’O2 % de G1 clignotent 20 s. BR : gaz suivant (O2 % et MOD clignotants), BR long : confirmer. Sans réponse, le gaz sort du calcul PREDICTIVE.', en: '“SWITCH” and the O2 % of G1 blink for 20 s. BR: next gas (O2 % and MOD blinking), BR hold: confirm. Without an answer, the gas leaves the PREDICTIVE calculation.' });
+        }
+        return null;
+    }
   }
 
   /** Warnings of §2.4 whose condition is on (each one blinks until a button is pressed). */

@@ -54,6 +54,27 @@ export interface AlertCue {
   repeat?: number;
 }
 
+/**
+ * Explanation of one of a model's alerts (DiveComputer.alertExplain), shown in the alert bubble
+ * (app/alertHelp.ts) under the generic text of `code` if it has one. From the model's manual.
+ */
+export interface AlertExplain {
+  /** Stable id (an alert key may carry a changing suffix, e.g. a timestamp); the key by default. */
+  id?: string;
+  /** The alert as the device shows it (exact wording), e.g. "MISSED DECO STOP". */
+  screen?: string;
+  /** Its name when the device shows no wording (a field turning red…) and it has no `code`. */
+  title?: Bi;
+  /** The common alarm it is this device's form of: its generic explanation is shown too. */
+  code?: AlarmCode;
+  /** What triggers it and what the device shows or does (thresholds, colours, sound, consequences). */
+  what: Bi;
+  /** What to do on this device (acknowledgement, required action), when it adds to the generic advice. */
+  todo?: Bi;
+  /** Serious enough to pause the simulation (bubble + pause mode), like the critical common alarms. */
+  critical?: boolean;
+}
+
 /** What a button does on the real device (per its manual), and whether the simulator reproduces it. */
 export interface ButtonAction {
   real: Bi;

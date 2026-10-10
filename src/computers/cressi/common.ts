@@ -4,7 +4,7 @@
 // mode for 48 h, 12 / 24 / 48 h no-fly, penalty after prolonged fast ascents.
 import { ceilingDepth, depthToPressure, ndl, pressureToDepth, type DecoParams } from '../../engine/buhlmann';
 import type { DiveSession } from '../../engine/session';
-import { type AlertCue, type ComputerView, DiveComputer, desaturationTime } from '../base';
+import { type AlertCue, type ComputerView, DiveComputer, desaturationTime, type AlertExplain } from '../base';
 
 /** Approximate GF equivalent of each safety factor (Cressi RGBM is proprietary). */
 export const SAFETY: Record<string, number> = { SF0: 0.88, SF1: 0.82, SF2: 0.76 };
@@ -123,6 +123,38 @@ export abstract class CressiRules extends DiveComputer {
     }
   }
 
+  /**
+   * Alert bubble (app/alertHelp.ts), after the Goa and Donatello manuals (same rules, same words):
+   * SLOW, NO DECO prewarning, deco, PO2 limit, omitted stop and ERROR mode, CNS bar, deep stop,
+   * maximum depth alarm (Donatello).
+   */
+  alertExplain(key: string): AlertExplain | null {
+    switch (key) {
+      case 'slow':
+        return { screen: 'SLOW', code: 'ASCENT', what: { fr: 'Les points de vitesse s’allument : 1 dès 4 m/min, 2 dès 8, 3 et « SLOW » dès 12 m/min, avec une alarme sonore. Une remontée trop rapide prolongée rend la plongée suivante plus prudente (pendant la désaturation).', en: 'The rate dots light up: 1 from 4 m/min, 2 from 8, 3 and “SLOW” from 12 m/min, with an audible alarm. A prolonged fast ascent makes the next dive more conservative (during desaturation).' } };
+      case 'ndl-3':
+        return { code: 'NDL_LOW', what: { fr: 'Pré-alarme sonore quand le temps sans palier descend à 3 min ; « NO DECO » clignote.', en: 'Audible prewarning when the no-deco time drops to 3 minutes; “NO DECO” blinks.' } };
+      case 'deco':
+        return { code: 'DECO', what: { fr: 'Alarme sonore à la sortie de la courbe de sécurité ; l’icône DECO s’affiche avec le palier (profondeur et durée) et le temps total de remontée. Des flèches indiquent s’il faut monter ou descendre vers le palier.', en: 'Audible alarm when leaving the safety curve; the DECO icon is shown with the stop (depth and time) and the total ascent time. Arrows show whether to go up or down to the stop.' } };
+      case 'po2':
+        return { code: 'PPO2_HIGH', what: { fr: 'Alarme sonore et profondeur clignotante au-delà de la profondeur limite de la PO2 réglée (MOD), jusqu’au retour au-dessus.', en: 'Audible alarm and blinking depth beyond the depth limit of the set PO2 (MOD), until you are back above it.' } };
+      case 'missed-stop':
+        return { code: 'CEILING', what: { fr: 'Palier omis : alarme sonore continue dès que vous remontez au-dessus de la profondeur du palier (aucune marge). Après plus de 2 min au-dessus, mode ERROR pendant 48 h : « StOP » clignote, profondeur et durée seulement.', en: 'Omitted stop: continuous audible alarm as soon as you go above the stop depth (no margin). After more than 2 min above it, ERROR mode for 48 h: “StOP” flashes, depth and time only.' }, todo: { fr: 'Vous avez 2 minutes pour redescendre au palier.', en: 'You have 2 minutes to go back down to the stop.' } };
+      case 'LOCKED':
+        return { screen: 'StOP', what: { fr: 'Mode ERROR pendant 48 h après un palier omis plus de 2 min : « StOP » clignote, l’ordinateur ne donne plus que la profondeur et la durée ; interdiction de vol de 48 h.', en: 'ERROR mode for 48 h after a stop omitted for more than 2 minutes: “StOP” flashes, the computer only gives depth and time; 48 h no-fly.' } };
+      case 'cns-4':
+        return { code: 'CNS', what: { fr: 'La barre de CNS (5 segments) atteint 4 segments, plus de 60 % : alarme sonore temporaire.', en: 'The CNS bar (5 segments) reaches 4 segments, over 60 %: temporary audible alarm.' } };
+      case 'cns-100':
+        return { code: 'CNS', what: { fr: 'CNS à 100 % : l’alarme se répète tant que la PO2 reste au-dessus de 0,6 (intervalle non précisé : chaque minute dans le simulateur).', en: 'CNS at 100 %: the alarm repeats while the PO2 stays above 0.6 (interval not given: every minute in the simulator).' }, todo: { fr: 'Terminez la plongée.', en: 'End the dive.' } };
+      case 'deep-stop':
+        return { screen: 'DEEP STOP', what: { fr: 'Palier profond proposé (réglage activé) sur une plongée de plus de 20 m qui approche de la limite sans palier : à la moitié de la pression absolue maximale, 1 min (2 min en décompression), à ±1 m. Remonter au-dessus l’efface.', en: 'Deep stop offered (setting on) on a dive deeper than 20 m nearing the no-deco limit: at half the maximum absolute pressure, 1 minute (2 in decompression), within ±1 m. Going above it deletes it.' }, todo: { fr: 'Arrêtez-vous à sa profondeur pendant le décompte.', en: 'Stop at its depth during the countdown.' } };
+      case 'depth-max':
+        return { title: { fr: 'Alarme de profondeur maximale', en: 'Maximum depth alarm' }, what: { fr: 'Trois bips : vous dépassez la profondeur d’alarme réglée ; la profondeur clignote jusqu’au retour au-dessus.', en: 'Three beeps: you are deeper than the set depth alarm; the depth flashes until you are back above it.' }, todo: { fr: 'Remontez au-dessus de la profondeur prévue.', en: 'Ascend above the planned depth.' } };
+      default:
+        return null;
+    }
+  }
+
   /** The fast ascent alarm sounds (the Donatello's AL.SP setting can silence it). */
   protected ascentSound(): boolean {
     return true;
@@ -135,7 +167,7 @@ export abstract class CressiRules extends DiveComputer {
    * until the PO2 drops below 0.6 (interval not given: every minute assumed); a skipped deco stop is
    * signalled by a continuous alarm.
    */
-  alertCues(v: ComputerView): AlertCue[] {
+  alertCues(v: ComputerView, all = false): AlertCue[] {
     if (!v.inDive) return [];
     const cues: AlertCue[] = [];
     if (v.alarms.includes('ASCENT') && this.ascentSound()) cues.push({ key: 'slow', kind: 'beep', level: 'alarm', until: 'clear', every: 2 });
@@ -145,6 +177,8 @@ export abstract class CressiRules extends DiveComputer {
     if (v.alarms.includes('CEILING')) cues.push({ key: 'missed-stop', kind: 'beep', level: 'alarm', until: 'clear', every: 1 });
     if (v.cns >= 100 && v.ppO2 >= 0.6) cues.push({ key: 'cns-100', kind: 'beep', level: 'warning', until: 'clear', every: 60 });
     else if (v.cns > 60) cues.push({ key: 'cns-4', kind: 'beep', level: 'info', until: 'once' });
+    // Alert bubble: the deep stop on display (the Goa's has no sound of its own).
+    if (all && (this.deepState === 'pending' || this.deepState === 'active')) cues.push({ key: 'deep-stop', kind: 'beep', level: 'info', until: 'once' });
     return cues;
   }
 }

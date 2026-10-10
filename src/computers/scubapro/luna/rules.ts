@@ -1,7 +1,8 @@
 import { ceilingDepth, type DecoParams, ndl, planAscent, pressureToDepth } from '../../../engine/buhlmann';
 import { GasPrompt } from '../../common/gasSwitch';
 import type { DiveSession } from '../../../engine/session';
-import { type AlertCue, ComputerView, SettingDef } from '../../base';
+import { type AlertCue, type AlertExplain, type Bi, ComputerView, SettingDef } from '../../base';
+import { IDEAL, SOS, STAGE } from '../alerts';
 import { ScubaproRules, idealAscent, levelParams, reserveSetting } from '../common';
 import { pressureSetting, pressureValue } from '../../common/tank';
 import { ppo2Setting } from '../../common/ppo2';
@@ -360,6 +361,52 @@ export abstract class LunaRules extends ScubaproRules {
     for (const k of this.confirmed) if (!now.has(k)) this.confirmed.delete(k);
   }
 
+  /**
+   * Alert bubble (app/alertHelp.ts): §3.10 alarms (boxes until confirmed with a long press of the
+   * right button: SLOW DOWN, MOD, MISSED DECO, CNS O2 100 %, RESERVE, RBT 0), §3.9 warnings (boxes for
+   * a few seconds, each ON / OFF), §3.11 SOS, §3.19 gas switch.
+   */
+  alertExplain(key: string): AlertExplain | null {
+    const confirm = { fr: 'Alarme (cadre blanc) jusqu’à sa confirmation par un appui long sur le bouton de droite.', en: 'Alarm (white box) until confirmed with a long press of the right button.' };
+    const warn = (fr: string, en: string): Bi => ({ fr: `${fr} Avertissement affiché quelques secondes, activable ou non dans les réglages.`, en: `${en} Warning shown for a few seconds, can be turned on or off in the settings.` });
+    const w = key.startsWith('w-') ? key.split('-')[1] : null;
+    if (key.startsWith('switch-')) {
+      return { id: 'switch', title: { fr: 'Changement de gaz proposé', en: 'Gas switch offered' }, what: { fr: 'Multigaz : à la MOD d’un autre gaz pendant la remontée, un signal sonore et le gaz proposé.', en: 'Multi-gas: at the MOD of another gas during the ascent, an audible signal and the suggested gas.' }, todo: { fr: 'Confirmez le changement dans les 30 s ; sinon le gaz sort du calcul.', en: 'Confirm the switch within 30 s; otherwise the gas leaves the calculation.' } };
+    }
+    switch (key) {
+      case 'slow':
+        return { screen: '↓SLOW↓ DOWN', code: 'ASCENT', what: { fr: `Six barres jusqu’à 110 % de la vitesse idéale ; au-delà, « SLOW DOWN ». ${IDEAL.fr} ${confirm.fr}`, en: `Six bars up to 110 % of the ideal rate; beyond, “SLOW DOWN”. ${IDEAL.en} ${confirm.en}` } };
+      case 'mod':
+        return { screen: 'MOD', code: 'PPO2_HIGH', what: { fr: `Vous êtes sous la MOD du gaz, affichée dans le cadre. ${confirm.fr}`, en: `You are below the gas MOD, shown in the box. ${confirm.en}` } };
+      case 'missed':
+        return { screen: 'MISSED DECO', code: 'CEILING', what: { fr: `À plus de 0,5 m au-dessus du palier obligatoire. ${SOS.fr} ${confirm.fr}`, en: `More than 0.5 m above the mandatory stop. ${SOS.en} ${confirm.en}` } };
+      case 'LOCKED':
+        return { screen: 'SOS', what: SOS };
+      case 'cns100':
+        return { screen: 'CNSO2 100%', code: 'CNS', what: { fr: `Le CNS atteint 100 % : bips pendant 12 s. ${confirm.fr}`, en: `The CNS reaches 100 %: beeps for 12 s. ${confirm.en}` }, todo: { fr: 'Terminez la plongée.', en: 'End the dive.' } };
+      case 'reserve':
+        return { screen: 'RESERVE', code: 'LOW_GAS', what: { fr: `Avec l’émetteur : la pression atteint la réserve réglée (50 bar ici), qui est aussi le « bloc vide » du RBT. ${confirm.fr}`, en: `With the transmitter: the pressure reaches the set reserve (50 bar here), which is also the RBT’s “empty tank”. ${confirm.en}` } };
+      case 'rbt0':
+        return { screen: 'RBT 0:', code: 'LOW_GAS', what: { fr: `Le temps restant au fond (RBT : temps qui laisse assez de gaz pour remonter à la vitesse idéale, paliers compris, avec la réserve) est épuisé. ${confirm.fr}`, en: `The remaining bottom time (RBT: time that leaves enough gas to ascend at the ideal rate, stops included, with the reserve) has run out. ${confirm.en}` }, todo: { fr: 'Remontez maintenant.', en: 'Ascend now.' } };
+    }
+    const gf = this.gfMode;
+    switch (w) {
+      case 'depth': return { id: 'w-depth', screen: 'MAX DPTH', what: warn('Vous avez atteint la profondeur réglée.', 'You reached the set depth.'), todo: { fr: 'Remontez au-dessus de la profondeur prévue.', en: 'Ascend above the planned depth.' } };
+      case 'cns75': return { id: 'w-cns75', screen: 'CNSO2 75%', code: 'CNS', what: warn('Le CNS atteint 75 % (bips pendant 12 s).', 'The CNS reaches 75 % (beeps for 12 s).') };
+      case 'nostop2': return { id: 'w-nostop2', screen: 'NOSTOP 2:', code: 'NDL_LOW', what: warn('Il reste 2 min de temps sans palier (celui affiché).', '2 minutes of no-stop time are left (the one on display).') };
+      case 'nostop0': return { id: 'w-nostop0', screen: 'NOSTOP 0:', what: warn(`Le temps sans palier affiché est épuisé : des paliers commencent. ${STAGE.fr}`, `The no-stop time on display has run out: stops begin. ${STAGE.en}`) };
+      case 'decoIn2': return { id: 'w-decoIn2', screen: gf ? 'NOSTOP 2:' : 'DECO IN 2:', code: 'NDL_LOW', what: warn(`Avec un niveau plus prudent : il reste 2 min avant la décompression obligatoire (${gf ? '100/100' : 'L0'}).`, `With a more conservative level: 2 minutes are left before mandatory decompression (${gf ? '100/100' : 'L0'}).`) };
+      case 'deco': return { id: 'w-deco', screen: 'DECO IN 0:', code: 'DECO', what: warn('La décompression obligatoire commence.', 'Mandatory decompression begins.') };
+      case 'time': return { id: 'w-time', screen: 'MAX TIME', what: warn('La durée réglée est atteinte.', 'The set dive time is reached.'), todo: { fr: 'Remontez.', en: 'Ascend.' } };
+      case 'turn': return { id: 'w-turn', screen: 'TURNING TIME', what: warn('La moitié de la durée réglée est écoulée.', 'Half the set dive time has elapsed.'), todo: { fr: 'Faites demi-tour.', en: 'Turn the dive around.' } };
+      case 'half': return { id: 'w-half', screen: 'HALFTANK', what: warn('Avec l’émetteur : la pression atteint la valeur réglée (100 bar supposé).', 'With the transmitter: the pressure reaches the set value (100 bar assumed).'), todo: { fr: 'Repère classique pour faire demi-tour.', en: 'The usual cue to turn the dive around.' } };
+      case 'rbt3': return { id: 'w-rbt3', screen: 'RBT 3:', code: 'LOW_GAS', what: warn('Il ne reste que 3 min de temps au fond (RBT).', 'Only 3 minutes of bottom time are left (RBT).'), todo: { fr: 'Préparez la remontée.', en: 'Get ready to ascend.' } };
+      case 'missed': return { id: 'w-missed', screen: gf ? 'MISSED GF STOP' : 'MISSED MB STOP', what: warn(`Vous êtes au-dessus du palier le plus profond du niveau choisi. ${STAGE.fr}`, `You are above the deepest stop of the chosen level. ${STAGE.en}`) };
+      case 'relaxed': return { id: 'w-relaxed', screen: gf ? 'GF INCREASED' : 'MB LEVEL REDUCED', what: warn(gf ? 'Palier GF ignoré de plus de 1,5 m : les GF en vigueur ont été augmentés.' : 'Palier MB ignoré de plus de 1,5 m : le niveau MB actif a été abaissé.', gf ? 'GF stop ignored by more than 1.5 m: the GF in force have been raised.' : 'MB stop ignored by more than 1.5 m: the active MB level has been lowered.') };
+      default: return null;
+    }
+  }
+
   /** The screen confirms alarms on a long press of the right button (hold()). */
   acknowledgeAlerts(): boolean {
     return true;
@@ -370,8 +417,8 @@ export abstract class LunaRules extends ScubaproRules {
    * seconds" (§3.9.2, §3.10.3); the other alarms and warnings have "audible signals" whose pattern is
    * not described (repeated every 2 s until confirmed or cleared, assumed).
    */
-  alertCues(v: ComputerView): AlertCue[] {
-    if (this.settings.sound === 'off' || !v.inDive) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if ((!all && this.settings.sound === 'off') || !v.inDive) return [];
     this.pruneConfirmed(v);
     const cues: AlertCue[] = [];
     // §3.19.1: "An audible sequence is played" with the suggested gas switch.

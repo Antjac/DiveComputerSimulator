@@ -1,7 +1,7 @@
 import { type DecoParams, ceilingDepth, ndl } from '../../../engine/buhlmann';
 import type { DiveSession } from '../../../engine/session';
 import { remainingTime, sacBarPerMin } from '../../../engine/gas';
-import { type AlertCue, type ComputerView, DiveComputer, type SettingDef } from '../../base';
+import { type AlertCue, type ComputerView, DiveComputer, type SettingDef, type AlertExplain } from '../../base';
 import { desaturationTime } from '../../base/tissues';
 import { GasPrompt } from '../../common/gasSwitch';
 import { Notices } from '../../common/notices';
@@ -421,8 +421,8 @@ export abstract class NauticRules extends DiveComputer {
    * until the situation has been resolved". §7.2: user alarms with their own tone and vibration (one
    * sound assumed, cleared by any button).
    */
-  alertCues(v: ComputerView): AlertCue[] {
-    if (!v.inDive || (this.settings.muteAudio === 'on' && this.settings.muteVibration === 'on')) return [];
+  alertCues(v: ComputerView, all = false): AlertCue[] {
+    if (!v.inDive || (!all && this.settings.muteAudio === 'on' && this.settings.muteVibration === 'on')) return [];
     const kind = this.soundKind;
     const cues: AlertCue[] = [];
     const warn = (key: string, level: AlertCue['level']) => cues.push({ key, kind, level, until: 'ack', every: 5 });
@@ -438,6 +438,84 @@ export abstract class NauticRules extends DiveComputer {
     }
     if (this.prompt.offer !== null) cues.push({ key: `gas-${this.prompt.offer}`, kind, level: 'info', until: 'once' });
     return cues;
+  }
+
+  /**
+   * Alert bubble (app/alertHelp.ts): §7.1 alarm table (ascent, ceiling, ppO2, CNS / OTU, tank,
+   * safety stop window), §9.2 decompression (window, safe margin, algorithm deviation, no lock),
+   * §4.5 ascent bar, §4.6 ppO2 / CNS / OTU, §7.2 user alarms, §5.2 gas switch, §11.1 no-fly.
+   */
+  alertExplain(key: string): AlertExplain | null {
+    const ack = { fr: 'Un bouton coupe le son et la vibration ; l’alerte reste en rouge tant que la situation dure.', en: 'A button silences the sound and vibration; the alert stays red while the situation lasts.' };
+    const user = { fr: 'Alarme utilisateur (réglée dans l’application Suunto, aucune par défaut), avec son propre son ; un bouton l’efface.', en: 'User alarm (set in the Suunto app, none by default), with its own tone; a button clears it.' };
+    if (key.startsWith('gas-')) {
+      return {
+        id: 'gas', screen: 'SWITCH GAS',
+        what: { fr: 'En remontant, le gaz suivant devient respirable (sa MOD est atteinte) : grand cadre cyan « SWITCH GAS » avec le gaz proposé.', en: 'While ascending, the next gas becomes breathable (its MOD is reached): large cyan “SWITCH GAS” field with the suggested gas.' },
+        todo: { fr: 'Un bouton ouvre la liste des gaz, le gaz conseillé en premier ; OK pour confirmer, Back pour refuser.', en: 'A button opens the gas list, the suggested gas first; OK to confirm, Back to decline.' },
+      };
+    }
+    switch (key) {
+      case 'ascent':
+        return {
+          code: 'ASCENT',
+          what: { fr: `Alarme quand la remontée dépasse 10 m/min pendant 5 s ou plus. La barre de vitesse compte un cran par 2 m/min : verte, jaune au-delà de 8 m/min, rouge à 10. ${ack.fr}`, en: `Alarm when the ascent exceeds 10 m/min for 5 s or more. The rate bar has one step per 2 m/min: green, yellow beyond 8 m/min, red at 10. ${ack.en}` },
+        };
+      case 'ceiling':
+        return {
+          code: 'CEILING',
+          what: { fr: `Alarme au-delà de la marge de sécurité, 0,6 m au-dessus du plafond ; la fenêtre de déco va du plafond à 3 m plus profond. Après 3 min au-delà, le palier est considéré comme manqué : « ALGORITHM DEVIATION! ». ${ack.fr}`, en: `Alarm beyond the safe margin, 0.6 m above the ceiling; the deco window runs from the ceiling to 3 m deeper. After 3 min beyond it, the stop counts as missed: “ALGORITHM DEVIATION!”. ${ack.en}` },
+        };
+      case 'deviation':
+        return {
+          screen: 'ALGORITHM DEVIATION!', critical: true,
+          what: { fr: 'Palier manqué : plus de 3 min au-delà de la marge de sécurité. Grand cadre rouge « ALGORITHM DEVIATION! SURPASSED THE DECO CEILING », puis « ALGORITHM DEVIATION! » jusqu’à la fin des paliers. Le Nautic ne se verrouille pas, mais l’interdiction de vol passe à 48 h.', en: 'Missed stop: more than 3 min beyond the safe margin. Large red “ALGORITHM DEVIATION! SURPASSED THE DECO CEILING” field, then “ALGORITHM DEVIATION!” until the stops are cleared. The Nautic does not lock, but the no-fly time becomes 48 h.' },
+          todo: { fr: 'Redescendez sous le plafond et terminez les paliers, puis surveillez l’apparition de symptômes. Un bouton acquitte l’alerte.', en: 'Go back below the ceiling and complete the stops, then watch for symptoms. A button acknowledges the alert.' },
+        };
+      case 'deco':
+        return {
+          code: 'DECO',
+          what: { fr: `Badge « DECO » orange à la place de « NO DECO », TTS (supposant une remontée à 10 m/min) et palier (paliers de 3 m, ou plafond continu selon le réglage Deco profile). ${ack.fr}`, en: `Orange “DECO” badge in place of “NO DECO”, TTS (assuming a 10 m/min ascent) and stop (3 m steps, or a continuous ceiling with the Deco profile setting). ${ack.en}` },
+        };
+      case 'ndl-5':
+        return { code: 'NDL_LOW', what: { fr: `Avertissement à 5 min de NDL ou moins ; la jauge de NDL passe en hachuré. ${ack.fr}`, en: `Warning at 5 minutes of NDL or less; the NDL bar turns hatched. ${ack.en}` } };
+      case 'safety':
+        return {
+          title: { fr: 'Hors de la fenêtre du palier de sécurité', en: 'Not inside the safety stop window' },
+          what: { fr: `Avertissement : vous êtes remonté au-dessus de 2,4 m avant la fin du palier de sécurité (compté entre 2,4 et 6 m). ${ack.fr}`, en: `Warning: you went above 2.4 m before the safety stop was complete (counted between 2.4 and 6 m). ${ack.en}` },
+          todo: { fr: 'Redescendez entre 3 et 6 m pour le terminer.', en: 'Go back down to 3–6 m to finish it.' },
+        };
+      case 'po2-max':
+        return { code: 'PPO2_HIGH', what: { fr: `Alarme : la ppO₂ dépasse 1,6 ; la fenêtre ppO₂ / MOD passe au rouge. ${ack.fr}`, en: `Alarm: the ppO₂ exceeds 1.6; the ppO₂ / MOD window turns red. ${ack.en}` } };
+      case 'po2-gas':
+        return {
+          title: { fr: 'ppO₂ au-dessus de la limite du gaz', en: 'ppO₂ above the gas limit' },
+          what: { fr: `Avertissement : la ppO₂ dépasse la limite réglée pour ce gaz (sans atteindre 1,6) ; la fenêtre ppO₂ / MOD passe au jaune. ${ack.fr}`, en: `Warning: the ppO₂ exceeds the limit set for this gas (below 1.6); the ppO₂ / MOD window turns yellow. ${ack.en}` },
+          todo: { fr: 'Remontez au-dessus de la MOD affichée.', en: 'Ascend above the displayed MOD.' },
+        };
+      case 'cns-100':
+        return { code: 'CNS', what: { fr: `Avertissement : le CNS dépasse la limite de 100 %. ${ack.fr}`, en: `Warning: the CNS exceeds the 100 % limit. ${ack.en}` }, todo: { fr: 'Terminez la plongée.', en: 'End the dive.' } };
+      case 'cns-80':
+        return { code: 'CNS', what: { fr: `Mise en garde : le CNS atteint 80 %. ${ack.fr}`, en: `Caution: the CNS reaches 80 %. ${ack.en}` } };
+      case 'otu-300':
+        return { screen: 'OTU 300', what: { fr: `Avertissement : 300 OTU (exposition des poumons à l’oxygène). ${ack.fr}`, en: `Warning: 300 OTU (the lungs’ oxygen exposure). ${ack.en}` }, todo: { fr: 'Terminez la plongée et limitez l’oxygène pour la journée.', en: 'End the dive and limit oxygen for the day.' } };
+      case 'otu-250':
+        return { screen: 'OTU 250', what: { fr: `Mise en garde : 250 OTU. ${ack.fr}`, en: `Caution: 250 OTU. ${ack.en}` } };
+      case 'tank-50':
+        return { screen: 'TANK PRESSURE', code: 'LOW_GAS', what: { fr: `Alarme : la pression du bloc (Tank POD) passe sous 50 bar ; grand cadre rouge avec la pression. ${ack.fr}`, en: `Alarm: the tank pressure (Tank POD) drops below 50 bar; large red field with the pressure. ${ack.en}` } };
+      case 'u-tank':
+        return { screen: 'TANK PRESSURE', code: 'LOW_GAS', what: { fr: `${user.fr} La pression passe sous la valeur choisie.`, en: `${user.en} The pressure drops below the chosen value.` } };
+      case 'u-depth':
+        return { title: { fr: 'Alarme de profondeur', en: 'Depth alarm' }, what: { fr: `${user.fr} Vous avez atteint la profondeur choisie.`, en: `${user.en} You reached the chosen depth.` }, todo: { fr: 'Vérifiez la profondeur prévue.', en: 'Check the planned depth.' } };
+      case 'u-time':
+        return { title: { fr: 'Alarme de durée', en: 'Dive time alarm' }, what: { fr: `${user.fr} La durée de plongée a atteint la valeur choisie.`, en: `${user.en} The dive time reached the chosen value.` }, todo: { fr: 'Préparez la remontée.', en: 'Get ready to ascend.' } };
+      case 'u-ndl':
+        return { code: 'NDL_LOW', what: { fr: `${user.fr} Le NDL est descendu à la valeur choisie.`, en: `${user.en} The NDL dropped to the chosen value.` } };
+      case 'u-gastime':
+        return { screen: 'GAS TIME', code: 'LOW_GAS', what: { fr: `${user.fr} Le temps de gaz restant passe sous la valeur choisie.`, en: `${user.en} The remaining gas time drops below the chosen value.` } };
+      default:
+        return null;
+    }
   }
 
   /** §7.1 "Not inside the safety stop window": shallower than 2.4 m before the stop is done (§9.1). */

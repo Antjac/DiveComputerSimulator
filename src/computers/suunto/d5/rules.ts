@@ -2,7 +2,7 @@ import type { DecoParams } from '../../../engine/buhlmann';
 import type { DiveSession } from '../../../engine/session';
 import { depthToPressure } from '../../../engine/buhlmann';
 import { sacBarPerMin } from '../../../engine/gas';
-import { type AlertCue, ComputerView, DiveComputer, SettingDef } from '../../base';
+import { type AlertCue, ComputerView, DiveComputer, SettingDef, type AlertExplain } from '../../base';
 import { GasPrompt } from '../../common/gasSwitch';
 import { Notices } from '../../common/notices';
 import { ppo2Setting } from '../../common/ppo2';
@@ -295,6 +295,86 @@ export abstract class D5Rules extends DiveComputer {
     }
   }
 
+  /**
+   * Alert bubble (app/alertHelp.ts): §4.1 alarms (ascent too fast, ceiling broken, pO2 above 1.6),
+   * warnings and notifications (acknowledged with any button), §4.11 decompression (deco window,
+   * calculation paused above the margin, 48 h lock after 3 min), safety stop between 2.4 and 6 m.
+   */
+  alertExplain(key: string): AlertExplain | null {
+    const ack = { fr: 'Elle reste affichée jusqu’à l’appui sur un bouton.', en: 'It stays on screen until a button is pressed.' };
+    switch (key) {
+      case 'fast-ascent':
+        return {
+          code: 'ASCENT',
+          what: {
+            fr: 'Alarme quand la remontée dépasse 10 m/min pendant 5 s ou plus ; la barre de vitesse (un cran par 2 m/min) est jaune dès 8 m/min, rouge au-delà de 10. Chaque remontée trop rapide pénalise la suite de la plongée et les suivantes (calcul plus prudent) et rend le palier de sécurité obligatoire (affiché en rouge).',
+            en: 'Alarm when the ascent exceeds 10 m/min for 5 s or more; the rate bar (one step per 2 m/min) is yellow from 8 m/min, red beyond 10. Each fast ascent penalises the rest of the dive and the next ones (more conservative calculation) and makes the safety stop mandatory (shown in red).',
+          },
+        };
+      case 'ceiling':
+        return {
+          code: 'CEILING',
+          what: {
+            fr: 'Le D5 raisonne en plafond continu, avec une fenêtre de déco du plafond jusqu’à 3 m plus profond. Au-dessus du plafond, la valeur « STOP, m » passe au jaune ; à plus de 0,6 m au-dessus, elle clignote en rouge, l’alarme sonne et le calcul de décompression s’arrête jusqu’à ce que vous redescendiez. Après 3 min au-delà de cette marge, le D5 se verrouille pour 48 h.',
+            en: 'The D5 works with a continuous ceiling, with a deco window from the ceiling down to 3 m deeper. Above the ceiling, the “STOP, m” value turns yellow; more than 0.6 m above it, it flashes red, the alarm sounds and the decompression calculation halts until you go back down. After 3 min beyond that margin, the D5 locks for 48 h.',
+          },
+        };
+      case 'LOCKED':
+        return { what: { fr: 'Verrouillage de 48 h (cadenas, NO DECO « N/A ») : le D5 ne calcule plus de décompression.', en: '48 h lock (padlock, NO DECO “N/A”): the D5 no longer computes decompression.' } };
+      case 'DECO':
+        return {
+          what: {
+            fr: 'Le bas de l’écran passe à « ASC. TIME » (orange, durée de remontée) ; dans la fenêtre de déco, « STOP » (rouge) donne la durée du palier et « STOP, m » le plafond. Les flèches ▼▲ indiquent que vous êtes dans la fenêtre.',
+            en: 'The bottom of the screen switches to “ASC. TIME” (orange, ascent time); in the deco window, “STOP” (red) gives the stop time and “STOP, m” the ceiling. The ▼▲ arrows show that you are in the window.',
+          },
+        };
+      case 'po2':
+        return {
+          screen: 'High pO2', code: 'PPO2_HIGH',
+          what: { fr: 'Alarme au-dessus de 1,6 bar : bandeau jaune « High pO2 » et ppO₂ en rouge. Elle s’arrête d’elle-même quand la ppO₂ redescend.', en: 'Alarm above 1.6 bar: yellow “High pO2” band and ppO₂ in red. It stops by itself once the ppO₂ drops back.' },
+        };
+      case 'cns-100':
+        return { screen: 'CNS 100%', code: 'CNS', what: { fr: `Avertissement : le CNS atteint 100 % de la limite. ${ack.fr}`, en: `Warning: the CNS reaches 100 % of the limit. ${ack.en}` }, todo: { fr: 'Terminez la plongée.', en: 'End the dive.' } };
+      case 'cns-80':
+        return { screen: 'CNS 80%', code: 'CNS', what: { fr: `Notification : le CNS atteint 80 %. ${ack.fr}`, en: `Notification: the CNS reaches 80 %. ${ack.en}` } };
+      case 'otu-300':
+        return {
+          screen: 'OTU 300',
+          what: { fr: `Avertissement : 300 OTU, la limite quotidienne recommandée d’exposition des poumons à l’oxygène. ${ack.fr}`, en: `Warning: 300 OTU, the recommended daily limit of the lungs’ oxygen exposure. ${ack.en}` },
+          todo: { fr: 'Terminez la plongée et évitez de nouvelles expositions à l’oxygène aujourd’hui.', en: 'End the dive and avoid further oxygen exposure today.' },
+        };
+      case 'otu-250':
+        return { screen: 'OTU 250', what: { fr: `Notification : 250 OTU, environ 80 % de la limite quotidienne recommandée. ${ack.fr}`, en: `Notification: 250 OTU, about 80 % of the recommended daily limit. ${ack.en}` } };
+      case 'depth':
+        return { screen: 'Depth', what: { fr: `Avertissement : vous dépassez la profondeur d’alarme réglée (dans l’application Suunto). ${ack.fr}`, en: `Warning: you are deeper than the depth alarm set (in the Suunto app). ${ack.en}` }, todo: { fr: 'Remontez au-dessus de la profondeur prévue.', en: 'Ascend above the planned depth.' } };
+      case 'dive-time':
+        return { screen: 'Dive time', what: { fr: `Avertissement : la durée de plongée dépasse l’alarme réglée. ${ack.fr}`, en: `Warning: the dive time exceeds the alarm set. ${ack.en}` }, todo: { fr: 'Préparez la remontée.', en: 'Get ready to ascend.' } };
+      case 'gas-time':
+        return {
+          screen: 'Gas time', code: 'LOW_GAS',
+          what: { fr: `Avertissement : le temps de gaz (gaz restant à cette profondeur, jusqu’à 35 bar) passe sous l’alarme réglée, ou la pression est sous 35 bar (temps de gaz à zéro). ${ack.fr}`, en: `Warning: the gas time (gas left at this depth, down to 35 bar) is below the alarm set, or the pressure is below 35 bar (gas time at zero). ${ack.en}` },
+        };
+      case 'tank-50':
+        return { screen: 'Tank pressure', code: 'LOW_GAS', what: { fr: `Avertissement de l’alarme intégrée à 50 bar (non modifiable) : la pression s’affiche en rouge en bas de l’écran. ${ack.fr}`, en: `Warning from the built-in 50 bar alarm (cannot be changed): the pressure is shown in red at the bottom. ${ack.en}` } };
+      case 'tank-alarm':
+        return { screen: 'Tank pressure', code: 'LOW_GAS', what: { fr: `Avertissement : la pression passe sous l’alarme réglée ; elle s’affiche en jaune en bas de l’écran. ${ack.fr}`, en: `Warning: the pressure is below the alarm set; it is shown in yellow at the bottom. ${ack.en}` } };
+      case 'safety-broken':
+        return {
+          screen: 'Safety stop broken',
+          what: { fr: `Avertissement : vous êtes remonté plus de 0,6 m au-dessus du palier de sécurité (compté entre 2,4 et 6 m) avant sa fin. ${ack.fr}`, en: `Warning: you went more than 0.6 m above the safety stop (counted between 2.4 and 6 m) before it was complete. ${ack.en}` },
+          todo: { fr: 'Redescendez entre 3 et 6 m pour terminer le palier.', en: 'Go back down to 3–6 m to finish the stop.' },
+        };
+      case 'change-gas':
+        return {
+          screen: 'Change gas',
+          what: { fr: `Notification en plongée multigaz : en remontant, vous pouvez passer au gaz suivant (sa MOD est atteinte) pour une décompression optimale. ${ack.fr}`, en: `Notification on a multi-gas dive: while ascending, you can switch to the next gas (its MOD is reached) for an optimal decompression. ${ack.en}` },
+          todo: { fr: 'Maintenez le bouton du milieu, choisissez le gaz (haut / bas), confirmez (milieu).', en: 'Hold the middle button, choose the gas (upper / lower), confirm (middle).' },
+        };
+      default:
+        return null;
+    }
+  }
+
   // User guide §3.2, §4.15.1, §4.32 and §5.12. Upper: timer start/pause (hold: reset). Middle: next
   // view (hold: gas menu). Lower: switch window (hold: bookmark, or bearing lock in compass view).
   protected timerSec = 0;
@@ -324,9 +404,9 @@ export abstract class D5Rules extends DiveComputer {
    * not simulated: the guide gives no default ("when the tank pressure alarm is turned on" suggests
    * they start off); OTU is not computed.
    */
-  alertCues(v: ComputerView): AlertCue[] {
+  alertCues(v: ComputerView, all = false): AlertCue[] {
     const mode = this.settings.alerts;
-    if (mode === 'off' || !v.inDive) return [];
+    if ((!all && mode === 'off') || !v.inDive) return [];
     const kind: AlertCue['kind'] = mode === 'tones' ? 'beep' : mode === 'vibration' ? 'buzz' : 'both';
     const cues: AlertCue[] = [];
     const alarm = (key: string) => cues.push({ key, kind, level: 'alarm', until: 'clear', every: 3 });

@@ -226,6 +226,7 @@ export class MaresQuad2 extends Quad2Rules {
 
   render(el: HTMLElement, v: ComputerView, s: DiveSession, _lang: Lang): void {
     this.lastView = v;
+    this.screenAlerts = [];
     const lcd = !v.inDive ? this.surface(v, s) : this.locked ? this.bottomTimer(v, s) : this.dive(v, s);
     el.innerHTML = `
       <div class="dev q2">
@@ -265,6 +266,8 @@ export class MaresQuad2 extends Quad2Rules {
     for (const w of ['max', 'time', 'half', 'nodeco', 'deco', 'gfsurf']) if (!this.activeWarnings(v).includes(w)) this.acks.show(`w-${w}`, false);
     const altBlink = this.acks.show('alt', this.altBySystem);
     const violBlink = this.acks.show('viol', this.violation !== null);
+    // Alert bubble (app/alertHelp.ts): what the screen shows with no sound of its own.
+    this.screenAlerts = [altBlink ? 'ALt' : '', this.violation ? `violation-${this.violation}` : '', this.deep.shown ? 'DEEP' : '', this.plus === 'active' ? 'SAFETY STOP +' : ''].filter((m) => !!m);
 
     // Top-right field.
     const tops = this.topFields(s, v);

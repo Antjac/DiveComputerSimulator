@@ -219,6 +219,8 @@ export class ScubaproG2 extends G2Rules {
     if (note && barCls !== 'red') [bar, barCls] = [note, ''];
     // §3.4.2 figure: EXCLUDING GAS T2 in the top bar (4 s assumed).
     if (this.excluded && s.clock - this.excluded.at < 4 && barCls !== 'red') [bar, barCls] = [`EXCLUDING GAS T${this.excluded.gas + 1}`, 'yellow'];
+    // Alert bubble (app/alertHelp.ts): the alarm or warning in the bar.
+    this.screenAlerts = v.inDive && (barCls === 'red' || barCls === 'yellow') ? [bar] : [];
     // §3.7.1: the alternate displays "remain for 12 seconds and return to the normal dive display unless
     // buttons are pressed"; "can be viewed for a maximum of 1 minute"; "If any warning or alarm is
     // triggered while viewing alternate screens, the G2 will immediately revert to the normal dive screen".

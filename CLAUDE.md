@@ -172,11 +172,14 @@ pénalités de plongées successives, carnet.
 Reprendre **toute** la table des alarmes du manuel : texte exact, priorité, couleurs, acquittement
 par un bouton ou non.
 
-**Explication propre au modèle** (`alertHelp(code)` dans `rules.ts`, affichée sous le texte générique de
-la bulle d'explication, `src/app/alertHelp.ts`) : pour chaque `AlarmCode`, ce que fait **cet** appareil
-d'après son manuel (verrouillage et sa durée, pénalité, palier ajouté, mode profondimètre, acquittement…),
-en français et en anglais, avec la section citée en commentaire. Rien si le manuel ne dit rien.
-**À faire : aucun ordinateur ne l'implémente encore** (la méthode de base renvoie `null`).
+**Explication de chaque alerte** (bulle d'explication, `src/app/alertHelp.ts`) : `alertExplain(clé)` dans
+`rules.ts` explique **chaque** alerte du modèle, en français et en anglais, section citée en commentaire :
+texte exact à l'écran (`screen`, ou `title` s'il n'y en a pas), déclenchement et conséquences sur cet
+appareil (`what`), action à mener (`todo`), alarme commune correspondante (`code`, dont le texte générique
+s'affiche aussi), `critical` si elle doit mettre en pause. Les clés : celles des `alertCues(v, all)` (le
+drapeau `all` passe outre le réglage de son), les `AlarmCode` (ce que fait l'appareil pour l'alarme
+commune), et `msg:<texte>` pour les messages seulement visuels que le rendu déclare dans `screenAlerts`.
+Toute nouvelle alerte d'un modèle doit avoir son explication.
 
 ## Vérifier avant de rendre la main
 
