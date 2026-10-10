@@ -13,6 +13,9 @@
 .modal table.compare { margin-bottom: 8px; }
 .modal table.compare th { position: static; }
 .about { width: min(620px, calc(100vw - 32px)); }
+/* Fidelity badges of the models table: on a phone they wrap over two or three lines, which a 999px pill
+   turns into a squashed oval with the text touching its border. */
+#about-models .badge { border-radius: 6px; padding: 1px 6px; line-height: 1.35; }
 /* Simulation details of a model */
 .model-info { width: min(640px, calc(100vw - 32px)); }
 .mi-head { padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid var(--line); }
