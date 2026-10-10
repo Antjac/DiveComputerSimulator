@@ -302,8 +302,8 @@ const dict = {
   },
   tourAlertHelpT: { fr: 'Les explications des alertes', en: 'Alert explanations' },
   tourAlertHelpB: {
-    fr: 'Quand une alarme se déclenche, une bulle explique ce qui se passe et ce qu’il faut faire. Ce bouton passe de <b>bulles</b> à <b>bulles + pause</b> (la simulation s’arrête sur les alertes graves : remontée rapide, palier manqué, ppO₂…), puis à <b>désactivé</b>. Chaque alerte est expliquée une fois par plongée, jamais pendant un exercice.',
-    en: 'When an alarm goes off, a bubble explains what is happening and what to do. This button switches from <b>bubbles</b> to <b>bubbles + pause</b> (the simulation stops on serious alerts: fast ascent, missed stop, ppO₂…), then to <b>off</b>. Each alert is explained once per dive, never during an exercise.',
+    fr: 'Quand une alarme se déclenche, une bulle explique ce qui se passe et ce qu’il faut faire. Ce bouton passe de <b>bulles</b> à <b>bulles + pause</b> (la simulation s’arrête sur les alertes graves : remontée rapide, palier manqué, ppO₂…), puis à <b>désactivé</b>. Le temps accéléré revient à ×1 ; sur téléphone, un bandeau sous l’ordinateur résume l’alerte (« Pourquoi ? » ouvre la bulle). Chaque alerte est expliquée une fois par plongée, jamais pendant un exercice.',
+    en: 'When an alarm goes off, a bubble explains what is happening and what to do. This button switches from <b>bubbles</b> to <b>bubbles + pause</b> (the simulation stops on serious alerts: fast ascent, missed stop, ppO₂…), then to <b>off</b>. Accelerated time goes back to ×1; on a phone, a banner under the computer sums up the alert (“Why?” opens the bubble). Each alert is explained once per dive, never during an exercise.',
   },
   tourDeviceT: { fr: 'L’écran de l’ordinateur', en: 'The computer display' },
   tourDeviceB: {
@@ -444,6 +444,10 @@ const dict = {
   },
   ahMute: { fr: 'Ne plus expliquer cette alerte', en: 'Don’t explain this alert again' },
   ahOk: { fr: 'Compris', en: 'Got it' },
+  ahSlowed: { fr: 'Le temps est revenu à ×1 pour vous laisser réagir.', en: 'Time is back to ×1 to give you time to react.' },
+  ahPausedRead: { fr: 'Simulation en pause le temps de lire.', en: 'Simulation paused while you read.' },
+  ahWhy: { fr: 'Pourquoi ?', en: 'Why?' },
+  ahBannerClose: { fr: 'Masquer', en: 'Hide' },
   ahResume: { fr: 'Reprendre la plongée', en: 'Resume the dive' },
   ahProfileHint: { fr: 'Cliquer pour l’explication', en: 'Click for the explanation' },
   ahAt: { fr: 'à', en: 'at' },

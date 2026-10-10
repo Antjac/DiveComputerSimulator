@@ -79,6 +79,17 @@
 .tour.crit .tour-hole { border-color: var(--crit); }
 .ah-body p { margin: 0 0 8px; }
 .ah-when { font-size: 12px; font-weight: 400; color: var(--muted); white-space: nowrap; }
+/* Phones: the alert as a one-line banner under the computer; a tap opens the bubble (app/alertHelp.ts). */
+.ah-banner { display: flex; align-items: stretch; gap: 4px; margin: 4px 0 0; border: 1px solid var(--warn); border-radius: var(--radius); background: var(--panel-2); }
+.ah-banner[hidden] { display: none; }
+.ah-banner.crit { border-color: var(--crit); }
+.ah-banner.serious { border-color: var(--serious); }
+.ah-banner.info { border-color: var(--line); }
+.ah-banner button { background: none; border: 0; color: var(--ink); font: inherit; font-size: 12px; cursor: pointer; min-height: 34px; }
+.ah-why { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 2px 8px; text-align: left; }
+.ah-lbl { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ah-more { flex: none; color: var(--accent); text-decoration: underline; }
+.ah-x { flex: none; width: 34px; color: var(--muted) !important; }
 .ah-body .ah-model { padding-left: 8px; border-left: 2px solid var(--accent); }
 .ah-body .ah-note { margin: 4px 0 0; font-size: 11px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) {
