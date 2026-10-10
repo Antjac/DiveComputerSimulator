@@ -1,0 +1,43 @@
+name: Bug de l'application / App bug
+description: Un problème du simulateur lui-même (interface, 2D/3D, exercices, tables MN90…) / A problem with the simulator itself (interface, 2D/3D, exercises, MN90 tables…)
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Pour un écart entre un ordinateur et son manuel, utiliser plutôt le modèle « Écart avec le manuel ».
+        For a gap between a computer and its manual, use the "Gap with the manual" template instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: Ce qui se passe / What happens
+      description: Une capture d'écran aide beaucoup / A screenshot helps a lot
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Ce qui était attendu / What was expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Pour reproduire / To reproduce
+      placeholder: |
+        1. Choisir l'ordinateur ... / Choose the computer ...
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: computer
+    attributes:
+      label: Ordinateur affiché / Computer shown
+  - type: input
+    id: env
+    attributes:
+      label: Navigateur et appareil / Browser and device
+      placeholder: "ex. Chrome 130, Windows 11 / Safari, iPhone 15"
+    validations:
+      required: true

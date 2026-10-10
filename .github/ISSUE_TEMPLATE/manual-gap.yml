@@ -1,0 +1,90 @@
+name: Écart avec le manuel / Gap with the manual
+description: Un ordinateur ne se comporte pas ou ne s'affiche pas comme le dit son manuel / A computer does not behave or display as its manual says
+title: "[Écart / Gap] <modèle / model> : "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci ! C'est la source (manuel, photo de l'écran) qui permet de corriger l'écart. Voir [CONTRIBUTING.fr.md](https://github.com/Antjac/DiveComputerSimulator/blob/HEAD/CONTRIBUTING.fr.md).
+        Thank you! The source (manual, photo of the screen) is what allows the fix. See [CONTRIBUTING.md](https://github.com/Antjac/DiveComputerSimulator/blob/HEAD/CONTRIBUTING.md).
+  - type: dropdown
+    id: model
+    attributes:
+      label: Modèle / Model
+      multiple: true
+      options:
+        - Aqualung i330R
+        - Aqualung i770R
+        - Azoth Systems Odyssey
+        - Cressi Donatello
+        - Cressi Goa
+        - Garmin Descent Mk3i
+        - Mares Genius
+        - Mares Puck Pro
+        - Mares Quad 2
+        - Mares Quad Air
+        - Mares Quad Ci
+        - Scubapro Galileo 2 (G2)
+        - Scubapro Luna 2.0 AI
+        - Shearwater Perdix 2
+        - Shearwater Peregrine TX
+        - Suunto D5
+        - Suunto Nautic
+        - Suunto Zoop Novo
+        - Tous / All
+    validations:
+      required: true
+  - type: input
+    id: mode
+    attributes:
+      label: Mode, réglages et firmware / Mode, settings and firmware
+      description: Mode simulé, réglages modifiés, version du firmware de l'appareil réel si connue / Simulated mode, changed settings, firmware version of the real device if known
+      placeholder: "ex. 3 GasNx, GF 40/85, firmware 92"
+  - type: dropdown
+    id: area
+    attributes:
+      label: Domaine / Area
+      multiple: true
+      options:
+        - Paliers de déco, DTR / Deco stops, TTS
+        - NDL
+        - Palier de sécurité / Safety stop
+        - Vitesse de remontée / Ascent rate
+        - Alarme, alerte / Alarm, alert
+        - Affichage, libellés, couleurs / Display, labels, colours
+        - Boutons, menus / Buttons, menus
+        - Gaz, oxygène, émetteur / Gas, oxygen, transmitter
+        - Surface, plongées successives / Surface, repetitive dives
+        - Autre / Other
+  - type: textarea
+    id: simulator
+    attributes:
+      label: Ce que fait le simulateur / What the simulator does
+    validations:
+      required: true
+  - type: textarea
+    id: device
+    attributes:
+      label: Ce que fait l'appareil réel / What the real device does
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: |
+        Section ou page du manuel officiel (avec le lien), photo de l'écran de l'appareil, carnet exporté… Les images peuvent être glissées ici.
+        Section or page of the official manual (with the link), photo of the device's screen, exported log… Images can be dropped here.
+      placeholder: "ex. Manuel Perdix 2, §5.2, p. 24 : « ... »"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Pour reproduire / To reproduce
+      description: Gaz, profil, actions / Gas, profile, actions
+      placeholder: |
+        1. Air, GF 40/85
+        2. 40 m pendant 25 min / 40 m for 25 min
+        3. Remontée à 9 m/min jusqu'au premier palier / Ascent at 9 m/min to the first stop

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Contact par e-mail / Contact by e-mail
+    url: mailto:antoalex@free.fr
+    about: Pour une question ou un signalement sans compte GitHub / For a question or a report without a GitHub account
+  - name: Guide de contribution / Contributing guide
+    url: https://github.com/Antjac/DiveComputerSimulator/blob/HEAD/CONTRIBUTING.md
+    about: Comment signaler un écart et contribuer au code / How to report a gap and contribute code

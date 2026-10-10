@@ -1,0 +1,35 @@
+name: Nouveau modèle / New model
+description: Proposer un ordinateur à simuler / Suggest a computer to simulate
+title: "[Modèle / Model] "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Chaque modèle est simulé d'après son manuel officiel : sans manuel public, il ne peut pas être ajouté.
+        Each model is simulated from its official manual: without a public manual, it cannot be added.
+  - type: input
+    id: model
+    attributes:
+      label: Modèle / Model
+      description: Nom exact et mode à simuler / Exact name and mode to simulate
+      placeholder: "ex. Shearwater Teric, mode Nitrox"
+    validations:
+      required: true
+  - type: input
+    id: manual
+    attributes:
+      label: Manuel officiel / Official manual
+      description: Lien vers le PDF sur le site du fabricant / Link to the PDF on the manufacturer's site
+    validations:
+      required: true
+  - type: input
+    id: algorithm
+    attributes:
+      label: Algorithme / Algorithm
+      placeholder: "ex. Bühlmann ZHL-16C + GF, RGBM…"
+  - type: textarea
+    id: why
+    attributes:
+      label: Pourquoi ce modèle ? / Why this model?
+      description: Usage en club, en formation… / Use in clubs, in training…

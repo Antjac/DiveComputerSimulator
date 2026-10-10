@@ -70,28 +70,132 @@ Code comments and identifiers are in English.
 
 ## Adding or reviewing a computer
 
-Go through **every** point of the checklist against the manual, and implement it or record that it
-is not simulated. The detailed checklist, with examples, is in [CLAUDE.md](CLAUDE.md) (in French);
-it covers:
+A model lives in its own folder (`src/computers/<brand>/` or `<brand>/<model>/`): `rules.ts`, an
+abstract class `XRules extends DiveComputer` holding what is checked against the manual (settings,
+algorithm, stops, alarms), and `index.ts`, the final class (screens, buttons, HTML rendering), with
+its style sheet. Register it in `src/computers/index.ts` and import its sheet in `src/style.css`.
 
-1. identity and algorithm (`exact = true` only for a public algorithm reproduced as published;
-   otherwise an approximation ≈ calibrated on the published NDL tables with `npm run calib`),
-   deco parameters, model-specific penalties;
-2. settings (`settingDefs`) with the manufacturer's defaults; `essential: true` only for the
-   screen layout setting, the others go to "Advanced settings";
-3. buttons (short and long press), sequence of screens and return delay;
-4. main screen in every state (surface, descent, NDL, deco, at the stop, above the stop, safety
-   stop, fast ascent, after the dive, locked) and in every layout, with exact labels;
-5. info screens and alternative fields;
-6. decompression stops (GF low anchor, stop window, what happens above the stop, missed stop,
-   deep stops);
-7. safety stop; 8. ascent rate; 9. NDL and warnings; 10. GF values shown; 11. gases and oxygen,
-   transmitter; 12. surface and after the dive;
-13. **the whole alarm table** of the manual, each alert with its explanation in `alertExplain()`
-    (French and English, section cited).
+### Finding and reading the manual
 
-Summarise what is simulated and what is not in the model's notes (`notes.fr` / `notes.en`), shown
-in the "ⓘ Simulation details" dialog.
+- Use the official manual of the exact model, in its latest revision, from the manufacturer's
+  site. If the site cannot be reached, a mirror (ManualsLib…) will do, after checking that it is
+  the same model and a recent revision.
+- Text: `pdftotext -layout manual.pdf manual.txt`, then search it. Manuals on several columns
+  extract poorly: split the lines by column.
+- Figures: `pdftoppm -f N -l N -r 220 -png manual.pdf page` renders page N at a readable
+  resolution. Read the figures: exact labels, field order, colours and decimals are often only
+  there, and the text is sometimes incomplete.
+
+### Checklist
+
+Copy it into the pull request. Tick each point once it is implemented, or once it is recorded as
+not simulated (in the code and the model's notes).
+
+**1. Identity and algorithm**
+
+- [ ] Exact name, simulated mode, algorithm.
+- [ ] `exact = true` only if the algorithm is public and reproduced (Bühlmann + GF); otherwise an
+      approximation (≈) calibrated on the published NDL tables (`npm run calib`).
+- [ ] Deco parameters: GF (or equivalent) for each conservatism level, last stop depth (3/6 m),
+      step between stops, **ascent rate assumed by the calculation**, fresh/salt water, altitude.
+- [ ] Model-specific penalties: repetitive dives, multi-day, fast ascent, missed stop…
+
+**2. Settings (`settingDefs`)**
+
+- [ ] Every setting useful for the dive, with the **manufacturer's default** values.
+- [ ] `essential: true` only for the screen's display setting (layout), and for the settings that
+      only appear with one of its values (`showIf`); the others go to "Advanced settings".
+
+**3. Buttons (`buttons()`, `press()`, `hold()`)**
+
+- [ ] Each button, short and long press, during the dive: real function from the manual,
+      `simulated` true/false and a `note` when the simulation differs.
+- [ ] Exact sequence of screens: order, conditional screens (surface only, with a transmitter,
+      nitrox only…), return to the main screen, **return delay and its exceptions**.
+
+**4. Main screen, in every state**
+
+- [ ] Fields, **exact labels** (case, abbreviations), units, decimals, rounding, colours,
+      blinking, in each state: surface, pre-dive, descent, no stop, low NDL, entering deco,
+      approaching a stop, at the stop, above the stop, safety stop (waiting, running, paused,
+      done), fast ascent, surfacing during the dive, after the dive, locked computer.
+- [ ] For **each layout** of the model: every value fits in its box, including with an alarm or a
+      banner on top. No text overflows or is cut.
+
+**5. Info screens and alternative fields**
+
+- [ ] Exact order and content of each screen, compared with the figures.
+- [ ] A default screen, or a custom screen to set up on the device: say so in the notes.
+
+**6. Decompression stops**
+
+- [ ] GF low anchor as in Subsurface: deepest GF low ceiling of the dive, unrounded, at least 1 bar
+      below the surface (`updateAnchor`), also updated during the ascent simulated by
+      `planAscent`. It only goes deeper: neither ceiling nor stop rises while staying at the
+      bottom. **Never bring the anchor back to the diver's depth**: a stop's time must never grow
+      on arrival.
+- [ ] Stop display: depth, time (minutes or mm:ss, rounding), total ascent time (TTS/DTR),
+      continuous ceiling or 3 m stops.
+- [ ] Approach indicator, if any (colour, arrow, message, distance).
+- [ ] "At the stop" window (`stopWindow`).
+- [ ] **Above the stop**: reference (`violationRef`: stop depth or ceiling), margin
+      (`ceilingMargin`), alarm (exact text, colours), and what happens to the calculation
+      (timer paused, calculation or off-gassing stopped → `withPausedDeco`).
+- [ ] Missed stop: time and distance thresholds, lock (`lockAfter`, `lockHours`), gauge mode, SOS,
+      backup GF, how the lock shows at the surface and on the next dive.
+- [ ] End of the stops: message, safety stop starting afterwards.
+- [ ] Deep stops (conditions, depth, time, optional or not) and options such as CEIL-CON.
+
+**7. Safety stop (`safetyStop`, `safetySeconds`)**
+
+- [ ] Trigger depth, depth where the countdown starts, window, reset, possible durations,
+      adaptive, pause and colours, ascending before the end, mandatory after a violation.
+
+**8. Ascent rate**
+
+- [ ] Thresholds (possibly by depth), display (arrows, segments, %), colours, delay before the
+      alarm, consequences (penalties, lock).
+
+**9. NDL and warnings**
+
+- [ ] Cap (99), warnings (e.g. 2, 3, 5 or 10 min), labels.
+
+**10. GF values (if the device shows them)**
+
+- [ ] GF99, SurfGF (and its exact label), @+5, Δ+5, rate of change…: exact definition, colour rules,
+      "On Gas" / "On-Gassing" (`leadingOnGas`).
+
+**11. Gas and oxygen**
+
+- [ ] O₂ %, MOD ppO₂, ppO₂ alarms, CNS thresholds and colours, OTU.
+- [ ] Multi-gas: `maxGases`, `decoPpo2` / `decoMod`, `planGases` (gases counted in the plan), switch
+      prompts and procedure.
+- [ ] Transmitter: name, remaining time (GTR, ATR, RBT, TTR) with its definition and delays,
+      reserve, consumption.
+
+**12. Surface and after the dive**
+
+- [ ] Surfacing mode duration, surface interval, no-fly time, desaturation, last dive, repetitive
+      dive penalties, logbook.
+
+**13. Alarms**
+
+- [ ] **The whole alarm table** of the manual: exact text, priority, colours, acknowledgement by a
+      button or not.
+- [ ] Each alert explained by `alertExplain(key)` in `rules.ts`, in French and English, section
+      cited: exact text on screen (`screen`, or `title`), trigger and consequences on this device
+      (`what`), action to take (`todo`), matching common alarm (`code`), `critical` if it must
+      pause. Keys: those of `alertCues(v, all)`, the `AlarmCode`s, and `msg:<text>` for the
+      visual-only messages declared in `screenAlerts`.
+
+**14. Wrapping up**
+
+- [ ] Model notes (`notes.fr` / `notes.en`): what is simulated, assumed or deduced, and not
+      simulated. They are shown in the "ⓘ Simulation details" dialog.
+- [ ] Every rule has its manual section in a comment; every deduction or assumption is flagged.
+- [ ] The checks below pass.
+- [ ] In the pull request: what was checked (with the sections), what remains **not verified**,
+      the gaps spotted but not fixed.
 
 ## Checks before a pull request
 
@@ -123,8 +227,9 @@ npm run snapshot   # display regression against .snapshots/baseline.json
 
 ## Pull requests
 
-- Branch from `main` and open the pull request against `main`. Every push to `main` deploys the
-  site to GitHub Pages.
+- **Work on `develop`:** branch from `develop` and open the pull request against `develop`.
+  `main` is the published version: every push to `main` deploys the site to GitHub Pages, so
+  `develop` is merged into `main` only once it has been checked.
 - One subject per pull request (one model, one fix…).
 - In the description, list: the manual sections checked, what remains **not verified**, and the
   gaps spotted but not fixed.

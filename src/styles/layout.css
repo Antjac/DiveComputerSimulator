@@ -11,7 +11,6 @@
   border-bottom: 1px solid var(--line);
 }
 .brand { min-width: 0; flex: 1; }
-.app-header .sub { margin: 0; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .header-actions { display: flex; align-items: center; gap: 10px; flex: none; }
 
 .app {
@@ -116,6 +115,17 @@
 .tab-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .tab-body[hidden] { display: none; }
 #about-open .icon { display: none; }
+/* Medium widths: "Computer inspired by" on two lines, a narrower list and About as its icon, so the
+   header does not overflow and the title keeps some room. */
+@media (max-width: 900px) {
+  .header-actions { flex: 0 1 auto; min-width: 0; }
+  .header-actions .field { min-width: 0; flex: 0 1 auto; }
+  .header-actions .field > span:first-child { white-space: normal; max-width: 6.5em; line-height: 1.15; flex: none; }
+  #computer-select { min-width: 110px; }
+  #about-open { width: 34px; padding-left: 0; padding-right: 0; flex: none; }
+  #about-open span:first-child { display: none; }
+  #about-open .icon { display: inline; font: italic 700 15px Georgia, serif; }
+}
 
 /* Tablets: scene + device side by side on top, panel below. */
 @media (max-width: 1100px) {

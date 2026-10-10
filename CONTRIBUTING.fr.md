@@ -76,29 +76,143 @@ Les commentaires et les identifiants du code sont en anglais.
 
 ## Ajouter ou revoir un ordinateur
 
-Passer **chaque** point de la checklist en revue dans le manuel, et l'implémenter ou noter qu'il
-n'est pas simulé. La checklist détaillée, avec des exemples, est dans [CLAUDE.md](CLAUDE.md) ; elle
-couvre :
+Un modèle a son propre dossier (`src/computers/<marque>/` ou `<marque>/<modèle>/`) : `rules.ts`,
+une classe abstraite `XRules extends DiveComputer` qui contient ce qu'on vérifie dans le manuel
+(réglages, algorithme, paliers, alarmes), et `index.ts`, la classe finale (écrans, boutons, rendu
+HTML), avec sa feuille de style. L'enregistrer dans `src/computers/index.ts` et importer sa
+feuille dans `src/style.css`.
 
-1. identité et algorithme (`exact = true` seulement pour un algorithme public reproduit tel que
-   publié ; sinon une approximation ≈ calibrée sur les tables de NDL publiées avec
-   `npm run calib`), paramètres de déco, pénalités propres au modèle ;
-2. réglages (`settingDefs`) avec les valeurs par défaut du fabricant ; `essential: true` seulement
-   pour le réglage de mise en page de l'écran, les autres vont dans « Réglages avancés » ;
-3. boutons (appui court et long), enchaînement des écrans et délai de retour ;
-4. écran principal dans chaque état (surface, descente, NDL, déco, au palier, au-dessus du palier,
-   palier de sécurité, remontée rapide, après la plongée, verrouillé) et dans chaque mise en page,
-   avec les libellés exacts ;
-5. écrans d'info et champs alternatifs ;
-6. paliers de décompression (ancre du GF bas, fenêtre du palier, ce qui se passe au-dessus du
-   palier, palier manqué, deep stops) ;
-7. palier de sécurité ; 8. vitesse de remontée ; 9. NDL et avertissements ; 10. valeurs de GF
-   affichées ; 11. gaz et oxygène, émetteur ; 12. surface et après la plongée ;
-13. **toute la table des alarmes** du manuel, chaque alerte avec son explication dans
-    `alertExplain()` (en français et en anglais, section citée).
+### Trouver et lire le manuel
 
-Résumer ce qui est simulé et ce qui ne l'est pas dans les notes du modèle (`notes.fr` /
-`notes.en`), affichées dans la fenêtre « ⓘ Détails de la simulation ».
+- Utiliser le manuel officiel du modèle exact, dans sa dernière révision, sur le site du
+  fabricant. Si le site est inaccessible, un miroir (ManualsLib…) convient, après avoir vérifié
+  qu'il s'agit du même modèle et d'une révision récente.
+- Texte : `pdftotext -layout manuel.pdf manuel.txt`, puis y chercher. Les manuels sur plusieurs
+  colonnes s'extraient mal : découper les lignes par colonne.
+- Figures : `pdftoppm -f N -l N -r 220 -png manuel.pdf page` produit la page N dans une
+  résolution lisible. Lire les figures : libellés exacts, ordre des champs, couleurs et décimales
+  ne figurent souvent que là, et le texte est parfois incomplet.
+
+### Checklist
+
+À recopier dans la pull request. Cocher chaque point une fois implémenté, ou une fois noté comme
+non simulé (dans le code et les notes du modèle).
+
+**1. Identité et algorithme**
+
+- [ ] Nom exact, mode simulé, algorithme.
+- [ ] `exact = true` seulement si l'algorithme est public et reproduit (Bühlmann + GF) ; sinon
+      approximation (≈) calibrée sur les tables de NDL publiées (`npm run calib`).
+- [ ] Paramètres de déco : GF (ou équivalent) pour chaque niveau de conservatisme, profondeur du
+      dernier palier (3/6 m), pas entre paliers, **vitesse de remontée supposée par le calcul**,
+      eau douce/salée, altitude.
+- [ ] Pénalités propres au modèle : plongées successives, multi-jours, remontée rapide, palier
+      ignoré…
+
+**2. Réglages (`settingDefs`)**
+
+- [ ] Tous les réglages utiles à la plongée, avec les valeurs **par défaut du fabricant**.
+- [ ] `essential: true` seulement pour le réglage d'affichage de l'écran (mise en page), et pour
+      les réglages qui n'apparaissent qu'avec l'une de ses valeurs (`showIf`) ; les autres vont
+      dans « Réglages avancés ».
+
+**3. Boutons (`buttons()`, `press()`, `hold()`)**
+
+- [ ] Chaque bouton, appui court et long, en plongée : fonction réelle d'après le manuel,
+      `simulated` vrai/faux et une `note` si la simulation diffère.
+- [ ] Enchaînement exact des écrans : ordre, écrans conditionnels (surface seulement, avec
+      émetteur, en nitrox seulement…), retour à l'écran principal, **délai de retour et ses
+      exceptions**.
+
+**4. Écran principal, dans chaque état**
+
+- [ ] Champs, **libellés exacts** (casse, abréviations), unités, décimales, arrondis, couleurs,
+      clignotements, dans chaque état : surface, pré-plongée, descente, sans palier, NDL faible,
+      entrée en déco, approche d'un palier, au palier, au-dessus du palier, palier de sécurité
+      (attente, en cours, en pause, terminé), remontée rapide, surface pendant la plongée, après
+      la plongée, ordinateur verrouillé.
+- [ ] Pour **chaque mise en page** du modèle : chaque valeur tient dans sa case, y compris avec
+      une alarme ou un bandeau par-dessus. Aucun texte ne déborde ni n'est coupé.
+
+**5. Écrans d'info et champs alternatifs**
+
+- [ ] Ordre exact et contenu de chaque écran, comparés aux figures.
+- [ ] Écran par défaut, ou écran personnalisé à configurer sur l'appareil : le préciser dans les
+      notes.
+
+**6. Paliers de décompression**
+
+- [ ] Ancre du GF bas comme dans Subsurface : plafond GF bas le plus profond de la plongée, non
+      arrondi, au moins 1 bar sous la surface (`updateAnchor`), mise à jour aussi pendant la
+      remontée simulée par `planAscent`. Elle ne fait que descendre : ni plafond ni palier ne
+      remontent tant qu'on reste au fond. **Ne jamais ramener l'ancre à la profondeur du
+      plongeur** : la durée d'un palier ne doit jamais augmenter à l'arrivée.
+- [ ] Affichage du palier : profondeur, durée (minutes ou mm:ss, arrondi), durée totale de
+      remontée (TTS/DTR), plafond continu ou paliers de 3 m.
+- [ ] Indicateur d'approche, s'il existe (couleur, flèche, message, distance).
+- [ ] Fenêtre « au palier » (`stopWindow`).
+- [ ] **Au-dessus du palier** : référence (`violationRef` : profondeur du palier ou plafond),
+      marge (`ceilingMargin`), alarme (texte exact, couleurs), et ce que devient le calcul
+      (chronomètre en pause, calcul ou désaturation stoppés → `withPausedDeco`).
+- [ ] Palier manqué : seuils de durée et de distance, verrouillage (`lockAfter`, `lockHours`),
+      mode profondimètre, SOS, GF de secours, affichage du verrouillage en surface et à la
+      plongée suivante.
+- [ ] Fin des paliers : message, palier de sécurité qui démarre ensuite.
+- [ ] Deep stops (conditions, profondeur, durée, facultatifs ou non) et options du type CEIL-CON.
+
+**7. Palier de sécurité (`safetyStop`, `safetySeconds`)**
+
+- [ ] Profondeur de déclenchement, profondeur de départ du décompte, fenêtre, remise à zéro,
+      durées possibles, adaptatif, pause et couleurs, remontée avant la fin, obligatoire après
+      une violation.
+
+**8. Vitesse de remontée**
+
+- [ ] Seuils (éventuellement selon la profondeur), affichage (flèches, segments, %), couleurs,
+      délai avant alarme, conséquences (pénalités, verrouillage).
+
+**9. NDL et avertissements**
+
+- [ ] Plafonnement (99), avertissements (ex. 2, 3, 5 ou 10 min), libellés.
+
+**10. Valeurs de GF (si l'appareil les affiche)**
+
+- [ ] GF99, SurfGF (et son libellé exact), @+5, Δ+5, taux d'évolution… : définition exacte, règles
+      de couleur, « On Gas » / « On-Gassing » (`leadingOnGas`).
+
+**11. Gaz et oxygène**
+
+- [ ] O₂ %, ppO₂ de la MOD, alarmes ppO₂, seuils et couleurs du CNS, OTU.
+- [ ] Multigaz : `maxGases`, `decoPpo2` / `decoMod`, `planGases` (gaz comptés dans le plan),
+      invites et procédure de changement de gaz.
+- [ ] Émetteur : nom, temps restant (GTR, ATR, RBT, TTR) avec sa définition et ses délais,
+      réserve, consommation.
+
+**12. Surface et après la plongée**
+
+- [ ] Durée du mode surfacing, intervalle de surface, interdiction de vol, désaturation, dernière
+      plongée, pénalités de plongées successives, carnet.
+
+**13. Alarmes**
+
+- [ ] **Toute la table des alarmes** du manuel : texte exact, priorité, couleurs, acquittement par
+      un bouton ou non.
+- [ ] Chaque alerte expliquée par `alertExplain(clé)` dans `rules.ts`, en français et en anglais,
+      section citée : texte exact à l'écran (`screen`, ou `title`), déclenchement et conséquences
+      sur cet appareil (`what`), action à mener (`todo`), alarme commune correspondante (`code`),
+      `critical` si elle doit mettre en pause. Clés : celles des `alertCues(v, all)`, les
+      `AlarmCode`, et `msg:<texte>` pour les messages seulement visuels déclarés dans
+      `screenAlerts`.
+
+**14. Pour finir**
+
+- [ ] Notes du modèle (`notes.fr` / `notes.en`) : ce qui est simulé, supposé ou déduit, et non
+      simulé. Elles s'affichent dans la fenêtre « ⓘ Détails de la simulation ».
+- [ ] Chaque règle a sa section du manuel en commentaire ; chaque déduction ou supposition est
+      signalée.
+- [ ] Les vérifications ci-dessous passent.
+- [ ] Dans la pull request : ce qui a été vérifié (avec les sections), ce qui reste **non
+      vérifié**, les écarts repérés mais non corrigés.
 
 ## Vérifications avant une pull request
 
@@ -131,8 +245,9 @@ npm run snapshot   # non-régression de l'affichage par rapport à .snapshots/ba
 
 ## Pull requests
 
-- Créer une branche à partir de `main` et ouvrir la pull request vers `main`. Chaque push sur
-  `main` déploie le site sur GitHub Pages.
+- **Travailler sur `develop` :** créer une branche à partir de `develop` et ouvrir la pull request
+  vers `develop`. `main` est la version publiée : chaque push sur `main` déploie le site sur
+  GitHub Pages, donc `develop` n'est fusionnée dans `main` qu'une fois vérifiée.
 - Un sujet par pull request (un modèle, une correction…).
 - Dans la description, lister : les sections du manuel vérifiées, ce qui reste **non vérifié**, et
   les écarts repérés mais non corrigés.

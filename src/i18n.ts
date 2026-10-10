@@ -2,16 +2,14 @@ export type Lang = 'fr' | 'en';
 
 const dict = {
   title: { fr: 'Simulateur d’ordinateurs de plongée', en: 'Dive Computers simulator' },
-  subtitle: {
-    fr: 'Touchez ou cliquez (et glissez) dans l’eau pour aller à une profondeur (à la dernière vitesse choisie). ▲/▼ ou flèches : vitesse de montée / descente (±1 m/min), ■ ou 0 : arrêt ; +/− accélère le temps, Espace = pause.',
-    en: 'Tap or click (and drag) in the water to go to a depth (at the last chosen speed). ▲/▼ or arrow keys: ascent / descent speed (±1 m/min), ■ or 0: stop; +/− changes time speed, Space pauses.',
-  },
   rateUp: { fr: 'Monter plus vite / descendre moins vite (1 m/min)', en: 'Ascend faster / descend slower (1 m/min)' },
   rateDown: { fr: 'Descendre plus vite / monter moins vite (1 m/min)', en: 'Descend faster / ascend slower (1 m/min)' },
   rateStop: { fr: 'Stabiliser (vitesse nulle)', en: 'Hold depth (zero speed)' },
   rateCmd: { fr: 'consigne', en: 'set' },
   rateTarget: { fr: 'vers', en: 'to' },
   computer: { fr: 'Ordinateur', en: 'Computer' },
+  /** Label of the computer list in the header: the displays are interpretations, not reproductions. */
+  computerPick: { fr: 'Ordinateur inspiré de', en: 'Computer inspired by' },
   settings: { fr: 'Réglages', en: 'Settings' },
   advanced: { fr: 'Réglages avancés', en: 'Advanced settings' },
   gas: { fr: 'Gaz', en: 'Gas' },

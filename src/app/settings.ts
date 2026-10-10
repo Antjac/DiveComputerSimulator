@@ -70,9 +70,10 @@ export function fidelityLabel(c: DiveComputer): string {
 export function renderControls(): void {
   const active = app.active;
   const sel = $<HTMLSelectElement>('computer-select');
-  sel.innerHTML = computers
+  // "Computer inspired by" heads the list too: phones hide the label beside it.
+  sel.innerHTML = `<optgroup label="${t('computerPick')}">${computers
     .map((c) => `<option value="${c.id}" ${c === active ? 'selected' : ''}>${c.name} ${c.exact ? '✓' : '≈'}</option>`)
-    .join('');
+    .join('')}</optgroup>`;
 
   $('device-hint').textContent = t('deviceHint');
   $('about-models').innerHTML = `<tr><th>${t('aboutModel')}</th><th>${t('algorithm')}</th><th>${t('aboutFidelity')}</th></tr>`

@@ -18,9 +18,16 @@
 }
 /* Tooltips are for the mouse only (device.ts): no toggle on touch screens. */
 @media (hover: none), (pointer: coarse) { #tips-toggle { display: none; } }
+/* Medium widths: "How to use it?" as its icon, always in view next to the (shortened) title. */
+@media (max-width: 900px) {
+  .brand { min-width: 34px; }
+  .tour-open { width: 34px; padding-left: 0; padding-right: 0; font-size: 13px; }
+  .tour-open span:first-child { display: none; }
+  .tour-open .icon { display: inline; font: 700 15px Georgia, serif; }
+}
 @media (max-width: 640px), (max-height: 500px) and (orientation: landscape) {
   .brand { display: block; flex: none; }
-  .brand h1, .brand .sub { display: none; }
+  .brand h1 { display: none; }
   .tour-open { width: 34px; padding-left: 0; padding-right: 0; font-size: 13px; }
   .tour-open span:first-child { display: none; }
   .tour-open .icon { display: inline; font: 700 15px Georgia, serif; }
