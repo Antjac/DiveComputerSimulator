@@ -144,7 +144,7 @@
   .brand, .header-actions .field span { display: none; }
   .header-actions { flex: 1; min-width: 0; gap: 6px; }
   .header-actions .field { flex: 1; }
-  #computer-select { width: 100%; }
+  #computer-select { width: 100%; min-width: 0; } /* not the 110px of medium widths: it would run under MN90 */
   #about-open { width: 34px; padding-left: 0; padding-right: 0; flex: none; }
   #about-open span:first-child { display: none; }
   #about-open .icon { display: inline; font: italic 700 15px Georgia, serif; }

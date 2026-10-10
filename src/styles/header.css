@@ -31,6 +31,13 @@
   .tour-open { width: 34px; padding-left: 0; padding-right: 0; font-size: 13px; }
   .tour-open span:first-child { display: none; }
   .tour-open .icon { display: inline; font: 700 15px Georgia, serif; }
-  /* MN90 tables: compact, the computer list keeps most of the row. */
-  #mn90-open { flex: none; padding-left: 6px; padding-right: 6px; font-size: 12px; }
+  /* MN90 tables: compact, the computer list keeps most of the row; set apart from the list (more room,
+     accent outline and text, like "?") so it does not read as part of it. */
+  #mn90-open {
+    flex: none; margin-left: 4px; padding-left: 7px; padding-right: 7px; font-size: 12px; font-weight: 600;
+    border-color: var(--accent); color: var(--accent);
+  }
+  /* Narrower icon buttons and language toggle: room for the computer list on a 360 px screen. */
+  #tips-toggle, #sound-toggle, #alert-help-toggle, #about-open, .tour-open { width: 32px; }
+  .app-header .seg-toggle button { padding-left: 6px; padding-right: 6px; }
 }
