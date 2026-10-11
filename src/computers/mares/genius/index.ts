@@ -5,7 +5,7 @@ import { depthInt, depthText, depthUnit, imperial, pressText, pressUnit, tempUni
 import { ButtonHelp, ComputerView, clockOfDay, hmm, mmss } from '../../base';
 import { Acks } from '../../common/acks';
 import { gfRate } from '../../common/predict';
-import { quadAscentLimit, tankRange } from '../common';
+import { quadAscentLimit, safetyShown, tankRange } from '../common';
 import { GeniusRules } from './rules';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -309,7 +309,7 @@ export class MaresGenius extends GeniusRules {
     } else if (this.deep.state === 'active') {
       midBand = `<div class="gn-mid orange"><span class="gn-lbl">DEEP</span><span class="gn-rlbl">TIMER</span>
         <span class="gn-stop">${depthInt(this.deep.depth)}<u>${du}</u></span><span class="gn-mv">${mmss(this.deep.remaining)}</span></div>`;
-    } else if (v.safety.state === 'active' || v.safety.state === 'paused') {
+    } else if (safetyShown(v, this.safetyStop.bottom)) {
       midBand = `<div class="gn-mid green"><span class="gn-lbl">SAFETY</span><span class="gn-big">${mmss(Math.ceil(v.safety.remaining))}</span></div>`;
     } else {
       // §9.1: "Maximum displayed no deco time is 99 minutes."
@@ -339,7 +339,7 @@ export class MaresGenius extends GeniusRules {
       if (v.cns > 75 && fields.includes('cns') && !this.botUntil) f = 'cns'; // §8.5.3
       let bf = this.bottomValue(f, v, s);
       // §9.1.1: GF @+3 next to GF @SURF once the safety stop countdown begins.
-      if ((v.safety.state === 'active' || v.safety.state === 'paused') && f === 'gf') bf = { lbl: 'GF@SURF/GF@+3', val: `${Math.round(v.surfGf)}/${this.gfAt3(v, s)}` };
+      if (safetyShown(v, this.safetyStop.bottom) && f === 'gf') bf = { lbl: 'GF@SURF/GF@+3', val: `${Math.round(v.surfGf)}/${this.gfAt3(v, s)}` };
       const left = v.ascentRate > 0.5
         ? `<span class="gn-lbl">SPEED</span><span class="gn-dt">${Math.round(imperial() ? v.ascentRate * 3.28084 : v.ascentRate)}<u class="frac">${du}<br>min</u></span>`
         : `<span class="gn-lbl">D-TIME</span><span class="gn-dt">${Math.floor(v.diveTime / 60)}:${this.settings.seconds === 'on' ? `<sup>${pad2(Math.floor(v.diveTime % 60))}</sup>` : ''}</span>`;

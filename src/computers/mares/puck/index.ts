@@ -3,6 +3,7 @@ import type { Lang } from '../../../i18n';
 import { depthInt, depthText, depthVal, tempUnit, tempVal } from '../../../units';
 import { ButtonHelp, ComputerView, clockOfDay } from '../../base';
 import { sevenSeg } from '../../common/segments';
+import { safetyShown } from '../common';
 import { PuckRules } from './rules';
 
 /** Mares Puck Pro: button and segmented LCD, after the manual (rules in rules.ts). */
@@ -93,7 +94,7 @@ export class MaresPuck extends PuckRules {
     let rightSmall = '';
     let arrows = '';
     const showDeep = !bottomTimer && v.inDive && (this.deepState === 'active' || this.deepState === 'pending');
-    const showSafe = v.inDive && !v.inDeco && (v.safety.state === 'active' || v.safety.state === 'paused' || (v.safety.state === 'pending' && v.depth < 7 && v.depth >= 1.2));
+    const showSafe = v.inDive && !v.inDeco && (safetyShown(v, this.safetyStop.bottom) || (v.safety.state === 'pending' && v.depth < 7 && v.depth >= 1.2));
 
     if (bottomTimer) {
       midLbl = 'bottom timer';

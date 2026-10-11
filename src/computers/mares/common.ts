@@ -19,10 +19,11 @@ export function quadAscentLimit(depth: number): number {
 }
 
 /**
- * Safety stop countdown on the display of the Quads (Quad Ci §11.1, Quad 2 §8.1, Quad Air §3.3): while it
- * runs between 6 and 3 m, and when interrupted above 3 m. Back deeper than 6 m the dive display (NO DECO)
- * returns: the manuals do not say so, reported on a real Quad (not verified in a manual). The countdown
- * keeps its value and resumes back in the 6-3 m range; it restarts deeper than 10 m (assumed, manuals silent).
+ * Safety stop countdown on the display (Quad Ci §11.1, Quad 2 §8.1, Quad Air §3.3, Genius §9.1, Puck Pro):
+ * while it runs between 6 and 3 m, and when interrupted above 3 m. Back deeper than 6 m the dive display
+ * (NO DECO) returns: the manuals do not say so, reported on a real Quad (not verified in a manual). The
+ * countdown keeps its value and resumes back in the 6-3 m range, as reported on a Mares Matrix (forum, not
+ * a manual); it restarts deeper than 10 m (assumed, manuals silent).
  */
 export function safetyShown(v: ComputerView, bottom: number): boolean {
   const st = v.safety.state;
