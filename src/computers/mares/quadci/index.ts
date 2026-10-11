@@ -5,7 +5,7 @@ import { depthInt, depthText, depthUnit, imperial, pressText, pressUnit, tempUni
 import { ButtonHelp, ComputerView, clockOfDay, hmm, mmss } from '../../base';
 import { Acks } from '../../common/acks';
 import { gfRate, surfGfAfter, ttsAfter } from '../../common/predict';
-import { quadAscentLimit, tankRange } from '../common';
+import { quadAscentLimit, safetyShown, tankRange } from '../common';
 import { QuadCiRules } from './rules';
 
 type Screen = 'ez' | 'full' | 'tissue' | 'profile' | 'stops';
@@ -389,7 +389,7 @@ export class MaresQuadCi extends QuadCiRules {
     if (full && deep && deep.active) {
       return timer('DEEP STOP', mmss(deep.remaining));
     }
-    if (v.safety.state === 'active' || v.safety.state === 'paused') {
+    if (safetyShown(v, this.safetyStop.bottom)) {
       return timer('SAFETY STOP', mmss(v.safety.remaining));
     }
     if (v.safety.state === 'done' && v.depth < 6) {
@@ -466,7 +466,7 @@ export class MaresQuadCi extends QuadCiRules {
     if (slow) bottomRight = `<div class="qc-alarm red sm">SPEED<small>${alarm!.sub!.replace('SPEED ', '')} <u>${du}/min</u></small></div>`;
     else if (alarm) bottomRight = alarmBlock;
     else if (surfacing) bottomRight = `<div class="qc-f"><em class="cy">GF @SURF/@+3</em><b>${this.surfGfText(v)}/${this.gfAt3(v, s)}</b></div>`;
-    else if (v.safety.state === 'active' || v.safety.state === 'paused') bottomRight = `<div class="qc-f"><em class="cy">GF @SURF/@+3</em><b>${this.surfGfText(v)}/${this.gfAt3(v, s)}</b></div>`;
+    else if (safetyShown(v, this.safetyStop.bottom)) bottomRight = `<div class="qc-f"><em class="cy">GF @SURF/@+3</em><b>${this.surfGfText(v)}/${this.gfAt3(v, s)}</b></div>`;
     const ai = v.tank.ai;
     const bottomLeft = ai ? `<div class="qc-c"><b>${pressText(v.tank.pressure)}<u>${pressUnit().toUpperCase()}</u></b></div>` : this.dtime(v, true);
     return `

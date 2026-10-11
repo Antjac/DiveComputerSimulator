@@ -4,6 +4,7 @@ import { depthInt, depthText, depthUnit, imperial, pressText, tempUnit, tempVal 
 import { ButtonHelp, ComputerView, clockOfDay } from '../../base';
 import { Acks } from '../../common/acks';
 import { sevenSeg } from '../../common/segments';
+import { safetyShown } from '../common';
 import { QuadAirRules } from './rules';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -251,7 +252,7 @@ export class MaresQuadAir extends QuadAirRules {
       Object.assign(mid, { r1: `${h}:`, r2: pad2(m), labels: ['TIME'] });
     } else if (v.inDeco && v.stopDepth > 0) {
       Object.assign(mid, { depth: String(depthInt(v.stopDepth)), r1: `${Math.min(99, v.stopTime)}:`, r2: `${Math.min(99, v.tts)}:`, labels: ['DECO', 'ASC'] });
-    } else if (v.safety.state === 'active' || v.safety.state === 'paused') {
+    } else if (safetyShown(v, this.safetyStop.bottom)) {
       const t = Math.ceil(v.safety.remaining);
       Object.assign(mid, { r1: `${Math.floor(t / 60)}:`, r2: pad2(t % 60), labels: ['SAFE'] });
     } else {
