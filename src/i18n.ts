@@ -290,8 +290,8 @@ const dict = {
   },
   tourRateT: { fr: 'Vitesse de montée et de descente', en: 'Ascent and descent speed' },
   tourRateB: {
-    fr: '<b>▲ / ▼</b> (ou les flèches du clavier) : vitesse de montée ou de descente, par pas de 1 m/min. <b>■</b> (ou 0) : stabiliser. Une remontée trop rapide déclenche l’alarme de l’ordinateur, comme sur l’appareil réel.',
-    en: '<b>▲ / ▼</b> (or the arrow keys): ascent or descent speed, in 1 m/min steps. <b>■</b> (or 0): hold depth. Ascending too fast triggers the computer’s alarm, as on the real device.',
+    fr: 'Les boutons reprennent les signes de plongée. ▲ « monter » et ▼ « descendre » (ou les flèches du clavier) : vitesse de montée ou de descente, par pas de 1 m/min. ■ « stabiliser, rester à ce niveau » (ou 0) : vitesse nulle. Une remontée trop rapide déclenche l’alarme de l’ordinateur, comme sur l’appareil réel.',
+    en: 'The buttons show the diving hand signals. ▲ “go up” and ▼ “go down” (or the arrow keys): ascent or descent speed, in 1 m/min steps. ■ “level off, stay at this depth” (or 0): zero speed. Ascending too fast triggers the computer’s alarm, as on the real device.',
   },
   tourViewT: { fr: 'Vue 2D ou 3D', en: '2D or 3D view' },
   tourViewB: {
