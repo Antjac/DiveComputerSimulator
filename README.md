@@ -68,7 +68,7 @@ To report a gap with a manual or contribute code, see [CONTRIBUTING.md](CONTRIBU
 ## Controls
 
 - Tap or click (and drag) in the water, or use the mouse wheel, to go to a depth (at the last chosen speed; 9 m/min ascending and 18 m/min descending by default).
-- ▲ / ▼ (buttons or arrow keys) to set the ascent or descent speed in 1 m/min steps; ■ or `0` to hold depth.
+- Buttons showing the diving hand signals “go up” (thumb up) and “go down” (thumb down), or the arrow keys, to set the ascent or descent speed in 1 m/min steps; the “level off” sign (flat hand rocked from side to side) or `0` to hold depth.
 - Pause and time speed (×1 to ×300) in the bar under the water column (or 3D view), always in view; on the keyboard, `+` / `−` to speed up or slow down time, `Space` to pause.
 - **How to use it?** (next to the title, or "Guided tour" in the welcome notice) starts a guided tour of the interface.
 - The computers' buttons can be clicked, with a long press when the model has one. On mouse hover, a tooltip shows each button's real function during the dive (from the manufacturer's manual) and what is not simulated; buttons with no simulated function are greyed out.

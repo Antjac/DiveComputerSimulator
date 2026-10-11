@@ -1,6 +1,7 @@
 // Driving the dive: vertical speed, 2D / 3D view, time speed, pause, surface interval, reset,
 // keyboard shortcuts.
 import { t } from '../i18n';
+import { HAND_SIGNS } from '../ui/handSigns';
 import type { Environment } from '../ui/scene3d';
 import { renderLog } from './logbook';
 import { advance } from './loop';
@@ -58,6 +59,8 @@ export function resetAll(): void {
 }
 
 export function setupDiveControls(): void {
+  // Buttons drawn with the diving hand signals: ascend, hold this level, descend.
+  document.querySelectorAll<HTMLButtonElement>('[data-sign]').forEach((b) => (b.innerHTML = HAND_SIGNS[b.dataset.sign as keyof typeof HAND_SIGNS]));
   // Vertical speed controls: each step changes the speed by 1 m/min (▲ = faster up / slower down).
   // Keeping a button pressed repeats the step.
   // Pressed look set by hand: touch screens do not always show :active.
