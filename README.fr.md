@@ -68,7 +68,7 @@ Pour signaler un écart avec un manuel ou contribuer au code, voir [CONTRIBUTING
 ## Commandes
 
 - Toucher ou cliquer (et glisser) dans l'eau, ou la molette, pour aller à une profondeur (à la dernière vitesse choisie ; 9 m/min en montée et 18 m/min en descente par défaut).
-- ▲ / ▼ (boutons ou flèches du clavier) pour régler la vitesse de montée ou de descente par pas de 1 m/min ; ■ ou `0` pour se stabiliser.
+- Boutons aux signes de plongée « monter » (pouce levé) et « descendre » (pouce vers le bas), ou flèches du clavier, pour régler la vitesse de montée ou de descente par pas de 1 m/min ; signe « stabiliser » (main à plat) ou `0` pour rester à ce niveau.
 - Pause et vitesse du temps (×1 à ×300) dans la barre sous la colonne d'eau (ou la vue 3D), toujours visible ; au clavier, `+` / `−` pour accélérer ou ralentir le temps, `Espace` pour mettre en pause.
 - **Comment s'en servir ?** (à côté du titre, ou « Visite guidée » dans l'avertissement d'accueil) lance une visite guidée de l'interface.
 - Les boutons des ordinateurs sont cliquables, avec appui long quand le modèle en a un. Au survol de la souris, une info-bulle indique la fonction réelle de chaque bouton pendant la plongée (d'après le manuel du fabricant) et précise ce qui n'est pas simulé ; les boutons sans aucune fonction simulée apparaissent grisés.

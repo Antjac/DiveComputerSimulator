@@ -2,9 +2,9 @@ export type Lang = 'fr' | 'en';
 
 const dict = {
   title: { fr: 'Simulateur d’ordinateurs de plongée', en: 'Dive Computers simulator' },
-  rateUp: { fr: 'Monter plus vite / descendre moins vite (1 m/min)', en: 'Ascend faster / descend slower (1 m/min)' },
-  rateDown: { fr: 'Descendre plus vite / monter moins vite (1 m/min)', en: 'Descend faster / ascend slower (1 m/min)' },
-  rateStop: { fr: 'Stabiliser (vitesse nulle)', en: 'Hold depth (zero speed)' },
+  rateUp: { fr: 'Signe « monter » : monter plus vite / descendre moins vite (1 m/min)', en: '“Go up” sign: ascend faster / descend slower (1 m/min)' },
+  rateDown: { fr: 'Signe « descendre » : descendre plus vite / monter moins vite (1 m/min)', en: '“Go down” sign: descend faster / ascend slower (1 m/min)' },
+  rateStop: { fr: 'Signe « stabiliser, rester à ce niveau » : vitesse nulle', en: '“Level off, stay at this depth” sign: zero speed' },
   rateCmd: { fr: 'consigne', en: 'set' },
   rateTarget: { fr: 'vers', en: 'to' },
   computer: { fr: 'Ordinateur', en: 'Computer' },

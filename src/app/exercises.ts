@@ -7,6 +7,7 @@ import { openModelInfo } from './modelInfo';
 import type { ComputerView } from '../computers/base';
 import type { Gas } from '../engine/buhlmann';
 import { lang, t, isI18nKey } from '../i18n';
+import { withHandSigns } from '../ui/handSigns';
 import { depthLabel, imperial, rateLabel } from '../units';
 import { resetAll } from './diveControls';
 import { EXERCISES, type Bi, type ExContext, type Exercise, type SetupTools } from './exerciseDefs';
@@ -69,7 +70,7 @@ function units(text: string): string {
 function text(b: Bi): string {
   let s = tr(b);
   for (const [k, v] of Object.entries(run.vars)) s = s.replace(`{${k}}`, v);
-  return esc(units(s));
+  return withHandSigns(esc(units(s)));
 }
 
 function tools(): SetupTools {
