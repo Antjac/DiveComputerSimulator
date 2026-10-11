@@ -6,6 +6,7 @@ import { ButtonHelp, ComputerView, clockOfDay } from '../../base';
 import { Acks } from '../../common/acks';
 import { gfRate } from '../../common/predict';
 import { sevenSeg } from '../../common/segments';
+import { safetyShown } from '../common';
 import { Quad2Rules } from './rules';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -308,7 +309,7 @@ export class MaresQuad2 extends Quad2Rules {
       if (!ascending) Object.assign(mid, { left: String(depthInt(stopDepth)), leftUnit: 'depth' });
       const blink = (this.altShown() ? 'blink' : '') || (warns.has('deco') ? 'blink' : '');
       Object.assign(mid, { labels: ['DECO', 'TTS'], r1: `${Math.min(99, stopMin)}:`, r2: `${Math.min(99, tts)}:`, blink, leftBlink: v.ceilingViolation === 2 || !!blink });
-    } else if (safety === 'active' || safety === 'paused') {
+    } else if (safetyShown(v, this.safetyStop.bottom)) {
       // §8.1: "always shown as a 3-minute countdown in minutes and seconds".
       const t = Math.ceil(v.safety.remaining);
       Object.assign(mid, { labels: ['SAFE'], r1: `${Math.floor(t / 60)}:`, r2: pad2(t % 60) });
@@ -411,7 +412,7 @@ export class MaresQuad2 extends Quad2Rules {
       case 'gfsurf': {
         // §8.1.1: GF @+3 next to GF @SURF once the safety stop countdown begins (figure: "83:78").
         const st = v.safety.state;
-        if (st === 'active' || st === 'paused' || (st === 'done' && this.plus === 'active')) return { lbl: ['GF', '@SURF'], value: `${Math.min(99, surf)}:${Math.min(99, this.gfAt3(v, s))}`, units: [] };
+        if (safetyShown(v, this.safetyStop.bottom) || (st === 'done' && this.plus === 'active')) return { lbl: ['GF', '@SURF'], value: `${Math.min(99, surf)}:${Math.min(99, this.gfAt3(v, s))}`, units: [] };
         return { lbl: ['GF', '@SURF'], value: String(surf), units: [], blink };
       }
       case 'gfrate': {
