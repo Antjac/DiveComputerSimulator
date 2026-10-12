@@ -154,6 +154,10 @@
             <button id="btn-skip" class="btn" data-i18n="surfaceSkip"></button>
             <button id="btn-reset" class="btn danger" data-i18n="resetShort"></button>
           </div>
+          <div class="button-row">
+            <button class="btn" data-backup="export" data-i18n-title="logExportHelp"><span data-icon="download"></span><span data-i18n="logExport"></span></button>
+            <button class="btn" data-backup="import" data-i18n-title="logImportHelp"><span data-icon="upload"></span><span data-i18n="logImport"></span></button>
+          </div>
           <details class="help">
             <summary data-i18n="help"></summary>
             <p data-i18n="helpText"></p>
@@ -205,6 +209,8 @@
     </dialog>
     <dialog class="modal model-info" id="model-info" aria-labelledby="model-info-title"></dialog>
     <dialog class="modal mn90" id="mn90" aria-labelledby="mn90-title"></dialog>
+    <dialog class="modal recap" id="recap" aria-label="Recap"></dialog>
+    <dialog class="modal backup" id="backup" aria-label="Import"></dialog>
     <dialog class="modal about" id="about" aria-labelledby="about-title">
       <h2 id="about-title" data-i18n="about"></h2>
       <p class="lead" data-i18n="introEdu"></p>
@@ -227,6 +233,7 @@
       <p><span data-i18n="aboutSource"></span> <a href="https://github.com/Antjac/DiveComputerSimulator" target="_blank" rel="noopener">github.com/Antjac/DiveComputerSimulator</a></p>
       <form method="dialog"><button class="btn primary" data-i18n="close" autofocus></button></form>
     </dialog>
+    <div id="print-root"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

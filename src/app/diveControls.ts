@@ -43,7 +43,7 @@ export async function setView(v: '2d' | '3d'): Promise<void> {
   renderControls();
 }
 
-/** Full reset: fresh tissues and logbook, computers unlocked. */
+/** Full reset: fresh tissues, computers unlocked (the logbook saved in the browser stays). */
 export function resetAll(): void {
   session.reset();
   mn90.reset();
@@ -52,7 +52,7 @@ export function resetAll(): void {
     c.locked = false;
     c.onDiveStart(session);
   }
-  app.selectedLog = -1;
+  app.selectedDive = null;
   renderLog();
   renderControls();
   refresh(true);

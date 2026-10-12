@@ -3,6 +3,7 @@
 import './style.css';
 import { setupAlertHelp } from './app/alertHelp';
 import { setupSound } from './app/alertSounds';
+import { setupBackup } from './app/backup';
 import { setupBoat } from './app/boat';
 import { setupSpg } from './app/spg';
 import { setupCompare } from './app/compare';
@@ -14,10 +15,12 @@ import { setView, setupDiveControls } from './app/diveControls';
 import { setupDevice } from './app/device';
 import { setupTour } from './app/guidedTour';
 import { applyI18n, setupLanguage } from './app/language';
+import { loadRecords } from './app/diveStore';
 import { renderLog, setupLogbook } from './app/logbook';
 import { setupMn90 } from './app/mn90';
 import { startLoop } from './app/loop';
 import { applyPrefs } from './app/prefs';
+import { onDiveClosed, resetRecapTrack, setupRecap } from './app/recap';
 import { refresh } from './app/render';
 import { setupRescue } from './app/rescue';
 import { renderControls, setupSettings } from './app/settings';
@@ -32,10 +35,9 @@ session.on((e) => {
     if (e === 'start') c.onDiveStart(session);
     else c.onDiveEnd(session);
   }
-  if (e === 'end') {
-    app.selectedLog = session.log.length - 1;
-    renderLog();
-  }
+  if (e === 'start') resetRecapTrack();
+  // The recap once the step is over: the MN90 tracker sees the dive end right after the session.
+  if (e === 'end') queueMicrotask(onDiveClosed);
   renderControls();
 });
 
@@ -57,10 +59,16 @@ setupBoat();
 setupSpg();
 setupSound();
 setupAlertHelp();
+setupRecap();
+setupBackup();
 if (import.meta.env.DEV) installDevHook();
 
 applyI18n();
 refresh(true);
+void loadRecords().then(() => {
+  renderLog();
+  refresh();
+});
 showIntro();
 if (app.view === '3d') void setView('3d');
 startLoop();

@@ -28,8 +28,10 @@ export const app = {
   stageId: '7-200',
   /** Oxygen % of the decompression gases carried (none: single gas). */
   decoO2: [] as number[],
-  /** Logbook entry whose profile is drawn at the surface (-1: none). */
-  selectedLog: -1,
+  /** Logbook dive (app/diveStore.ts record id) whose profile is drawn at the surface (null: none). */
+  selectedDive: null as string | null,
+  /** The dive recap opens by itself when a dive is closed (app/recap.ts). */
+  recapAuto: true,
   activeTab: 'settings',
   /** Phones: the sheet is closed at start. */
   sheetOpen: !compactMq.matches,
