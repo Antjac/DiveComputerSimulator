@@ -1,0 +1,109 @@
+/* Scubapro G3: round colour display in a round case, two buttons on each side (§3.2), windows with
+   green headers, button labels on the upper and lower edges, warnings / alarms in a pop-up at the top
+   (figures of §3.6 to §3.8). */
+.g3-case {
+  position: relative; padding: 22px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #5d636b, #202328 62%, #121417);
+  box-shadow: 0 16px 30px rgba(0,0,0,0.55), inset 0 0 0 3px #7b828b, inset 0 0 0 9px #2a2d32;
+}
+.g3-btn { position: absolute; width: 14px; height: 40px; border-radius: 4px; background: linear-gradient(90deg, #8a9097, #d6dade 45%, #6c727a); box-shadow: inset 0 0 0 1px #4d5359; }
+.g3-btn.tl { left: -6px; top: 70px; transform: rotate(-24deg); }
+.g3-btn.bl { left: -6px; bottom: 70px; transform: rotate(24deg); }
+.g3-btn.tr { right: -6px; top: 70px; transform: rotate(24deg); }
+.g3-btn.br { right: -6px; bottom: 70px; transform: rotate(-24deg); }
+.g3-btn.tl.pressed, .g3-btn.bl.pressed { translate: 3px 0; }
+.g3-btn.tr.pressed, .g3-btn.br.pressed { translate: -3px 0; }
+.g3-screen {
+  position: relative; width: 300px; height: 300px; border-radius: 50%; overflow: hidden; background: #000;
+  font-family: 'Roboto Condensed', 'Arial Narrow', sans-serif; color: #36e036; line-height: 1;
+}
+.g3-screen.backlit { filter: brightness(1.3) saturate(1.1); }
+
+/* Pop-up at the top of the round screen (§3.6.1: yellow warnings; §3.7: red alarms). */
+.g3-pop { position: absolute; left: 0; right: 0; top: 0; height: 50px; display: flex; align-items: flex-end; justify-content: center; padding: 0 70px 4px; text-align: center; font-size: 15px; font-weight: 700; color: #000; line-height: 1.05; z-index: 1; }
+.g3-pop.yellow { background: #ffe600; }
+.g3-pop.red { background: #ff2a1f; }
+.g3-pop.note { background: #1f8f1f; color: #fff; }
+/* Button labels (figures: LIGHT / DIM and ➡ above, BOOK / SAVE and ⬅ below). */
+.g3-tabs { position: absolute; left: 44px; right: 44px; display: flex; justify-content: space-between; z-index: 2; }
+.g3-tabs.top { top: 51px; }
+.g3-tabs.bot { bottom: 20px; left: 80px; right: 80px; }
+.g3-tabs span { min-width: 54px; padding: 1px 6px; text-align: center; font-size: 11px; font-weight: 700; color: #fff; background: linear-gradient(#5a5d62, #2c2e31); border-radius: 2px; }
+
+.g3-body { position: absolute; left: 0; right: 0; top: 68px; bottom: 40px; }
+.g3-row { position: absolute; display: grid; column-gap: 3px; }
+.g3-win { display: flex; flex-direction: column; min-width: 0; }
+.g3-h { display: flex; justify-content: flex-start; gap: 9px; background: #2bb82b; color: #000; font-size: 9.5px; font-weight: 700; padding: 0 4px; height: 11px; line-height: 11px; letter-spacing: 0.4px; white-space: nowrap; overflow: hidden; }
+.g3-v { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; white-space: nowrap; color: #36e036; }
+.g3-v small { font-size: 0.42em; margin-left: 1px; }
+.g3-win.yellow .g3-h { background: #ffd400; } .g3-win.yellow .g3-v { color: #ffd400; }
+.g3-win.red .g3-h { background: #ff2a1f; } .g3-win.red .g3-v { color: #ff4a3a; }
+/* Deco stop (orange, figures of §3.6.18, §3.7.6) and level / GF stop (white, figures of §3.6.10–§3.6.15). */
+.g3-win.deco .g3-h { background: #8a5c10; color: #000; } .g3-win.deco .g3-v { color: #ff9e1f; }
+.g3-win.level .g3-v { color: #f2f2f2; }
+.g3-gap { margin-left: 10px; }
+.g3-sub { position: absolute; bottom: 0; font-size: 7.5px; font-style: normal; letter-spacing: 0.5px; color: #d77ad7; }
+.g3-win.deco .g3-sub { color: #ff9e1f; }
+.g3-sub.l { left: 8px; } .g3-sub.r { right: 8px; }
+.g3-v:has(.g3-sub) { padding-bottom: 8px; }
+/* Caption under a value (gas switch figure of §3.5.2.1: O2, BAR, METER). */
+.g3-cap { display: block; font-size: 9px; font-style: normal; color: #36e036; margin-top: 2px; }
+/* O2 % under the tank pressure (Light, figure of §3.8.1.1). */
+.g3-o2 { position: absolute; left: 30px; bottom: 0; font-size: 22px; }
+.g3-o2 small { font-size: 10px; margin-left: 6px; }
+.g3-v:has(.g3-o2) { padding-bottom: 22px; }
+
+/* Light: DEPTH | DIVE TIME, then TANK (or information) | RBT / NO STOP, large digits. */
+.g3-row.l1 { left: 26px; right: 26px; top: 0; height: 40%; }
+.g3-row.l2 { left: 30px; right: 30px; top: 43%; bottom: 0; }
+.g3-row.l1 .g3-v { font-size: 58px; }
+.g3-row.l2 .g3-v { font-size: 70px; }
+.g3-row.l2 .g3-v:has(.g3-o2), .g3-row.l2 .g3-v:has(.g3-sub) { font-size: 54px; }
+/* Classic: three rows of three windows. */
+.g3-row.c1 { left: 18px; right: 18px; top: 0; height: 31%; }
+.g3-row.c2 { left: 2px; right: 2px; top: 34%; height: 31%; }
+.g3-row.c3 { left: 32px; right: 32px; top: 68%; bottom: 0; }
+.g3-row.c1 .g3-v { font-size: 38px; }
+/* The outer headers start inside the round edge. */
+.g3-row.c1 .g3-win:first-child .g3-h, .g3-row.c2 .g3-win:first-child .g3-h { padding-left: 14px; }
+.g3-row.c2 .g3-win:last-child .g3-h { padding-right: 12px; }
+.g3-row.c2 .g3-v { font-size: 30px; }
+.g3-row.c3 .g3-v { font-size: 32px; }
+.g3-row.c1 .g3-win + .g3-win .g3-v { font-size: 30px; }
+.g3-row.c2 .g3-win.deco .g3-v, .g3-row.c2 .g3-win.level .g3-v { font-size: 28px; }
+.g3-row .g3-v:has(.g3-batt) { font-size: 16px; }
+.g3-row.l2 .g3-win.long .g3-v { font-size: 44px; }
+.g3-row.c2 .g3-win.long:not(.deco):not(.level) .g3-v { font-size: 24px; }
+/* Surface (figures of §3.1). */
+.g3-row.s1 { left: 22px; right: 22px; top: 0; height: 26%; }
+.g3-row.s2 { left: 4px; right: 4px; top: 29%; height: 28%; }
+.g3-row.s3 { left: 24px; right: 24px; top: 60%; bottom: 0; }
+.g3-row.s1 .g3-v, .g3-row.s2 .g3-v { font-size: 26px; }
+.g3-row.s3 .g3-v { font-size: 30px; }
+.g3-row.s3 .g3-v.big { font-size: 56px; }
+.g3-ng { display: block; font-size: 0.8em; }
+.g3-row.s3 .g3-v:has(.g3-ng) { flex-direction: column; }
+.g3-nodive { display: flex; flex-direction: column; background: #ffe600; }
+.g3-nodive .g3-h { background: #ffe600; }
+.g3-nodive .g3-v { color: #000; font-size: 24px; gap: 8px; }
+.g3-nodive b { font-size: 22px; }
+.g3-batt { display: inline-flex; gap: 1px; padding: 2px; border: 1.5px solid #fff; border-radius: 2px; position: relative; }
+.g3-batt::after { content: ''; position: absolute; right: -4px; top: 3px; width: 2px; height: 6px; background: #fff; }
+.g3-batt i { width: 4px; height: 8px; background: #fff; }
+.g3-batt-top { position: absolute; top: 24px; left: 0; right: 0; text-align: center; }
+/* Gas switch (figure of §3.5.2.1). */
+.g3-body.sw .g3-row.l1 { height: 36%; }
+.g3-banner { position: absolute; left: 12px; right: 12px; top: 39%; height: 24px; line-height: 22px; text-align: center; color: #fff; font-size: 17px; border: 2px solid #f2f2f2; background: #050505; }
+.g3-row.w3 { left: 30px; right: 30px; top: 52%; bottom: 0; }
+.g3-row.w3 .g3-v { font-size: 26px; flex-direction: column; justify-content: flex-start; padding-top: 6px; }
+.g3-swok { position: absolute; left: 34px; right: 34px; top: 110px; padding: 10px 0; background: #050a2a; color: #fff; border: 2px solid #f2f2f2; text-align: center; font-size: 18px; line-height: 1.5; z-index: 3; }
+/* Alternate displays (figure of §3.5.2.6), with the G2 pages (g2.css) scaled to the round screen. */
+.g3-alt-title { position: absolute; top: 66px; left: 0; right: 0; text-align: center; color: #fff; font-size: 15px; font-weight: 700; line-height: 1.1; }
+.g3-alt { position: absolute; left: 46px; right: 46px; top: 104px; bottom: 48px; border: 2px solid #2bb82b; border-radius: 2px; }
+.g3-alt .g2-dsum { font-size: 17px; padding: 4px 6px; }
+.g3-alt .g2-dsum div { grid-template-columns: 40px 34px 44px 36px 1fr; }
+.g3-alt .g2-gsum { font-size: 13px; padding: 2px 4px; }
+.g3-alt .g2-gsum .hd { font-size: 11px; }
+.g3-alt .g2-gsum div { grid-template-columns: 24px 44px 40px 1fr; }
+.g3-alt .g2-sat-lbl { font-size: 10px; }
+.g3-alt .g2-prof-stops { font-size: 12px; }

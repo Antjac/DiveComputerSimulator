@@ -11,6 +11,7 @@
 @import './computers/azoth/odyssey/odyssey.css';
 @import './computers/shearwater/perdix/shearwater.css';
 @import './computers/shearwater/peregrine/peregrine.css';
+@import './computers/shearwater/teric/teric.css';
 @import './computers/garmin/garmin.css';
 @import './computers/suunto/d5/suunto.css';
 @import './computers/suunto/zoopnovo/zoopnovo.css';
@@ -18,6 +19,7 @@
 @import './computers/suunto/eoncore/eoncore.css';
 @import './computers/mares/puck/puck.css';
 @import './computers/scubapro/g2/g2.css';
+@import './computers/scubapro/g3/g3.css';
 @import './computers/scubapro/luna/luna.css';
 @import './computers/mares/quadci/quadci.css';
 @import './computers/cressi/lcd.css';

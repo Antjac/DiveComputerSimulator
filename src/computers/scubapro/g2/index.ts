@@ -1,8 +1,8 @@
-import { WATER_VAPOUR, planAscent } from '../../../engine/buhlmann';
 import type { DiveSession } from '../../../engine/session';
 import { depthInt, depthText, imperial, pressText, pressUnit, tempUnit, tempVal } from '../../../units';
 import type { Lang } from '../../../i18n';
 import { ButtonHelp, ComputerView, clockOfDay, hmm, mmss } from '../../base';
+import { decoSummary, diveProfile, gasSummary, projection, saturation } from '../altPages';
 import { idealAscent, levelParams } from '../common';
 import { type G2Warning, G2Rules } from './rules';
 
@@ -419,35 +419,11 @@ export class ScubaproG2 extends G2Rules {
   }
 
   /**
-   * Graphical screen: the dive profile so far, the diver as a grey cursor line, and the projected
-   * ascent with its stops on the right of the cursor.
-   */
-  /** Projected ascent at 10 m/min with the planned stops (and the safety stop when pending), as [s, m] points. */
-  private projection(v: ComputerView): [number, number][] {
-    const now = v.inDive ? v.diveTime : 0;
-    const proj: [number, number][] = [[now, v.depth]];
-    let t = now;
-    let d = v.depth;
-    const stops = v.plan.stops.map((st) => ({ depth: st.depth, min: st.minutes }));
-    if (!stops.length && v.maxDepth > 10 && v.safety.state !== 'done' && v.depth > 5) stops.push({ depth: 5, min: v.safety.remaining / 60 });
-    for (const st of stops) {
-      t += ((d - st.depth) / 10) * 60;
-      d = st.depth;
-      proj.push([t, d]);
-      t += st.min * 60;
-      proj.push([t, d]);
-    }
-    t += (d / 10) * 60;
-    proj.push([t, 0]);
-    return proj;
-  }
-
-  /**
    * §3.7.1 alternate displays (figures of §3.4.2 and §3.7.1): ⇩ ⇧ DIM in the bar, "5.Dive profile" or
    * "6.Compartment saturation" in white, then the graph in a green frame.
    */
   private renderAlt(el: HTMLElement, v: ComputerView, s: DiveSession, page: AltPage): void {
-    const body = page === 'gas' ? this.gasSummary(s) : page === 'deco' ? this.decoSummary(v, s) : page === 'profile' ? this.diveProfile(v, s) : this.saturation(s);
+    const body = page === 'gas' ? gasSummary(this, s) : page === 'deco' ? this.decoSummary(v, s) : page === 'profile' ? diveProfile(this, v, s) : saturation(s);
     const title = { gas: '3.Gas summary', deco: '4.Deco summary table', profile: '5.Dive profile', sat: '6.Compartment saturation' }[page];
     el.innerHTML = `
       <div class="dev g2">
@@ -464,104 +440,20 @@ export class ScubaproG2 extends G2Rules {
       </div>`;
   }
 
-  /**
-   * Gas summary (§2.8.2.5 figure, "a fast overview of the paired tank pressures and their content"):
-   * BAR, O2 and MOD of tanks T1 to T4 (more rows when more gases are set); "NO P" for a tank without a
-   * paired transmitter (only T1 has one here), "---" when it is not received, "--%" and "-" for an
-   * unused tank; the MOD column gives the AMD (0.0 with nitrox) and the MOD. Title number deduced.
-   */
-  private gasSummary(s: DiveSession): string {
-    const gases = this.knownGases(s);
-    const mods = this.gasMods(s);
-    const n = Math.max(4, gases.length);
-    const u = imperial() ? 'FT' : 'M';
-    const rows = Array.from({ length: n }, (_, i) => {
-      const g = gases[i];
-      const bar = i === 0 ? (this.transmitter && s.transmitterOn ? pressText(s.tankPressure) : '---') : 'NO P';
-      const o2 = g ? `${Math.round(g.o2 * 100)}<small>%</small>` : '--<small>%</small>';
-      const mod = g ? `0.0- ${depthText(mods[i])}<small>${u}</small>` : '-';
-      return `<div class="${i === s.breathing ? 'cur' : ''}"><span>T${i + 1}</span><span>${bar}</span><span>${o2}</span><span>${mod}</span></div>`;
-    }).join('');
-    return `<div class="g2-gsum"><div class="hd"><span></span><span>${imperial() ? 'PSI' : 'BAR'}</span><span>O2</span><span>MOD</span></div>${rows}</div>`;
-  }
-
-  /**
-   * Deco summary table (§3.4.2 figure): "the predicted decompression stops are shown with all enabled
-   * gases used (PMG) and assuming only the current gas would be used (1G). Also, current selected MB
-   * level as well as MB level 0 schedules are shown": first stop (depth, minutes) and TAT in orange.
-   * Without PMG the rows are labelled 1G (deduced).
-   */
+  /** Deco summary table: the active MB level (when above L0) and L0. */
   private decoSummary(v: ComputerView, s: DiveSession): string {
-    const pmg = this.maxGases > 1 && this.knownGases(s).length > 1;
     const levels = this.activeLevel > 0 ? [this.activeLevel, 0] : [0];
-    const rows: string[] = [];
-    for (const lv of levels) {
-      for (const mode of pmg ? ['PMG', '1G'] : ['1G']) {
-        const p = { ...levelParams(lv), gases: mode === 'PMG' ? this.planGases(s) : [] };
-        const plan = planAscent(s.tissues, v.depth, s.gas, p, lv > 0 ? this.levelAnchor : this.anchor);
-        const st = plan.stops[0];
-        const stop = st ? `<span class="o">${depthInt(st.depth)}<small>${imperial() ? 'FT' : 'M'}</small></span><span class="o">${Math.ceil(st.minutes)}:</span>` : '<span></span><span></span>';
-        rows.push(`<div><span class="b">${mode}</span><span class="b">L${lv}</span>${stop}<span class="o">${plan.tts}:</span></div>`);
-      }
-    }
-    return `<div class="g2-dsum">${rows.join('')}</div>`;
+    return decoSummary(this, v, s, levels.map((lv) => ({ label: `L${lv}`, params: levelParams(lv), anchor: lv > 0 ? this.levelAnchor : this.anchor })));
   }
 
   /**
-   * "blue is the dived part, the gray line identifies current time and green is the predicted ascent
-   * profile) with required gas switching depths according to MOD's (white lines)"; figures: depth scale
-   * on the right (0 m to a round depth below the maximum: deduced) and the stops in orange.
+   * Graphical screen: the dive profile so far, the diver as a grey cursor line, and the projected
+   * ascent with its stops on the right of the cursor.
    */
-  private diveProfile(v: ComputerView, s: DiveSession): string {
-    const past: [number, number][] = [...s.profile.map((p) => [p.t, p.depth] as [number, number]), [v.diveTime, v.depth]];
-    const proj = this.projection(v);
-    const now = v.diveTime;
-    const tMax = Math.max(proj[proj.length - 1][0], 600);
-    const scale = Math.max(10, Math.ceil(v.maxDepth / 10) * 10);
-    const W = 268;
-    const H = 150;
-    const X = (x: number) => ((x / tMax) * W).toFixed(1);
-    const Y = (y: number) => ((Math.min(y, scale) / scale) * (H - 2) + 1).toFixed(1);
-    const area = (pts: [number, number][]) => `M ${X(pts[0][0])} 0 ${pts.map(([x, y]) => `L ${X(x)} ${Y(y)}`).join(' ')} L ${X(pts[pts.length - 1][0])} 0 Z`;
-    const line = (pts: [number, number][]) => pts.map(([x, y], i) => `${i ? 'L' : 'M'} ${X(x)} ${Y(y)}`).join(' ');
-    const mods = this.maxGases > 1
-      ? this.planGases(s).map((g) => `<line x1="${X(now)}" y1="${Y(g.mod)}" x2="${W}" y2="${Y(g.mod)}" stroke="#fff" stroke-width="1"/>`).join('')
-      : '';
-    const stops = [...v.plan.stops].reverse().map((st) => `<div><span>${depthInt(st.depth)}<small>${imperial() ? 'FT' : 'M'}</small></span><span>${Math.ceil(st.minutes)}:</span></div>`).join('');
-    const u = imperial() ? 'FT' : 'M';
-    return `<svg class="g2-prof" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-        <path d="${area(past)}" fill="#0b1f78"/><path d="${line(past)}" fill="none" stroke="#3f7bff" stroke-width="1.5"/>
-        <path d="${area(proj)}" fill="#1c6a1c"/><path d="${line(proj)}" fill="none" stroke="#8be08b" stroke-width="1.5"/>
-        ${mods}
-        <line x1="${X(now)}" y1="0" x2="${X(now)}" y2="${H}" stroke="#a0a0a0" stroke-width="2"/>
-        <path d="M ${Number(X(now)) - 4} 0 L ${Number(X(now)) + 4} 0 L ${X(now)} 6 Z M ${Number(X(now)) - 4} ${H} L ${Number(X(now)) + 4} ${H} L ${X(now)} ${H - 6} Z" fill="#a0a0a0"/>
-      </svg>
-      <div class="g2-prof-scale"><span>0${u}</span><span>${imperial() ? depthInt(scale) : scale}${u}</span></div>
-      <div class="g2-prof-stops">${stops}</div>`;
-  }
-
-  /**
-   * "The height of each bar indicates the ratio of current tissue loading with respect to the maximum
-   * tolerable loading, expressed in a percentage. The green color indicates that the compartment is
-   * off-gassing, and the red color shows on-gassing." The tolerable loading is taken as the M-value at
-   * the current ambient pressure (deduced). Captions of the figures: CNS, SKIN, MUSCLE, BONE.
-   */
-  private saturation(s: DiveSession): string {
-    const t = s.tissues;
-    const inspired = (s.pressure - WATER_VAPOUR) * (1 - s.gas.o2);
-    const bars = Array.from({ length: 16 }, (_, i) => {
-      const [a, b] = t.coefficients(i);
-      const p = t.n2[i] + t.he[i];
-      const ratio = Math.max(0, Math.min(1, p / (s.pressure / b + a)));
-      return `<i class="${p > inspired ? 'off' : 'on'}" style="height:${(ratio * 100).toFixed(1)}%"></i>`;
-    }).join('');
-    return `<div class="g2-sat"><div class="g2-sat-bars">${bars}</div><div class="g2-sat-lbl"><span>CNS</span><span>SKIN</span><span>MUSCLE</span><span>BONE</span></div></div>`;
-  }
-
   private profileGraph(v: ComputerView, s: DiveSession): string {
     const past: [number, number][] = v.inDive ? [...s.profile.map((p) => [p.t, p.depth] as [number, number]), [v.diveTime, v.depth]] : [];
     const now = v.inDive ? v.diveTime : 0;
-    const proj = this.projection(v);
+    const proj = projection(v);
     const t = proj[proj.length - 1][0];
 
     const tMax = Math.max(t, 600);

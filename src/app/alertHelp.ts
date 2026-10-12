@@ -209,7 +209,9 @@ function open(it: Item, ev: AlertEvent | null = null, read = false): void {
   tour.start(
     [
       {
-        targets: () => (ev ? [$('profile')] : [$('device').firstElementChild, it.code ? q(`#device-alarms [data-alarm="${it.code}"]`) : null]),
+        // The buttons too: some stick out of the case (Luna), and the bubble must leave them free to
+        // confirm the alarm.
+        targets: () => (ev ? [$('profile')] : [$('device').firstElementChild, ...$('device').querySelectorAll('[data-btn]'), it.code ? q(`#device-alarms [data-alarm="${it.code}"]`) : null]),
         title: () => `${ICON[it.severity]} ${itemLabel(it, e)}${when}`,
         body: () => `<div class="ah-body">${bodyHtml(it, computer, e)}
           ${pausedByUs ? `<p><b>${t(read ? 'ahPausedRead' : 'ahPaused')}</b></p>` : ''}

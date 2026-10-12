@@ -1,7 +1,11 @@
 /* ---------------------------------------------------------------------- */
 /* Device screens — shared */
-.dev { user-select: none; font-variant-numeric: tabular-nums; flex: none; }
-.dev button { border: 0; padding: 0; cursor: pointer; }
+.dev { user-select: none; -webkit-user-select: none; font-variant-numeric: tabular-nums; flex: none; }
+/* Touch: no scroll, text selection or callout during a long press (they cancel it: no alarm confirmed). */
+.dev button {
+  border: 0; padding: 0; cursor: pointer;
+  touch-action: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+}
 .dev button:active { filter: brightness(1.5); }
 .blink { animation: blink 1s steps(2, start) infinite; }
 @keyframes blink { to { visibility: hidden; } }
