@@ -4,7 +4,7 @@ import { setUnits, units, type UnitSystem } from '../units';
 import { DECO_GASES, ENVS, STAGES, TANKS, applyDecoGases, applyTank } from './options';
 import { $, app, computers, session } from './state';
 
-interface Prefs {
+export interface Prefs {
   computer: string;
   settings: Record<string, Record<string, string>>;
   o2: number;
@@ -24,6 +24,7 @@ interface Prefs {
   tips: boolean;
   alertHelp: 'off' | 'bubble' | 'pause';
   alertHelpMuted: string[];
+  recapAuto: boolean;
 }
 
 function loadPrefs(): Partial<Prefs> {
@@ -34,8 +35,9 @@ function loadPrefs(): Partial<Prefs> {
   }
 }
 
-export function savePrefs(): void {
-  const prefs: Prefs = {
+/** The preferences as they are now (what savePrefs() writes, and what a backup file holds). */
+export function currentPrefs(): Prefs {
+  return {
     computer: app.active.id,
     settings: Object.fromEntries(computers.map((c) => [c.id, c.settings])),
     o2: Math.round(session.backGas.o2 * 100),
@@ -55,12 +57,51 @@ export function savePrefs(): void {
     tips: app.tips,
     alertHelp: app.alertHelp,
     alertHelpMuted: app.alertHelpMuted,
+    recapAuto: app.recapAuto,
   };
+}
+
+export function savePrefs(): void {
+  storePrefs(currentPrefs());
+}
+
+/** Writes preferences to the browser (read back by applyPrefs() on the next page load). */
+export function storePrefs(prefs: Partial<Prefs>): void {
   try {
     localStorage.setItem('divesim.prefs', JSON.stringify(prefs));
   } catch {
     /* storage unavailable */
   }
+}
+
+/**
+ * Preferences read from a backup file (app/backup.ts): only the known fields, with the right types.
+ * The values themselves (a computer, a setting option, a tank…) are checked by applyPrefs() as at
+ * every page load. null: nothing usable.
+ */
+export function cleanPrefs(v: unknown): Partial<Prefs> | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const o = v as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  const str = (k: string) => typeof o[k] === 'string' && (out[k] = (o[k] as string).slice(0, 100));
+  const bool = (k: string) => typeof o[k] === 'boolean' && (out[k] = o[k]);
+  const num = (k: string, min: number, max: number) => typeof o[k] === 'number' && Number.isFinite(o[k]) && (o[k] as number) >= min && (o[k] as number) <= max && (out[k] = o[k]);
+  ['computer', 'units', 'tank', 'stage', 'view', 'env', 'alertHelp'].forEach(str);
+  ['transmitter', 'spgWithTx', 'rescue', 'advanced', 'sound', 'tips', 'recapAuto'].forEach(bool);
+  num('o2', 5, 100);
+  num('site', 1, 200);
+  num('rmv', 5, 60);
+  if (Array.isArray(o.decoO2)) out.decoO2 = o.decoO2.filter((x) => typeof x === 'number' && Number.isFinite(x)).slice(0, 4);
+  if (Array.isArray(o.alertHelpMuted)) out.alertHelpMuted = o.alertHelpMuted.filter((x) => typeof x === 'string').slice(0, 500);
+  if (o.settings && typeof o.settings === 'object' && !Array.isArray(o.settings)) {
+    const settings: Record<string, Record<string, string>> = {};
+    for (const [id, vals] of Object.entries(o.settings as Record<string, unknown>)) {
+      if (!vals || typeof vals !== 'object' || Array.isArray(vals)) continue;
+      settings[id] = Object.fromEntries(Object.entries(vals as Record<string, unknown>).filter((e): e is [string, string] => typeof e[1] === 'string'));
+    }
+    out.settings = settings;
+  }
+  return Object.keys(out).length ? (out as Partial<Prefs>) : null;
 }
 
 /** Restores the saved preferences (at start). */
@@ -89,5 +130,6 @@ export function applyPrefs(): void {
   app.sound = prefs.sound === true;
   app.tips = prefs.tips !== false; // on unless turned off
   app.alertHelp = prefs.alertHelp === 'off' || prefs.alertHelp === 'pause' ? prefs.alertHelp : 'bubble'; // bubble unless changed
+  app.recapAuto = prefs.recapAuto !== false; // on unless turned off
   app.alertHelpMuted = Array.isArray(prefs.alertHelpMuted) ? prefs.alertHelpMuted.filter((a) => typeof a === 'string') : [];
 }

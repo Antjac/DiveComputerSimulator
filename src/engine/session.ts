@@ -50,6 +50,10 @@ export interface ProfileSample {
   t: number; // s since dive start
   depth: number;
   ceiling: number;
+  /** Saturation of the diver's tissues (pure ZH-L16C, % of the M-value gradient): the most loaded
+   *  compartment at the current depth (GF99) and if surfacing now (SurfGF). Dive recap (app/recap.ts). */
+  gf99?: number;
+  surfGf?: number;
 }
 
 /** Scuba tank: water capacity (L) and working/fill pressure (bar). The reserve is a setting of each computer. */
@@ -316,7 +320,13 @@ export class DiveSession {
       this.sampleTimer += dt;
       if (this.sampleTimer >= 5) {
         this.sampleTimer = 0;
-        this.profile.push({ t: this.diveTime, depth: this.depth, ceiling: this.reportedCeiling });
+        this.profile.push({
+          t: this.diveTime,
+          depth: this.depth,
+          ceiling: this.reportedCeiling,
+          gf99: this.tissues.maxGradientPercent(this.pressure),
+          surfGf: this.tissues.maxGradientPercent(SURFACE_PRESSURE),
+        });
       }
       if (this.depth < DIVE_START_DEPTH) {
         this.surfaceTimer += dt;
@@ -467,7 +477,7 @@ export class DiveSession {
     this.minTemp = 99;
     this.surfaceTimer = 0;
     this.sampleTimer = 0;
-    this.profile = [{ t: 0, depth: 0, ceiling: 0 }];
+    this.profile = [{ t: 0, depth: 0, ceiling: 0, gf99: this.tissues.maxGradientPercent(SURFACE_PRESSURE), surfGf: this.tissues.maxGradientPercent(SURFACE_PRESSURE) }];
     this.track = [];
     this.usedGases = new Set([this.breathing]);
     this.rapid = null;

@@ -1,6 +1,7 @@
 // Guided tour ("How to use it?" button and intro notice). Time is paused while it runs; the tab, the
 // phone sheet and the settings scroll are put back as they were at the end.
 import { t, type I18nKey } from '../i18n';
+import { withHandSigns } from '../ui/handSigns';
 import { Tour, type TourStep } from '../ui/tour';
 import { renderControls } from './settings';
 import { $, app, compactMq, q } from './state';
@@ -29,7 +30,7 @@ const TOUR: TourStep[] = [
   { title: () => t('tourWelcomeT'), body: () => t('tourWelcomeB') },
   { targets: () => [q('.header-actions .field')], title: () => t('tourComputerT'), body: () => t('tourComputerB') },
   { targets: () => [q('.scene-panel')], title: () => t('tourSceneT'), body: () => t('tourSceneB') },
-  { targets: () => [q('.scene-ctl:not(.turn)')], title: () => t('tourRateT'), body: () => t('tourRateB') },
+  { targets: () => [q('.scene-ctl:not(.turn)')], title: () => t('tourRateT'), body: () => withHandSigns(t('tourRateB')) }, // ▲ ■ ▼ drawn as the buttons' hand signals
   { targets: () => [q('.scene-top')], title: () => t('tourViewT'), body: () => t('tourViewB') },
   { targets: () => [$('time-bar')], title: () => t('tourTimeT'), body: () => t('tourTimeB') },
   { targets: () => [$('device'), $('spg'), $('device-alarms')], title: () => t('tourDeviceT'), body: () => t('tourDeviceB') },

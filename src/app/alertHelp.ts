@@ -9,16 +9,19 @@
 // alert is explained, to leave time to react. Phones (compactMq): a bubble would cover the water
 // column and its controls, so the alert first shows as a one-line banner under the computer; tapping
 // it opens the bubble and pauses while it is read (serious alerts in pause mode open it at once).
-// Debrief: every alert is also recorded with its time and depth, drawn as a marker on the dive
-// profile (during the dive and for the logbook's dives); clicking one explains it.
-import type { AlarmCode, AlertExplain, ComputerView, DiveComputer } from '../computers/base';
+// Debrief: every alert is also recorded with its time, depth and the computer's display at that
+// moment, drawn as a marker on the dive profile (during the dive, clicking one explains it) and kept
+// in the dive's recap (app/recap.ts; a marker of a logbook dive opens its recap at that alert).
+import type { AlarmCode, AlertExplain, Bi, ComputerView, DiveComputer } from '../computers/base';
 import { lang, t, type I18nKey } from '../i18n';
 import { depthLabel } from '../units';
 import type { ProfileMarker } from '../ui/charts';
 import { Tour } from '../ui/tour';
+import type { RecAlert } from './diveStore';
 import { exerciseBusy } from './exercises';
 import { tourRunning } from './guidedTour';
 import { savePrefs } from './prefs';
+import { openRecap, shownRecord } from './recap';
 import { renderControls } from './settings';
 import { $, app, compactMq, computers, q, session } from './state';
 
@@ -84,6 +87,8 @@ interface AlertEvent {
   t: number;
   depth: number;
   item: Item;
+  /** The computer's display when it appeared (its HTML). */
+  screen?: string;
 }
 
 /** Alerts of each dive, by the dive's start (session clock): the current one and the logbook's. */
@@ -239,21 +244,27 @@ function open(it: Item, ev: AlertEvent | null = null, read = false): void {
   );
 }
 
-/** Records the alerts that appear on the shown computer during a dive (profile markers). */
-function record(items: Item[]): void {
+/** Displays kept per dive (the recap shows one beside each alert; beyond, the alerts are listed without). */
+const MAX_SCREENS = 40;
+
+/** Records the alerts that appear on the shown computer during a dive (profile markers, recap). */
+function record(items: Item[], screen: string): void {
   if (!session.inDive) return;
   let list = events.get(session.diveStart);
   if (!list) events.set(session.diveStart, (list = []));
   const now = session.diveTime;
   for (const it of items) {
-    if (!activeNow.has(it.id) && now - (lastSeen.get(it.id) ?? -Infinity) > MERGE) list.push({ t: now, depth: session.depth, item: it });
+    if (!activeNow.has(it.id) && now - (lastSeen.get(it.id) ?? -Infinity) > MERGE) {
+      const keep = list.filter((e) => e.screen).length < MAX_SCREENS;
+      list.push({ t: now, depth: session.depth, item: it, screen: keep ? screen : undefined });
+    }
     lastSeen.set(it.id, now);
   }
   activeNow = new Set(items.map((i) => i.id));
 }
 
-/** Called on every refresh with the active computer's view. */
-export function updateAlertHelp(v: ComputerView): void {
+/** Called on every refresh with the active computer's view and its display (HTML). */
+export function updateAlertHelp(v: ComputerView, screen: string): void {
   syncChip();
   if (session.inDive && !wasInDive) {
     // A new dive: every alert will be explained again, and recorded anew.
@@ -264,7 +275,7 @@ export function updateAlertHelp(v: ComputerView): void {
   }
   wasInDive = session.inDive;
   const items = activeItems(app.active, v);
-  record(items);
+  record(items, screen);
   const blocked = app.alertHelp === 'off' || exerciseBusy() || tourRunning() || !!session.emergency;
   if (blocked) {
     // An exercise or the guided tour starting, or the explanations turned off: the live bubble goes
@@ -286,8 +297,19 @@ export function updateAlertHelp(v: ComputerView): void {
 
 /** The alerts of the dive drawn on the profile: the current dive, or the logbook dive shown. */
 export function alertMarkers(depthOf: (m: number) => number): ProfileMarker[] {
-  const start = session.inDive ? session.diveStart : session.log[app.selectedLog]?.start;
-  const list = start === undefined ? [] : (events.get(start) ?? []);
+  if (!session.inDive) {
+    const rec = shownRecord();
+    if (!rec) return [];
+    return rec.alerts.map((a, i) => ({
+      t: a.t,
+      depth: depthOf(a.depth),
+      level: a.severity === 'info' ? 'warn' : a.severity,
+      label: recAlertLabel(a),
+      id: `rec:${rec.id}:${i}`,
+    }));
+  }
+  const start = session.diveStart;
+  const list = events.get(start) ?? [];
   return list.map((ev, i) => {
     const c = computers.find((x) => x.id === ev.item.computer) ?? app.active;
     const level = ev.item.severity === 'info' ? 'warn' : ev.item.severity;
@@ -295,11 +317,46 @@ export function alertMarkers(depthOf: (m: number) => number): ProfileMarker[] {
   });
 }
 
-/** A profile marker was clicked: its explanation, pointing at the profile. */
+/** A profile marker was clicked: its explanation, pointing at the profile (a logbook dive: its recap). */
 export function explainMarker(m: ProfileMarker): void {
+  if (m.id.startsWith('rec:')) {
+    const i = m.id.lastIndexOf(':');
+    openRecap(m.id.slice(4, i), Number(m.id.slice(i + 1)));
+    return;
+  }
   const [start, i] = m.id.split(':').map(Number);
   const ev = events.get(start)?.[i];
   if (ev) open(ev.item, ev);
+}
+
+/** A recorded alert's name in the current language, as itemLabel() gives it. */
+export function recAlertLabel(a: RecAlert): string {
+  const common = a.code ? t(a.code as I18nKey) : a.title?.[lang()] ?? '';
+  if (!a.screenText) return common;
+  return common ? `${a.screenText} · ${common}` : a.screenText;
+}
+
+/** The alerts of the dive that started at `start` (session clock), with their texts in both languages. */
+export function diveAlerts(start: number): RecAlert[] {
+  return (events.get(start) ?? []).map((ev) => {
+    const c = computers.find((x) => x.id === ev.item.computer) ?? app.active;
+    const e = c.alertExplain(ev.item.key);
+    // The model's text for the common alarm itself, when the alert is one of its own (as in the bubble).
+    const forCode = ev.item.code && ev.item.key !== ev.item.code ? c.alertExplain(ev.item.code) : null;
+    const join = (a?: Bi, b?: Bi): Bi | undefined => (a || b ? { fr: [a?.fr, b?.fr].filter(Boolean).join(' '), en: [a?.en, b?.en].filter(Boolean).join(' ') } : undefined);
+    return {
+      t: ev.t,
+      depth: ev.depth,
+      severity: ev.item.severity,
+      code: ev.item.code,
+      computer: c.name,
+      screenText: e?.screen,
+      title: e?.title,
+      what: join(e?.what, forCode?.what),
+      todo: join(e?.todo, forCode?.todo),
+      screen: ev.screen,
+    };
+  });
 }
 
 function renderButton(): void {
@@ -331,6 +388,12 @@ export function setupAlertHelp(): void {
     renderButton();
     savePrefs();
   });
+}
+
+/** The dive recap opens: the bubble and the banner of a live alert go (the recap explains it again). */
+export function closeAlertBubble(): void {
+  if (tour.running) close();
+  if (banner) hideBanner();
 }
 
 /** Also re-labels the button when the language changes. */

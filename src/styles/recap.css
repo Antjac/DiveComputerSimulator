@@ -1,0 +1,127 @@
+/* Dive recap (app/recap.ts): a paper sheet in a dialog, printable. Logbook tools (app/logbook.ts). */
+.log-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
+.log-tools .btn { white-space: nowrap; }
+/* The three buttons on one line, the option under them. */
+.log-tools .log-auto { flex-basis: 100%; }
+.log-tools .btn.danger { border-color: var(--crit); color: var(--crit); }
+.log-auto { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ink-2); cursor: pointer; }
+.log-msg { margin: 0 0 6px; color: var(--ok); }
+.log-msg.bad { color: var(--crit); }
+#logbook > .muted.small { margin: 0 0 8px; }
+.log-recap { padding: 1px 6px; line-height: 1.2; }
+
+.modal.recap {
+  width: min(860px, calc(100vw - 24px)); height: calc(100vh - 32px); padding: 10px 12px 8px;
+  display: none; flex-direction: column; gap: 8px;
+}
+.modal.recap[open] { display: flex; }
+.rc-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.modal .rc-bar .btn { margin: 0; }
+.rc-bar .btn:disabled { opacity: 0.4; cursor: default; }
+.rc-bar-gap { flex: 1; }
+.rc-bar form { margin: 0; }
+.rc-auto { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); cursor: pointer; }
+@media (max-width: 640px) { .rc-bar-lbl { display: none; } }
+
+/* The sheet */
+.rc-sheet {
+  --pg-ink: #1b2430; --pg-muted: #5d6b7c; --pg-line: #d6cfbd; --pg-head: #ece6d4;
+  flex: 1; min-height: 0; overflow-y: auto; outline: none;
+  padding: 16px 20px; border-radius: 10px; background: #fbf8ef; color: var(--pg-ink);
+  font-size: 13px; line-height: 1.45;
+}
+.rc-title { border-bottom: 2px solid var(--pg-ink); padding-bottom: 6px; margin-bottom: 4px; }
+.modal .rc-sheet h2, .rc-sheet h2 { margin: 0; font-size: 18px; color: var(--pg-ink); }
+.modal .rc-sheet p, .rc-sheet p { color: var(--pg-ink); margin: 0 0 6px; font-size: 12.5px; }
+.rc-title p { margin: 2px 0 0 !important; color: var(--pg-muted) !important; }
+.rc-sec { margin-top: 14px; }
+.modal .rc-sheet h3, .rc-sheet h3 { margin: 0 0 6px; font-size: 14px; color: var(--pg-ink); border-bottom: 1px solid var(--pg-line); padding-bottom: 2px; }
+.modal .rc-sheet .rc-help, .rc-sheet .rc-help { color: var(--pg-muted); font-size: 11.5px; }
+.rc-figs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.rc-fig { display: flex; flex-direction: column; padding: 6px 8px; border-radius: 6px; background: #fff; border: 1px solid var(--pg-line); min-width: 0; }
+.rc-fig span { font-size: 11px; color: var(--pg-muted); }
+.rc-fig b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.rc-fig small { font-weight: 400; font-size: 11px; color: var(--pg-muted); }
+.rc-link { margin-top: 2px; padding: 0; border: 0; background: none; color: #0d5f9e; font-size: 11.5px; text-align: left; cursor: pointer; text-decoration: underline; }
+.modal .rc-sheet .rc-settings { margin-top: 8px; font-size: 12px; }
+.rc-key { margin: 0; padding: 0; list-style: none; }
+.rc-key li { padding: 4px 8px; margin-bottom: 4px; border-radius: 6px; font-size: 12.5px; }
+.rc-key li.bad { background: #fdecdc; border-left: 3px solid #c0561b; }
+.rc-key li.ok { background: #e6f4ea; border-left: 3px solid #1f9d5a; }
+
+/* Charts (ui/recapCharts.ts) */
+.rc-chart { width: 100%; height: auto; display: block; background: #fff; border: 1px solid var(--pg-line); border-radius: 6px; }
+.rc-grid { stroke: #e6e0d0; stroke-width: 1; }
+.rc-zero { stroke: #8a94a3; stroke-width: 1; }
+.rc-axis, .rc-legend text { fill: #5d6b7c; font: 11px Inter, sans-serif; }
+.rc-depth { fill: none; stroke: #1f6fb2; stroke-width: 2; stroke-linejoin: round; }
+.rc-ceil { fill: rgba(214, 60, 50, 0.18); stroke: none; }
+.rc-ceil-line { fill: none; stroke: #d0453a; stroke-width: 1; }
+.rc-mk circle { stroke: #fff; stroke-width: 1.5; }
+.rc-mk text { fill: #fff; font: 700 10px Inter, sans-serif; }
+.rc-mk.crit circle { fill: #c62828; }
+.rc-mk.serious circle { fill: #e8710a; }
+.rc-mk.warn circle { fill: #b88400; }
+.rc-surfgf { fill: none; stroke: #e8710a; stroke-width: 2; }
+.rc-gf99 { fill: none; stroke: #1f6fb2; stroke-width: 1.5; stroke-dasharray: 5 3; }
+.rc-mvalue { stroke: #c62828; stroke-width: 1.2; stroke-dasharray: 6 4; }
+.rc-mvalue-t { fill: #c62828; }
+.rc-gfhigh { stroke: #b88400; stroke-width: 1.2; stroke-dasharray: 3 3; }
+.rc-gfhigh-t { fill: #8a6300; }
+.rc-bar.under { fill: #7fa7d6; }
+.rc-bar.ok { fill: #3aa76d; }
+.rc-bar.warn { fill: #e0a526; }
+.rc-bar.crit { fill: #c62828; }
+
+/* Alerts, each with the display at that moment */
+.rc-alert { margin-bottom: 10px; padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid var(--pg-line); border-left: 4px solid #b88400; }
+.rc-alert.crit { border-left-color: #c62828; }
+.rc-alert.serious { border-left-color: #e8710a; }
+.rc-alert.info { border-left-color: #7fa7d6; }
+.rc-alert h4 { margin: 0 0 6px; font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.rc-num { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 10px; background: #b88400; color: #fff; font-size: 11px; }
+.rc-alert.crit .rc-num { background: #c62828; }
+.rc-alert.serious .rc-num { background: #e8710a; }
+.rc-alert.info .rc-num { background: #7fa7d6; }
+.rc-when { font-weight: 400; color: var(--pg-muted); font-variant-numeric: tabular-nums; }
+.rc-alert-body { display: flex; gap: 12px; align-items: flex-start; }
+.rc-alert-text { flex: 1; min-width: 0; }
+.modal .rc-sheet .rc-alert-text p, .rc-alert-text p { font-size: 12.5px; }
+.rc-model { padding-left: 8px; border-left: 2px solid var(--pg-line); }
+.rc-screen { flex: none; position: relative; overflow: hidden; pointer-events: none; border-radius: 6px; }
+.rc-noscreen { width: 120px; padding: 18px 6px; text-align: center; font-size: 11px; color: var(--pg-muted); background: var(--pg-head); }
+.rc-dev { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+/* A frozen display: no blinking or animation (the moment of the alert). */
+.rc-dev *, .rc-dev *::before, .rc-dev *::after { animation: none !important; transition: none !important; }
+@media (max-width: 560px) { .rc-alert-body { flex-direction: column; } }
+.rc-mnpage { padding: 4px 8px 8px; border-radius: 8px; box-shadow: none; min-height: 0; }
+.rc-foot { margin-top: 14px !important; font-size: 11px !important; color: var(--pg-muted) !important; text-align: center; }
+
+/* Printing the recap: only the sheet, on white, the displays in their colours. */
+#print-root { display: none; }
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body.print-recap { background: #fff !important; }
+  body.print-recap > *:not(#print-root) { display: none !important; }
+  body.print-recap #print-root { display: block; }
+  #print-root .rc-sheet { overflow: visible; height: auto; padding: 0; background: #fff; border-radius: 0; }
+  #print-root * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  #print-root .rc-sec, #print-root .rc-alert, #print-root .rc-chart { break-inside: avoid; }
+  #print-root .rc-link { display: none; }
+}
+
+/* Import of a backup file (app/backup.ts) */
+.modal.backup { width: min(520px, calc(100vw - 32px)); }
+.bk-opts { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.bk-opt { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 8px; background: var(--panel-2); cursor: pointer; font-size: 13px; }
+.bk-opt input { margin-top: 3px; }
+.modal p.bk-reload { color: var(--warn); }
+.bk-reload[hidden] { display: none; }
+.bk-done { margin: 8px 0; padding-left: 4px; list-style: none; font-size: 13px; color: var(--ok); }
+
+/* Line icons in buttons (ui/icons.ts) */
+.btn .ico { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; margin-right: 0.4em; }
+.btn [data-icon] { display: contents; }
+/* Icon alone: no gap after it. */
+.log-recap .ico { margin-right: 0; }
+@media (max-width: 640px) { .rc-bar .ico { margin-right: 0; } }

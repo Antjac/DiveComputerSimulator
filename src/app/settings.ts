@@ -5,6 +5,7 @@ import { gasLabel } from '../engine/buhlmann';
 import { type I18nKey, lang, t } from '../i18n';
 import { depthLabel, imperial, setUnits, units, type UnitSystem } from '../units';
 import { renderLog } from './logbook';
+import { renderRecap } from './recap';
 import { DECO_GASES, ENVS, GASES, RMVS, SITES, SPEEDS, STAGES, TANKS, applyDecoGases, applyTank, tankLabel } from './options';
 import { savePrefs } from './prefs';
 import { refresh } from './render';
@@ -47,7 +48,7 @@ export function alertSettings(c: DiveComputer): SettingDef[] {
 }
 
 /** Theme of a computer setting: given by the model, or guessed from its key. */
-function settingGroup(def: SettingDef): SettingGroup {
+export function settingGroup(def: SettingDef): SettingGroup {
   if (def.group) return def.group;
   if (ALERT_KEYS.has(def.key) || /^w[A-Z]/.test(def.key)) return 'alerts';
   if (SOUND_KEYS.has(def.key)) return 'sound';
@@ -237,6 +238,7 @@ export function setupSettings(): void {
     setUnits((e.target as HTMLSelectElement).value as UnitSystem);
     savePrefs();
     renderLog();
+    renderRecap();
     refresh(true);
   });
 

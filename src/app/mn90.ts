@@ -180,11 +180,17 @@ function steps(d: Mn90Dive, r: Mn90Result, live: boolean): string {
   return `<ol class="mn-steps">${items.filter(Boolean).join('')}</ol>`;
 }
 
-function issues(d: Mn90Dive, r: Mn90Result): string {
+function issues(d: Mn90Dive, r: Mn90Result, decoGases = session.decoGases.length > 0): string {
   const list = r.issues.map((i) => tr(`issue_${i}` as keyof typeof L));
   if (d.rapid) list.push(tr('rapid', { v: `${Math.round(d.rapid)} m/min` }));
-  if (session.decoGases.length) list.push(tr('decoGas'));
+  if (decoGases) list.push(tr('decoGas'));
   return list.length ? `<ul class="mn-issues">${list.map((x) => `<li>⚠ ${esc(x)}</li>`).join('')}</ul>` : '';
+}
+
+/** A closed dive placed in the tables (steps, stops, group, issues), for the dive recap (app/recap.ts). */
+export function mn90Summary(d: Mn90Dive, decoGases: boolean): string {
+  const r = assessDive(d);
+  return `${steps(d, r, false)}${resultCard(r)}${issues(d, r, decoGases)}`;
 }
 
 /** At the surface: what the last dive leaves for the next one. */

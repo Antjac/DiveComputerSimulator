@@ -4,6 +4,7 @@ import { renderSound } from './alertSounds';
 import { isI18nKey, lang, setLang, t } from '../i18n';
 import { renderTipsButton } from './device';
 import { renderLog } from './logbook';
+import { renderRecap } from './recap';
 import { profileChart, refresh, tissueChart } from './render';
 import { renderControls } from './settings';
 
@@ -28,6 +29,7 @@ export function applyI18n(): void {
     : { compartment: 'Compartment', halfTime: 'Half-time', inspired: 'Inspired gas', ofAmbient: 'of ambient' };
   renderControls();
   renderLog();
+  renderRecap();
 }
 
 export function setupLanguage(): void {

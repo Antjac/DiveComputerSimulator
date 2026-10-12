@@ -11,6 +11,7 @@ import { updateAlertSounds } from './alertSounds';
 import { updateBoat } from './boat';
 import { renderCompare } from './compare';
 import { renderMn90 } from './mn90';
+import { shownRecord, trackRecap } from './recap';
 import { updateExercise } from './exercises';
 import { decorateButtons, fitDevice } from './device';
 import { renderRescue } from './rescue';
@@ -79,7 +80,8 @@ export function refresh(full = false): void {
       return `<span class="alarm ${sev}" data-alarm="${a}">${icon} ${t(a as I18nKey)}</span>`;
     })
     .join(''));
-  updateAlertHelp(v);
+  updateAlertHelp(v, out.innerHTML);
+  trackRecap(v);
 
   // Every computer is computed only while the comparison is on screen.
   if (paneShown('compare')) renderCompare(computers.map((c) => [c, c === app.active ? v : c.compute(session)] as const));
@@ -115,9 +117,7 @@ export function refresh(full = false): void {
   // Charts
   const samples = session.inDive
     ? [...session.profile, { t: session.diveTime, depth: session.depth, ceiling: v.ceiling }]
-    : app.selectedLog >= 0 && session.log[app.selectedLog]
-      ? session.log[app.selectedLog].profile
-      : [];
+    : (shownRecord()?.entry.profile ?? []);
   profileChart.unit = depthUnit();
   profileChart.markers = alertMarkers(depthVal);
   const shown = samples.map((p) => ({ t: p.t, depth: depthVal(p.depth), ceiling: depthVal(p.ceiling) }));

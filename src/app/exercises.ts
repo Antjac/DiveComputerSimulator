@@ -44,6 +44,31 @@ function loadDone(): Record<string, string[]> {
   }
 }
 
+/** Passed exercises, for a backup file (app/backup.ts). */
+export function exerciseProgress(): Record<string, string[]> {
+  return loadDone();
+}
+
+/** Adds the passed exercises of a backup file to those already passed. */
+export function mergeExerciseProgress(v: unknown): number {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return 0;
+  const done = loadDone();
+  let n = 0;
+  for (const [ex, ids] of Object.entries(v as Record<string, unknown>)) {
+    if (!Array.isArray(ids)) continue;
+    const add = ids.filter((x): x is string => typeof x === 'string').map((x) => x.slice(0, 100));
+    if (!add.length) continue;
+    done[ex.slice(0, 100)] = [...new Set([...(done[ex] ?? []), ...add])];
+    n++;
+  }
+  try {
+    localStorage.setItem(STORE, JSON.stringify(done));
+  } catch {
+    /* storage unavailable */
+  }
+  return n;
+}
+
 function markDone(exId: string, computerId: string): void {
   const done = loadDone();
   done[exId] = [...new Set([...(done[exId] ?? []), computerId])];
