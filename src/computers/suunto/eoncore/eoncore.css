@@ -1,0 +1,82 @@
+/* Suunto EON Core: landscape colour display in a black case, three buttons on the right edge (user
+   guide §3.2 figure). Screen areas after the Prominent style figures: battery and next stop on top,
+   ascent bar and temperature on the left, depth and dive time, gauge and switch window on the right. */
+.ec { position: relative; padding: 30px 0; }
+.ec-strap { position: absolute; left: 50%; translate: -50% 0; width: 200px; height: 40px; background: linear-gradient(90deg, #161616, #2a2a2a, #161616); }
+.ec-strap.l { top: 0; border-radius: 10px 10px 0 0; }
+.ec-strap.r { bottom: 0; border-radius: 0 0 10px 10px; }
+.ec-case {
+  position: relative; width: 392px; height: 292px; border-radius: 30px;
+  background: linear-gradient(160deg, #2c2e31, #121314 60%, #0b0b0c);
+  box-shadow: 0 16px 30px rgba(0,0,0,0.55), inset 0 0 0 3px #34363a;
+  display: grid; place-items: center;
+}
+.ec-btn {
+  position: absolute; right: -14px; width: 18px; height: 34px; border-radius: 6px;
+  background: linear-gradient(90deg, #6a6e74, #cfd3d8 55%, #7c8086); box-shadow: 0 0 0 1px #111;
+}
+.ec-btn.upper { top: 44px; }
+.ec-btn.middle { top: 129px; }
+.ec-btn.lower { top: 214px; }
+.ec-btn.pressed { translate: -3px 0; }
+
+.ec-screen {
+  position: relative; width: 320px; height: 240px; background: #000; color: #fff; overflow: hidden;
+  border-radius: 4px; box-shadow: 0 0 0 8px #050506, 0 0 0 10px #2a2c30;
+  font-family: 'Barlow Condensed', 'Roboto Condensed', sans-serif; line-height: 1;
+}
+.ec-screen small { font-size: 0.6em; }
+.ec-screen sub { font-size: 0.65em; vertical-align: -0.15em; }
+.ec-top { position: absolute; left: 4px; top: 2px; right: 120px; height: 20px; line-height: 1.25; display: flex; align-items: center; gap: 4px; font-size: 15px; white-space: nowrap; }
+.ec-batt { width: 7px; height: 13px; border: 1.5px solid #ddd; border-radius: 1px; position: relative; box-sizing: border-box; }
+.ec-batt::before { content: ''; position: absolute; left: 1px; top: -3px; width: 2px; height: 2px; background: #ddd; }
+.ec-batt i { position: absolute; left: 0; right: 0; bottom: 0; height: 75%; background: #ddd; }
+.ec-bh { color: #ddd; margin-right: 14px; }
+.ec-next { font-weight: 500; letter-spacing: 0.3px; padding-left: 2px; }
+.ec-next .ec-dim { opacity: 0.85; }
+.ec-ico { font-size: 13px; margin-right: 2px; }
+.ec-ico.surf { color: #8fd12f; }
+.ec-ico.fly { color: #f2953a; margin-left: 6px; }
+.ec-lock-i { color: #f2953a; font-size: 13px; margin-right: 4px; }
+
+.ec-asc { position: absolute; left: 6px; top: 26px; width: 14px; height: 168px; display: flex; flex-direction: column-reverse; gap: 2px; }
+.ec-asc i { display: block; height: 26px; border-radius: 1px; }
+.ec-asc b { position: absolute; left: -1px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 11px solid #8fd12f; margin-bottom: -2px; }
+.ec-broken { position: absolute; left: 24px; top: 26px; width: 16px; height: 168px; background: #ec3a2e; display: grid; place-items: center; }
+.ec-broken span { writing-mode: vertical-rl; rotate: 180deg; font-size: 12px; font-weight: 600; color: #2a0804; letter-spacing: 0.6px; white-space: nowrap; }
+.ec-temp { position: absolute; left: 3px; bottom: 6px; font-size: 18px; }
+
+.ec-lbl { font-size: 15px; color: #9b9b9b; white-space: nowrap; }
+.ec-l-depth { position: absolute; left: 50px; top: 27px; }
+.ec-l-time { position: absolute; left: 50px; top: 133px; }
+.ec-depth { position: absolute; left: 47px; top: 44px; font-size: 70px; font-weight: 500; letter-spacing: -1px; white-space: nowrap; }
+.ec-time { position: absolute; left: 47px; top: 150px; font-size: 70px; font-weight: 500; color: #8fd12f; white-space: nowrap; }
+
+.ec-deco { position: absolute; left: 196px; width: 124px; top: 3px; text-align: center; font-size: 15px; font-weight: 600; color: #f2953a; }
+.ec-ring { position: absolute; left: 196px; top: 18px; width: 124px; height: 124px; }
+.ec-gauge { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ec-center { position: absolute; left: 14px; right: 14px; top: 36px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.ec-glbl { font-size: 15px; white-space: nowrap; }
+.ec-gval { font-size: 34px; font-weight: 500; white-space: nowrap; }
+.ec-padlock { font-size: 30px; filter: sepia(1) saturate(4) hue-rotate(-12deg); }
+
+.ec-sw { position: absolute; left: 196px; width: 124px; top: 160px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.ec-swv { font-size: 38px; font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 3px; }
+.ec-arr { font-size: 16px; }
+.ec-arr.win { display: inline-flex; flex-direction: column; font-size: 10px; line-height: 0.9; color: #fff; }
+
+.ec-dots { position: absolute; left: 50%; translate: -50% 0; bottom: 3px; display: flex; gap: 2px; }
+.ec-dots i { width: 4px; height: 4px; border-radius: 50%; border: 1px solid #ccc; box-sizing: border-box; }
+.ec-dots i.on { background: #ccc; }
+
+/* §4.1 pop-up: yellow-framed dark box over the lower right of the gauge (figures). */
+.ec-pop {
+  position: absolute; right: -8px; min-width: 152px; top: 118px; height: 34px; box-sizing: border-box;
+  padding: 0 12px; display: flex; align-items: center; background: #3a3611; border: 2px solid #c9c23a;
+  border-radius: 9px; color: #ebe43c; font-size: 16px; white-space: nowrap;
+}
+.ec-gases { position: absolute; left: 150px; right: 6px; top: 30px; background: #000; border: 1px solid #555; border-radius: 6px; padding: 4px; }
+.ec-gases div { font-size: 17px; padding: 4px 6px; border-radius: 4px; white-space: nowrap; }
+.ec-gases div span { color: #9b9b9b; font-size: 13px; }
+.ec-gases div.sel { background: #4fc9ea; color: #000; }
+.ec-gases div.sel span { color: #123; }
