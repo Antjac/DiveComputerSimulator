@@ -117,12 +117,16 @@ export class FastAscentRgbm {
 /**
  * Deep stop of the ZH-L16C models: at the depth where the 5th tissue (27 min) switches from
  * ongassing to offgassing, suggested as the no deco limit approaches on dives deeper than 15 m;
- * 2 minutes within 1.5 m, optional.
+ * 2 minutes within 1.5 m, optional. The RGBM models (Quad Air, Puck Pro) do not give the depth: the
+ * same rule is assumed, with their own window (±1 m).
  */
 export class DeepStop {
   state: 'none' | 'pending' | 'active' | 'done' = 'none';
   depth = 0;
   remaining = 120;
+
+  /** `window`: half-width of the range where the stop counts down (1.5 m on the Quad 2 and Quad Ci). */
+  constructor(readonly window = 1.5) {}
 
   get shown(): boolean {
     return this.state === 'pending' || this.state === 'active';
@@ -139,10 +143,12 @@ export class DeepStop {
     // Quad 2 §2.8: "for air and nitrox dives only".
     if (s.gas.he > 0) {
       if (this.state === 'pending') this.state = 'none';
-    } else if (enabled && (this.state === 'none' || this.state === 'pending') && s.maxDepth > 15 && s.depth > this.depth + 1.5) {
+    } else if (enabled && (this.state === 'none' || (this.state === 'pending' && s.ascentRate <= 1)) && s.maxDepth > 15 && s.depth > this.depth + this.window) {
       // "generated as you approach the no deco limit" (Quad 2 §8.1): the depth follows the 5th tissue as it
       // loads (on a deep dive the limit is near on arrival, when that tissue is still nearly empty), until
-      // the diver gets within 1.5 m of it. Inert gas fraction of the gas breathed (air or nitrox).
+      // the diver gets within the window of it; it is kept while the diver ascends toward it (the tissue
+      // still loads on the way up: the stop would move away from the diver). Inert gas fraction of the
+      // gas breathed (air or nitrox).
       if (ceil > 0 || ndl(s.tissues, s.depth, s.gas, p.gfHigh) <= 10) {
         const d = Math.round(equilibriumDepth(s.tissues, 4, s.gas) * 10) / 10;
         // Shallower than 9 m it would merge with the safety stop: not suggested (limit not given by the manuals, assumed).
@@ -155,11 +161,11 @@ export class DeepStop {
       }
     }
     if (this.state === 'pending' || this.state === 'active') {
-      if (Math.abs(s.depth - this.depth) <= 1.5) {
+      if (Math.abs(s.depth - this.depth) <= this.window) {
         this.state = 'active';
         this.remaining -= dt;
         if (this.remaining <= 0) this.state = 'done';
-      } else if (s.depth < this.depth - 1.5) {
+      } else if (s.depth < this.depth - this.window) {
         this.state = 'done';
       } else if (this.state === 'active') {
         this.state = 'pending';

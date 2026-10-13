@@ -9,7 +9,7 @@ import { QuadAirRules } from './rules';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
-type TopField = 'temp' | 'max' | 'avg' | 'mod' | 'asc5' | 'empty';
+type TopField = 'temp' | 'max' | 'avg' | 'mod' | 'deep' | 'asc5' | 'empty';
 type BottomField = 'ttr' | 'gas' | 'o2' | 'cns' | 'ppo2' | 'asc5' | 'temp' | 'none' | 'time';
 
 /** Mares Quad Air: buttons and segmented LCD, after the manual's figures (rules in rules.ts). */
@@ -22,6 +22,10 @@ export class MaresQuadAir extends QuadAirRules {
   private acks = new Acks();
   private lastSession: DiveSession | null = null;
   private surfacePage: 'pre' | 'post' = 'pre';
+  /** Deep stop seen on this dive (its field is brought up once when it appears, §3.3). */
+  private deepSeen = false;
+  /** Top-right field chosen with the buttons on the last frame. */
+  private lastTop: TopField = 'temp';
   // -------------------------------------------------------------------------
   // Buttons (§1.5, figures of §1.5): during the dive both upper buttons act as UP (top-right field,
   // hold: backlight) and both lower ones as DOWN (bottom-right field, hold: gas switch, or stopwatch
@@ -31,6 +35,7 @@ export class MaresQuadAir extends QuadAirRules {
     super.onDiveStart(s);
     this.topIdx = this.botIdx = 0;
     this.botUntil = 0;
+    this.deepSeen = false;
     this.stopwatchFrom = 0;
     this.acks.clear();
   }
@@ -106,7 +111,7 @@ export class MaresQuadAir extends QuadAirRules {
     const up: ButtonHelp['press'] = {
       real: { fr: 'Plongée : champ en haut à droite (température, max, moyenne, MOD en nitrox, deep stop, vide). Surface : menus', en: 'Dive: top-right field (temperature, max, average, MOD on nitrox, deep stop, empty). Surface: menus' },
       simulated: true,
-      note: { fr: 'sans deep stop ; en surface, seules les pages PRE-DIVE / POST-DIVE', en: 'no deep stop; at the surface, only the PRE-DIVE / POST-DIVE pages' },
+      note: { fr: 'en surface, seules les pages PRE-DIVE / POST-DIVE', en: 'at the surface, only the PRE-DIVE / POST-DIVE pages' },
     };
     const down: ButtonHelp['press'] = {
       real: { fr: 'Plongée : champ en bas à droite (TTR, consommation, O2 %, CNS, ppO2, ASC+5, heure 4 s). Surface : menus', en: 'Dive: bottom-right field (TTR, gas consumption, O2 %, CNS, ppO2, ASC+5, time of day 4 s). Surface: menus' },
@@ -130,12 +135,16 @@ export class MaresQuadAir extends QuadAirRules {
   // -------------------------------------------------------------------------
   // Fields.
 
-  /** §3.3: temperature, max depth, average depth, MOD (nitrox only), deep stop, empty field. */
+  /**
+   * §3.3: temperature, max depth, average depth, MOD (nitrox only), deep stop ("if activated and if
+   * calculated to be present"), empty field.
+   */
   private topFields(s: DiveSession, v: ComputerView | null): TopField[] {
     const f: TopField[] = [];
     if (this.settings.temp !== 'bottom') f.push('temp');
     f.push('max', 'avg');
     if (this.nitrox(s)) f.push('mod');
+    if (this.deep.shown) f.push('deep');
     if (this.settings.asc5 === 'top' && v?.inDeco) f.push('asc5');
     f.push('empty');
     return f;
@@ -193,7 +202,20 @@ export class MaresQuadAir extends QuadAirRules {
 
     // Top-right field (MOD instead while the MOD alarm is on, §3.2.2).
     const tops = this.topFields(s, v);
+    // §3.3: "Deep stops are displayed to the right of the current depth": brought up when one appears
+    // (the diver can then scroll away from it); back to the first field once it is over.
+    if (this.deep.shown && !this.deepSeen) {
+      this.deepSeen = true;
+      this.topIdx = tops.indexOf('deep');
+    } else if (this.deepSeen && !this.deep.shown) {
+      this.deepSeen = false;
+      if (this.lastTop === 'deep') this.topIdx = 0;
+    }
     let top = tops[this.topIdx % tops.length];
+    this.lastTop = top;
+    // §3.3: within ±1 m, "the deep stop itself will be shown in the top right corner with the label DEEP
+    // blinking, and a countdown timer".
+    if (this.deep.state === 'active') top = 'deep';
     const modAlarm = v.depth > v.mod;
     if (modAlarm) top = 'mod';
     if (surfacing) top = 'max'; // figure of §3.4
@@ -266,7 +288,7 @@ export class MaresQuadAir extends QuadAirRules {
     if (msg) Object.assign(mid, { depth: '', r1: '', r2: '', labels: [] });
 
     // Alert bubble (app/alertHelp.ts): what the screen shows with no sound of its own.
-    this.screenAlerts = [runaway ? 'rUn AWAY' : '', this.fastBlink && !this.fastViolation ? 'fast' : '', this.fastViolation ? 'fast-violation' : '', this.decoViolation ? 'missed-violation' : ''].filter((m) => !!m);
+    this.screenAlerts = [runaway ? 'rUn AWAY' : '', this.deep.shown && !surfacing ? 'DEEP' : '', this.fastBlink && !this.fastViolation ? 'fast' : '', this.fastViolation ? 'fast-violation' : '', this.decoViolation ? 'missed-violation' : ''].filter((m) => !!m);
     const aboveStop = v.ceilingViolation === 2;
     const ceilingBlink = aboveStop ? 'blink' : '';
     return this.lcd({
@@ -296,6 +318,14 @@ export class MaresQuadAir extends QuadAirRules {
         const seq = this.seq.gas;
         if (seq !== null && this.lastSession) return { lbl: ['MOD'], value: depthText(this.gasMods(this.lastSession)[seq]), unit: du, blink: true };
         return { lbl: ['MOD'], value: depthText(v.mod), unit: du, blink };
+      }
+      case 'deep': {
+        // §3.3: the deep stop depth (figure "IF DEEP STOP ON": DEEP, whole metres), then the countdown.
+        if (this.deep.state === 'active') {
+          const t = Math.max(0, Math.ceil(this.deep.remaining));
+          return { lbl: ['DEEP'], lblBlink: true, value: `${Math.floor(t / 60)}:${pad2(t % 60)}`, unit: '' };
+        }
+        return { lbl: ['DEEP'], value: String(depthInt(this.deep.depth)), unit: du };
       }
       case 'asc5': return { lbl: ['ASC+5'], value: `${Math.min(99, asc5)}:`, unit: '' };
       default: return { lbl: [], value: '', unit: '' };
@@ -430,7 +460,7 @@ export class MaresQuadAir extends QuadAirRules {
       ${L('⧗', d.icons.missed === 'on', 'qa-hg')}
       <svg class="qa-mtn" viewBox="0 0 30 26"><path d="M1 25 L15 2 L29 25 Z M8 25 L15 13 L22 25" /></svg>
       <span class="qa-batt"></span>${L('✈', !!d.icons.plane, 'qa-plane')}
-      <span class="qa-tlbl">${L('MAX', tl.has('MAX'))}${L('DEEP', false)}${L('AVG', tl.has('AVG'))}${L('MOD', tl.has('MOD'), '', !!top.blink)}</span>
+      <span class="qa-tlbl">${L('MAX', tl.has('MAX'))}${L('DEEP', tl.has('DEEP'), '', !!top.lblBlink)}${L('AVG', tl.has('AVG'))}${L('MOD', tl.has('MOD'), '', !!top.blink)}</span>
       ${L('ASC<br>+5', tl.has('ASC+5'), 'qa-asc5t')}
       <div class="qa-top ${top.blink ? 'blink' : ''}">${sevenSeg(top.value, 3, 'qa-t')}</div>
       ${L('h', top.unit === 'h', 'qa-th')}${L(imp ? '°F' : '°C', topUnitC, 'qa-tc')}${L(top.unit === 'ft' ? 'ft' : 'm', top.unit === 'm' || top.unit === 'ft', 'qa-tm')}
@@ -463,6 +493,8 @@ export class MaresQuadAir extends QuadAirRules {
 
 interface TopView {
   lbl: string[];
+  /** Label blinking (DEEP during the deep stop countdown, §3.3). */
+  lblBlink?: boolean;
   value: string;
   unit: string;
   blink?: boolean;

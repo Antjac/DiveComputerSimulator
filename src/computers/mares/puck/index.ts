@@ -93,7 +93,7 @@ export class MaresPuck extends PuckRules {
     let leftSmall = '';
     let rightSmall = '';
     let arrows = '';
-    const showDeep = !bottomTimer && v.inDive && (this.deepState === 'active' || this.deepState === 'pending');
+    const showDeep = !bottomTimer && v.inDive && this.deep.shown;
     const showSafe = v.inDive && !v.inDeco && (safetyShown(v, this.safetyStop.bottom) || (v.safety.state === 'pending' && v.depth < 7 && v.depth >= 1.2));
 
     if (bottomTimer) {
@@ -106,9 +106,12 @@ export class MaresPuck extends PuckRules {
       midLbl = 'surf';
       const si = Math.floor((v.surfaceInterval ?? 0) / 60);
       mid = sevenSeg(v.surfaceInterval === null ? '-:--' : `${Math.floor(si / 60)}:${String(si % 60).padStart(2, '0')}`, 3, 'mr-mid');
-    } else if (showDeep && this.deepState === 'active') {
+    } else if (showDeep && (this.deep.state === 'active' || v.inDeco)) {
+      // §3.3: the deep stop is shown "as first (deepest) stop of a deco dive", counted in the ASC ("ASC
+      // includes the duration of deep stops as well"), with its countdown once within ±1 m.
       midLbl = 'deep deco';
-      mid = sevenSeg(`${depthInt(this.deepTarget)}.`, 2, 'mr-mid') + sevenSeg(mmss(this.deepRemaining), 3, 'mr-mid');
+      mid = sevenSeg(`${depthInt(this.deep.depth)}.`, 2, 'mr-mid') + sevenSeg(mmss(this.deep.remaining), 3, 'mr-mid');
+      if (v.inDeco) rightSmall = `<div class="mr-lbl">asc</div>${sevenSeg(time(v.tts + Math.ceil(this.deep.remaining / 60)), 2, 'mr-small')}`;
     } else if (v.inDeco) {
       midLbl = 'deco';
       mid = sevenSeg(`${depthInt(v.stopDepth)}.`, 2, 'mr-mid') + sevenSeg(time(v.stopTime), 2, 'mr-mid');
@@ -119,7 +122,8 @@ export class MaresPuck extends PuckRules {
       midLbl = 'safe';
       mid = sevenSeg(mmss(v.safety.remaining), 3, 'mr-mid');
     }
-    if (showDeep && this.deepState === 'pending' && !v.inDeco) leftSmall = sevenSeg(String(depthInt(this.deepTarget)), 2, 'mr-small');
+    // §3.3: "Deep stops are indicated to the left of the no deco time".
+    if (showDeep && this.deep.state === 'pending' && !v.inDeco) leftSmall = sevenSeg(String(depthInt(this.deep.depth)), 2, 'mr-small');
     // Vertical speed at the far left of the middle row while moving.
     const speed = Math.abs(v.ascentRate);
     if (v.inDive && speed > 0.8 && !leftSmall) leftSmall = sevenSeg(depthVal(speed).toFixed(0), 2, `mr-small ${v.ascentRate >= 10 ? 'blink' : ''}`);
