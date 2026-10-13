@@ -1,0 +1,117 @@
+/* Shearwater Teric: round 1.39" AMOLED in a round steel bezel, LIGHT / MENU on the left, FUNC / INFO on
+   the right (§2.2); white values, cyan labels and units, grey rules between the rows (figures of §3). */
+.tr-case {
+  position: relative; padding: 24px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #8d949c, #3a3e44 55%, #1a1c20);
+  box-shadow: 0 16px 30px rgba(0,0,0,0.55), inset 0 0 0 3px #b3b9c0, inset 0 0 0 10px #2b2e33;
+}
+.tr-btn { position: absolute; width: 14px; height: 34px; border-radius: 4px; background: linear-gradient(90deg, #8a9097, #e1e4e7 45%, #6c727a); box-shadow: inset 0 0 0 1px #4d5359; }
+.tr-btn.tl { left: -6px; top: 74px; transform: rotate(-30deg); }
+.tr-btn.bl { left: -6px; bottom: 74px; transform: rotate(30deg); }
+.tr-btn.tr { right: -6px; top: 74px; transform: rotate(30deg); }
+.tr-btn.br { right: -6px; bottom: 74px; transform: rotate(-30deg); }
+.tr-btn.tl.pressed, .tr-btn.bl.pressed { translate: 3px 0; }
+.tr-btn.tr.pressed, .tr-btn.br.pressed { translate: -3px 0; }
+.tr-screen {
+  position: relative; width: 300px; height: 300px; border-radius: 50%; overflow: hidden; background: #000;
+  font-family: 'Roboto Condensed', 'Arial Narrow', sans-serif; font-weight: 300; color: #fff; line-height: 1;
+  filter: brightness(0.92);
+}
+.tr-screen.bright { filter: none; }
+.tr-cy { color: #2fb4ff; font-size: 0.42em; font-weight: 400; margin-left: 1px; }
+.tr-body { position: absolute; inset: 0; }
+
+/* Top row: depth (one decimal, unit under it), ascent rate, battery and mode at the surface (§3.4). */
+.tr-top { position: absolute; left: 0; right: 0; top: 0; height: 104px; }
+.tr-top.std { height: 92px; }
+.tr-depth { position: absolute; left: 0; right: 0; top: 26px; display: flex; justify-content: center; align-items: flex-start; }
+.tr-depth .i { font-size: 74px; letter-spacing: -2px; }
+.tr-depth .d { display: flex; flex-direction: column; font-size: 32px; margin-top: 6px; }
+.tr-depth .d em { font-style: normal; font-size: 14px; color: #2fb4ff; margin-top: 4px; }
+.tr-top.std .tr-depth { top: 22px; }
+.tr-top.std .tr-depth .i { font-size: 62px; }
+.tr-batt { position: absolute; left: 136px; top: 12px; width: 26px; height: 10px; border: 1.5px solid #fff; border-radius: 2px; }
+.tr-batt::after { content: ''; position: absolute; right: -4px; top: 2px; width: 2px; height: 4px; background: #fff; }
+.tr-batt i { display: block; height: 100%; background: #fff; }
+.tr-mode { position: absolute; left: 30px; top: 72px; display: flex; align-items: center; gap: 2px; color: #2fb4ff; font-size: 12px; font-weight: 400; }
+.tr-mode b { background: #2fb4ff; color: #000; border-radius: 8px; padding: 1px 3px; font-size: 11px; }
+.tr-rate { position: absolute; left: 206px; top: 44px; display: flex; align-items: flex-end; gap: 4px; color: #fff; stroke: #fff; }
+.tr-rate svg { width: 12px; height: 38px; fill: none; stroke-width: 2.2; }
+.tr-rate span { font-size: 22px; }
+.tr-rate.yellow { color: #ffe600; stroke: #ffe600; }
+.tr-rate.red { color: #ff2a2a; stroke: #ff2a2a; }
+
+/* Rows and their rules. */
+.tr-rule { position: absolute; left: 0; right: 0; height: 1.5px; background: #6b6f75; }
+.tr-rule.b1 { top: 106px; } .tr-rule.b2 { top: 170px; }
+.tr-rule.r1 { top: 92px; } .tr-rule.r2 { top: 144px; } .tr-rule.r3 { top: 196px; }
+.tr-row { position: absolute; display: flex; justify-content: center; gap: 12px; }
+.tr-row.info.big { left: 22px; right: 22px; top: 108px; height: 60px; }
+.tr-row.deco { left: 22px; right: 22px; top: 94px; height: 48px; }
+.tr-row.info.std { left: 14px; right: 14px; top: 146px; height: 48px; }
+.tr-cell { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.tr-lbl { color: #2fb4ff; font-size: 14px; font-weight: 400; padding: 0 3px; white-space: nowrap; }
+.tr-lbl.red { color: #ff2a2a; }
+.tr-lbl.inv-green { background: #2cff2c; color: #000; }
+.tr-lbl.inv-yellow { background: #ffe600; color: #000; }
+.tr-lbl.inv-cyan { background: #2fb4ff; color: #000; }
+.tr-val { font-size: 34px; white-space: nowrap; }
+.tr-row.deco .tr-val, .tr-row.info.std .tr-val { font-size: 30px; }
+.tr-cell.yellow .tr-val, .tr-screen .yellow:not(.tr-cell):not(.tr-rate) { color: #ffe600; }
+.tr-cell.red .tr-val, .tr-screen .red:not(.tr-lbl):not(.tr-cell):not(.tr-rate) { color: #ff2a2a; }
+.tr-cell.green .tr-val { color: #2cff2c; }
+.tr-vu { display: inline-block; writing-mode: vertical-lr; text-orientation: upright; font-size: 7px; line-height: 1; letter-spacing: -1px; vertical-align: middle; margin-left: 2px; }
+.inv-yellow { background: #ffe600; color: #000; padding: 0 2px; }
+.inv-red { background: #ff2a2a; color: #000; padding: 0 2px; }
+
+/* Bottom row: dive time, or SURFACE and the surface interval (§3.4). */
+.tr-time { position: absolute; left: 0; right: 0; top: 176px; display: flex; justify-content: center; align-items: flex-start; }
+.tr-body.std .tr-time { top: 202px; }
+.tr-time .m { font-size: 64px; }
+.tr-time .s { font-size: 30px; margin-top: 4px; }
+.tr-body.std .tr-time .m { font-size: 52px; }
+.tr-body.std .tr-time .s { font-size: 26px; }
+.tr-time.surf { flex-direction: column; align-items: center; top: 178px; }
+.tr-body.std .tr-time.surf { top: 202px; }
+.tr-surf-lbl { color: #2fb4ff; font-size: 14px; font-weight: 400; }
+.tr-surf-val { font-size: 34px; margin-top: 2px; }
+.tr-alerticon { position: absolute; left: 34px; top: 4px; color: #ccc; font-size: 11px; }
+.tr-tri { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 16px; background: #ffe600; color: #000; font-weight: 700; font-size: 12px; clip-path: polygon(50% 0, 100% 100%, 0 100%); padding-top: 3px; }
+.tr-tri.big { position: absolute; left: 52px; top: 26px; width: 26px; height: 23px; font-size: 16px; }
+.tr-gasline { position: absolute; left: 0; right: 0; top: 252px; display: flex; justify-content: center; align-items: center; gap: 3px; }
+.tr-body.std .tr-gasline { top: 262px; }
+.tr-gasline .tr-gas { font-size: 28px; }
+.tr-body.std .tr-gasline .tr-gas { font-size: 22px; }
+.tr-tank { width: 7px; height: 16px; border: 2px solid #2fb4ff; border-radius: 3px 3px 2px 2px; }
+.tr-gas.better { background: #ffe600; color: #000; padding: 0 2px; }
+.tr-gas.better .tr-cy { color: #000; }
+
+/* §3.8 alert banners in the Info row: WARNING yellow, INFO cyan, "CLEAR" on the right edge. */
+.tr-banner { flex: 1; position: relative; display: flex; flex-direction: column; justify-content: center; padding: 0 22px 0 14px; font-family: 'Share Tech Mono', 'Consolas', monospace; color: #000; clip-path: polygon(4% 0, 100% 0, 100% 100%, 0 100%); }
+.tr-banner.warn { background: #ffe600; }
+.tr-banner.info { background: #19a7e6; }
+.tr-banner .k { font-size: 12px; }
+.tr-banner .t { font-size: 19px; white-space: nowrap; }
+.tr-banner .c { position: absolute; right: 2px; top: 50%; transform: translateY(-50%) rotate(90deg); font-size: 9px; }
+/* §3.8 warnings overlay (MENU with the alert indicator). */
+.tr-overlay { position: absolute; left: 6px; right: 6px; top: 94px; height: 104px; background: #000; display: flex; flex-direction: column; justify-content: center; color: #ffe600; font-family: 'Share Tech Mono', 'Consolas', monospace; font-size: 14px; line-height: 1.25; padding-left: 26px; border-left: 4px solid #ffe600; border-right: 4px solid #ffe600; }
+.tr-overlay > div:first-child { font-size: 18px; }
+/* §2.2 menu: highlighted item between the rules, the next one dimmed; button hints at the corners. */
+.tr-menu { flex: 1; display: flex; flex-direction: column; justify-content: center; font-family: 'Share Tech Mono', 'Consolas', monospace; font-size: 18px; padding-left: 30px; gap: 6px; }
+.tr-menu .sel { color: #fff; }
+.tr-menu .dim { color: #6f747a; }
+.tr-menu.gas { font-size: 15px; gap: 2px; }
+.tr-menu.gas .sel { outline: 1.5px solid #ffe600; outline-offset: 1px; width: fit-content; padding: 0 4px; }
+.tr-menu-title { color: #2fb4ff; font-size: 12px; }
+.tr-hint { position: absolute; color: #fff; font-size: 13px; z-index: 2; }
+.tr-hint.tl { left: 40px; top: 80px; } .tr-hint.tr { right: 40px; top: 80px; }
+.tr-hint.bl { left: 40px; bottom: 80px; }
+.tr-screen:has(.tr-hint) .tr-alerticon { display: none; } .tr-hint.br { right: 40px; bottom: 80px; }
+/* §3.6 tissues graph: fastest compartment on top, pressure increasing to the right. */
+.tr-tissues { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.tr-tissues .tr-lbl { font-size: 11px; }
+.tr-tbars { position: relative; width: 150px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 2px 0; }
+.tr-tbars i { display: block; height: 1.6px; background: #fff; }
+.tr-tbars i.yellow { background: #ffe600; } .tr-tbars i.red { background: #ff2a2a; }
+.tr-tbars b { position: absolute; top: 0; bottom: 0; width: 1.5px; }
+.tr-tbars b.cy { background: #2fb4ff; } .tr-tbars b.ye { background: #ffe600; } .tr-tbars b.re { background: #ff2a2a; }

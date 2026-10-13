@@ -1,7 +1,7 @@
 export type Lang = 'fr' | 'en';
 
 const dict = {
-  title: { fr: 'Simulateur d’ordinateurs de plongée', en: 'Dive Computers simulator' },
+  title: { fr: 'Simulateur d’ordinateurs de plongée', en: 'Dive Computer Simulator' },
   rateUp: { fr: 'Signe « monter » : monter plus vite / descendre moins vite (1 m/min)', en: '“Go up” sign: ascend faster / descend slower (1 m/min)' },
   rateDown: { fr: 'Signe « descendre » : descendre plus vite / monter moins vite (1 m/min)', en: '“Go down” sign: descend faster / ascend slower (1 m/min)' },
   rateStop: { fr: 'Signe « stabiliser, rester à ce niveau » : vitesse nulle', en: '“Level off, stay at this depth” sign: zero speed' },
@@ -476,6 +476,20 @@ const dict = {
     en: 'Replay this tour at any time with this button. The “About” button, top right, details the simulated models and their limits. Reminder: educational tool, never for planning a real dive.',
   },
   about: { fr: 'À propos', en: 'About' },
+  /** Install button (app/install.ts): Android / Chrome prompt, or the steps to follow on iPhone / iPad. */
+  installBtn: { fr: 'Installer l’application', en: 'Install the app' },
+  installTitle: { fr: 'Installer sur iPhone / iPad', en: 'Install on iPhone / iPad' },
+  installIntro: {
+    fr: 'Une fois installée, l’application fonctionne sans connexion. Sur iPhone et iPad, l’installation se fait depuis Safari :',
+    en: 'Once installed, the app works without a connection. On iPhone and iPad, installation is done from Safari:',
+  },
+  installIosStep1: { fr: 'Ouvrez cette page dans Safari (pas dans une autre application).', en: 'Open this page in Safari (not in another app).' },
+  installIosStep2: { fr: 'Touchez le bouton Partager (le carré avec une flèche vers le haut).', en: 'Tap the Share button (the square with an up arrow).' },
+  installIosStep3: { fr: 'Choisissez « Sur l’écran d’accueil », puis « Ajouter ».', en: 'Choose “Add to Home Screen”, then “Add”.' },
+  installIosNote: {
+    fr: 'Ouvrez ensuite l’application depuis son icône, avec du réseau la première fois.',
+    en: 'Then open the app from its icon, with a network connection the first time.',
+  },
   mn90Btn: { fr: 'MN90', en: 'MN90' },
   mn90Name: { fr: 'Tables MN90 (FFESSM)', en: 'MN90 tables (FFESSM)' },
   mn90Out: { fr: 'Hors table', en: 'Out of tables' },
@@ -496,8 +510,8 @@ const dict = {
   },
   aboutBrandsTitle: { fr: 'Marques et affiliation', en: 'Trademarks and affiliation' },
   aboutBrands: {
-    fr: 'Ce projet est indépendant et n’est ni affilié, ni approuvé, ni sponsorisé par les fabricants cités. Aqualung, Aqua Lung, Azoth Systems, Odyssey, Shearwater, Perdix, Peregrine, Garmin, Descent, Suunto, Zoop, Nautic, Mares, Puck, Quad, Genius, Scubapro, Galileo, Luna, Cressi, Goa et Donatello sont des marques de leurs propriétaires respectifs ; elles sont citées uniquement pour identifier les modèles dont les interfaces sont inspirées. Aucun logo, code ou élément graphique des fabricants n’est inclus.',
-    en: 'This project is independent and is not affiliated with, endorsed or sponsored by the manufacturers mentioned. Aqualung, Aqua Lung, Azoth Systems, Odyssey, Shearwater, Perdix, Peregrine, Garmin, Descent, Suunto, Zoop, Nautic, Mares, Puck, Quad, Genius, Scubapro, Galileo, Luna, Cressi, Goa and Donatello are trademarks of their respective owners; they are only mentioned to identify the models whose displays inspired this simulator. No manufacturer logo, code or artwork is included.',
+    fr: 'Ce projet est indépendant et n’est ni affilié, ni approuvé, ni sponsorisé par les fabricants cités. Aqualung, Aqua Lung, Azoth Systems, Odyssey, Shearwater, Perdix, Peregrine, Garmin, Descent, Suunto, EON Core, Zoop, Nautic, Mares, Puck, Quad, Genius, Scubapro, Galileo, Luna, Cressi, Goa et Donatello sont des marques de leurs propriétaires respectifs ; elles sont citées uniquement pour identifier les modèles dont les interfaces sont inspirées. Aucun logo, code ou élément graphique des fabricants n’est inclus.',
+    en: 'This project is independent and is not affiliated with, endorsed or sponsored by the manufacturers mentioned. Aqualung, Aqua Lung, Azoth Systems, Odyssey, Shearwater, Perdix, Peregrine, Garmin, Descent, Suunto, EON Core, Zoop, Nautic, Mares, Puck, Quad, Genius, Scubapro, Galileo, Luna, Cressi, Goa and Donatello are trademarks of their respective owners; they are only mentioned to identify the models whose displays inspired this simulator. No manufacturer logo, code or artwork is included.',
   },
   aboutRemoval: {
     fr: 'Si vous représentez l’un de ces fabricants et souhaitez qu’un élément soit modifié ou retiré, écrivez à :',

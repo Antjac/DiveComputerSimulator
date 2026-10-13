@@ -147,6 +147,10 @@ export function setupDevice(): void {
   });
   window.addEventListener('pointerup', releaseButton);
   window.addEventListener('pointercancel', releaseButton);
+  // Touch screens: a long press must not open the context menu (it would cancel the press).
+  $('device').addEventListener('contextmenu', (e) => {
+    if ((e.target as HTMLElement).closest('[data-btn]')) e.preventDefault();
+  });
 
   $('device').addEventListener('pointermove', (e) => {
     if (e.pointerType !== 'mouse') return;

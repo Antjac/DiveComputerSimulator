@@ -11,16 +11,19 @@ import { MaresQuadAir } from './mares/quadair';
 import { MaresQuad2 } from './mares/quad2';
 import { MaresQuadCi } from './mares/quadci';
 import { ScubaproG2 } from './scubapro/g2';
+import { ScubaproG3 } from './scubapro/g3';
 import { ScubaproLuna } from './scubapro/luna';
 import { ShearwaterPerdix } from './shearwater/perdix';
 import { ShearwaterPeregrine } from './shearwater/peregrine';
+import { ShearwaterTeric } from './shearwater/teric';
 import { SuuntoD5 } from './suunto/d5';
+import { SuuntoEonCore } from './suunto/eoncore';
 import { SuuntoNautic } from './suunto/nautic';
 import { SuuntoZoopNovo } from './suunto/zoopnovo';
 
 /** Every simulated computer, in alphabetical order of name (the order of the lists and tables). */
 export function createComputers(): DiveComputer[] {
-  const all = [new ShearwaterPerdix(), new ShearwaterPeregrine(), new GarminDescent(), new SuuntoD5(), new MaresPuck(), new MaresQuadCi(), new MaresQuadAir(), new MaresQuad2(), new MaresGenius(), new ScubaproG2(), new ScubaproLuna(), new CressiGoa(), new CressiDonatello(), new SuuntoZoopNovo(), new SuuntoNautic(), new AqualungI330r(), new AqualungI770r(), new AzothOdyssey()];
+  const all = [new ShearwaterPerdix(), new ShearwaterPeregrine(), new ShearwaterTeric(), new GarminDescent(), new SuuntoD5(), new SuuntoEonCore(), new MaresPuck(), new MaresQuadCi(), new MaresQuadAir(), new MaresQuad2(), new MaresGenius(), new ScubaproG2(), new ScubaproG3(), new ScubaproLuna(), new CressiGoa(), new CressiDonatello(), new SuuntoZoopNovo(), new SuuntoNautic(), new AqualungI330r(), new AqualungI770r(), new AzothOdyssey()];
   return all.sort((a, b) => a.name.localeCompare(b.name));
 }
 
