@@ -204,9 +204,21 @@
       <p data-i18n="introInstructors"></p>
       <p><a href="#terms" data-terms data-i18n="termsLink"></a></p>
       <div class="modal-actions">
+        <button class="btn" id="install-open" data-i18n="installBtn" hidden></button>
         <button class="btn" id="intro-tour" data-i18n="introTour"></button>
         <button class="btn primary" id="intro-ok" data-i18n="introOk"></button>
       </div>
+    </dialog>
+    <dialog class="modal install-help" id="install-help" aria-labelledby="install-help-title">
+      <h2 id="install-help-title" data-i18n="installTitle"></h2>
+      <p data-i18n="installIntro"></p>
+      <ol class="install-steps">
+        <li data-i18n="installIosStep1"></li>
+        <li data-i18n="installIosStep2"></li>
+        <li data-i18n="installIosStep3"></li>
+      </ol>
+      <p data-i18n="installIosNote"></p>
+      <div class="modal-actions"><button class="btn primary" id="install-help-ok" data-i18n="close"></button></div>
     </dialog>
     <dialog class="modal model-info" id="model-info" aria-labelledby="model-info-title"></dialog>
     <dialog class="modal mn90" id="mn90" aria-labelledby="mn90-title"></dialog>

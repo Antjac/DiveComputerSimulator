@@ -476,6 +476,20 @@ const dict = {
     en: 'Replay this tour at any time with this button. The “About” button, top right, details the simulated models and their limits. Reminder: educational tool, never for planning a real dive.',
   },
   about: { fr: 'À propos', en: 'About' },
+  /** Install button (app/install.ts): Android / Chrome prompt, or the steps to follow on iPhone / iPad. */
+  installBtn: { fr: 'Installer l’application', en: 'Install the app' },
+  installTitle: { fr: 'Installer sur iPhone / iPad', en: 'Install on iPhone / iPad' },
+  installIntro: {
+    fr: 'Une fois installée, l’application fonctionne sans connexion. Sur iPhone et iPad, l’installation se fait depuis Safari :',
+    en: 'Once installed, the app works without a connection. On iPhone and iPad, installation is done from Safari:',
+  },
+  installIosStep1: { fr: 'Ouvrez cette page dans Safari (pas dans une autre application).', en: 'Open this page in Safari (not in another app).' },
+  installIosStep2: { fr: 'Touchez le bouton Partager (le carré avec une flèche vers le haut).', en: 'Tap the Share button (the square with an up arrow).' },
+  installIosStep3: { fr: 'Choisissez « Sur l’écran d’accueil », puis « Ajouter ».', en: 'Choose “Add to Home Screen”, then “Add”.' },
+  installIosNote: {
+    fr: 'Ouvrez ensuite l’application depuis son icône, avec du réseau la première fois.',
+    en: 'Then open the app from its icon, with a network connection the first time.',
+  },
   mn90Btn: { fr: 'MN90', en: 'MN90' },
   mn90Name: { fr: 'Tables MN90 (FFESSM)', en: 'MN90 tables (FFESSM)' },
   mn90Out: { fr: 'Hors table', en: 'Out of tables' },
