@@ -10,6 +10,35 @@ interface changes are in the Git history.
 
 Format : `AAAA-MM-JJ` · modèle(s) · correction (FR) / fix (EN).
 
+## 2026-10-13
+
+- Mares Quad 2, Quad Ci, Genius · Deep stop : la profondeur proposée n'est plus recalculée pendant
+  la remontée vers le palier (le tissu de 27 min charge encore en montant, le palier s'éloignait du
+  plongeur) / Deep stop: the suggested depth is no longer recomputed while ascending toward the stop
+  (the 27 min tissue still loads on the way up, the stop moved away from the diver).
+- Mares Puck Pro, Quad Air · Deep stop : même règle que les Quad 2 et Quad Ci (profondeur où le 5ᵉ
+  tissu passe de la saturation à la désaturation), au lieu de la moitié de la pression absolue de la
+  profondeur maximale au-delà de 20 m ; fenêtre de ±1 m (§3.3). Profondeur non donnée par les
+  manuels : règle supposée / Deep stop: same rule as the Quad 2 and Quad Ci (depth where the 5th
+  tissue switches from ongassing to offgassing), instead of half the absolute pressure of the
+  maximum depth beyond 20 m; ±1 m window (§3.3). Depth not given by the manuals: assumed rule.
+- Mares Quad Air · Deep stop ajouté (absent jusqu'ici), affiché en haut à droite avec DEEP,
+  premier palier d'une plongée avec déco et compté dans l'ASC (§3.3) ; réglage DEEp (§2.2.1) /
+  Deep stop added (missing until now), shown top right with DEEP, first stop of a deco dive and
+  counted in the ASC (§3.3); DEEp setting (§2.2.1).
+- Mares Puck Pro · Réglage DEEp pour masquer le deep stop (notes de version du firmware V4.0, absent
+  du manuel) / DEEp setting to hide the deep stop (firmware V4.0 release notes, not in the manual).
+
+## 2026-10-11
+
+- Mares Quad 2, Quad Ci, Quad Air, Genius, Puck Pro · Redescendu sous 6 m pendant le palier de
+  sécurité, l'écran revient à NO DECO au lieu de laisser SAFETY STOP figé ; le décompte reprend
+  entre 6 et 3 m et repart de zéro au-delà de 10 m. Non décrit par les manuels : comportement
+  rapporté sur un Quad et un Matrix (remise à zéro supposée) / Back below 6 m during the safety
+  stop, the screen returns to NO DECO instead of leaving SAFETY STOP frozen; the countdown resumes
+  between 6 and 3 m and restarts from zero beyond 10 m. Not described by the manuals: behaviour
+  reported on a Quad and a Matrix (reset assumed).
+
 ## 2026-10-09
 
 - Mares Quad 2, Quad Ci, Genius · PREDICTIVE : au retour sur un gaz moins riche au-dessus du MOD du
