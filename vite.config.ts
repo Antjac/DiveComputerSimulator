@@ -17,7 +17,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
       },
       manifest: {
-        name: 'Dive Computers simulator',
+        name: 'Dive Computer Simulator',
         short_name: 'DiveSim',
         description: 'Simulateur pédagogique d’ordinateurs de plongée / Educational dive computer simulator',
         lang: 'fr',

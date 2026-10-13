@@ -73,7 +73,7 @@ Pour signaler un écart avec un manuel ou contribuer au code, voir [CONTRIBUTING
 L'application est une PWA installable qui fonctionne entièrement hors ligne : après la première visite, un
 service worker conserve tous les fichiers (code, vue 3D, polices, icônes) dans le cache de l'appareil. Sur
 téléphone, utiliser « Ajouter à l'écran d'accueil » (Android/Chrome) ou « Partager → Sur l'écran d'accueil »
-(iOS/Safari) ; sur ordinateur, le bouton d'installation de la barre d'adresse. La fenêtre d'accueil a aussi un bouton « Installer l'application » (Android et Chrome/Edge sur ordinateur : l'invite du navigateur ; iPhone/iPad : les étapes à suivre), masqué une fois l'application installée. Les mises à jour sont récupérées
+(iOS/Safari) ; sur ordinateur, l'icône d'installation de la barre d'adresse (Chrome, Edge) ou Fichier → Ajouter au Dock (Safari sous macOS). La fenêtre d'accueil a aussi un bouton « Installer l'application » (Android et Chrome/Edge sur ordinateur : l'invite du navigateur ; iPhone/iPad : les étapes à suivre), masqué une fois l'application installée. Les mises à jour sont récupérées
 en arrière-plan et appliquées au lancement suivant.
 
 ## Commandes
