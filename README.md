@@ -68,6 +68,13 @@ npm run stops     # checks each computer's behaviour at deco stops
 
 To report a gap with a manual or contribute code, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Offline and mobile
+
+The app is an installable PWA that works fully offline: after the first visit, a service worker keeps every file
+(code, 3D view, fonts, icons) in the device cache. On a phone, use "Add to home screen" (Android/Chrome) or
+"Share → Add to Home Screen" (iOS/Safari); on a computer, the install button of the address bar. Updates are
+fetched in the background and applied at the next launch.
+
 ## Controls
 
 - Tap or click (and drag) in the water, or use the mouse wheel, to go to a depth (at the last chosen speed; 9 m/min ascending and 18 m/min descending by default).

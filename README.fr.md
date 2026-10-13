@@ -68,6 +68,14 @@ npm run stops     # contrôle le comportement aux paliers de déco de chaque ord
 
 Pour signaler un écart avec un manuel ou contribuer au code, voir [CONTRIBUTING.fr.md](CONTRIBUTING.fr.md).
 
+## Hors ligne et mobile
+
+L'application est une PWA installable qui fonctionne entièrement hors ligne : après la première visite, un
+service worker conserve tous les fichiers (code, vue 3D, polices, icônes) dans le cache de l'appareil. Sur
+téléphone, utiliser « Ajouter à l'écran d'accueil » (Android/Chrome) ou « Partager → Sur l'écran d'accueil »
+(iOS/Safari) ; sur ordinateur, le bouton d'installation de la barre d'adresse. Les mises à jour sont récupérées
+en arrière-plan et appliquées au lancement suivant.
+
 ## Commandes
 
 - Toucher ou cliquer (et glisser) dans l'eau, ou la molette, pour aller à une profondeur (à la dernière vitesse choisie ; 9 m/min en montée et 18 m/min en descente par défaut).
