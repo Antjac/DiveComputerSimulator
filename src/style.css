@@ -1,5 +1,6 @@
 /* Style sheet index. Order matters (later rules win at equal specificity): page, then controls,
    devices and scene, then each computer next to its code in src/computers/, then overlays. */
+@import './styles/fonts.css';
 @import './styles/base.css';
 @import './styles/layout.css';
 @import './styles/controls.css';
