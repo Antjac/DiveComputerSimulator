@@ -318,3 +318,6 @@
 .mn-how p { margin: 6px 0 0; font-size: 12px; }
 /* Sticky headers stay opaque when highlighted (the cells scroll under them). */
 .mn-page .mn-grid th.row { background: linear-gradient(var(--hl-row), var(--hl-row)) var(--pg-head); }
+/* "Install the app" (app/install.ts): the button hides unless the app can be installed. */
+.modal .btn[hidden] { display: none; }
+.install-steps { margin: 0 0 10px; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--ink-2); }

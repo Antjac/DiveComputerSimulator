@@ -69,7 +69,7 @@ To report a gap with a manual or contribute code, see [CONTRIBUTING.md](CONTRIBU
 
 The app is an installable PWA that works fully offline: after the first visit, a service worker keeps every file
 (code, 3D view, fonts, icons) in the device cache. On a phone, use "Add to home screen" (Android/Chrome) or
-"Share → Add to Home Screen" (iOS/Safari); on a computer, the install button of the address bar. Updates are
+"Share → Add to Home Screen" (iOS/Safari); on a computer, the install button of the address bar. The welcome notice also has an "Install the app" button (Android and desktop Chrome/Edge: the browser prompt; iPhone/iPad: the steps to follow); it is hidden once the app is installed. Updates are
 fetched in the background and applied at the next launch.
 
 ## Controls

@@ -9,6 +9,7 @@ import { setupSpg } from './app/spg';
 import { setupCompare } from './app/compare';
 import { installDevHook } from './app/devHook';
 import { showIntro, setupDialogs } from './app/dialogs';
+import { setupInstall } from './app/install';
 import { setupModelInfo } from './app/modelInfo';
 import { setupExercises } from './app/exercises';
 import { setView, setupDiveControls } from './app/diveControls';
@@ -44,6 +45,7 @@ session.on((e) => {
 setupSettings();
 setupDiveControls();
 setupDialogs();
+setupInstall();
 setupModelInfo();
 setupLanguage();
 setupTabs();
