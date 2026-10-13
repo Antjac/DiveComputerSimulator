@@ -153,7 +153,7 @@ If you represent one of these manufacturers and would like something changed or 
 
 ## Licence
 
-Copyright © 2026 Antoine ALEXANDRE — [https://github.com/Antjac/DiveComputerSimulator](https://github.com/Antjac/DiveComputerSimulator)
+Copyright © 2026 Antoine ALEXANDRE (Antjac) — [https://github.com/Antjac/DiveComputerSimulator](https://github.com/Antjac/DiveComputerSimulator)
 
 Free software under the [GNU Affero General Public License v3.0](LICENSE) or (at your option) any later version.
 

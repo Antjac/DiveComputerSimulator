@@ -154,7 +154,7 @@ Si vous représentez l'un de ces fabricants et souhaitez qu'un élément soit mo
 
 ## Licence
 
-Copyright © 2026 Antoine ALEXANDRE — [https://github.com/Antjac/DiveComputerSimulator](https://github.com/Antjac/DiveComputerSimulator)
+Copyright © 2026 Antoine ALEXANDRE (Antjac) — [https://github.com/Antjac/DiveComputerSimulator](https://github.com/Antjac/DiveComputerSimulator)
 
 Logiciel libre sous [licence publique générale GNU Affero v3.0](LICENSE) (GNU AGPL) ou, à votre choix, toute version ultérieure.
 

@@ -547,8 +547,8 @@ const dict = {
   helpSource: { fr: 'Code source, suggestions et signalements sur GitHub :', en: 'Source code, suggestions and issues on GitHub:' },
   aboutLicenceTitle: { fr: 'Licence et responsabilité', en: 'Licence and liability' },
   aboutLicence: {
-    fr: '© 2026 Antoine ALEXANDRE. Logiciel libre sous licence GNU AGPL v3 : utilisation libre pour tous ; toute version modifiée, même mise en ligne, doit publier son code source sous la même licence. Fourni « tel quel », sans aucune garantie. Les calculs sont des approximations. Les auteurs ne sauraient être tenus responsables de son utilisation.',
-    en: '© 2026 Antoine ALEXANDRE. Free software under the GNU AGPL v3 licence: free to use for everyone; any modified version, including one put online, must publish its source code under the same licence. Provided “as is”, without any warranty. Calculations are approximations. The authors cannot be held liable for its use.',
+    fr: '© 2026 Antoine ALEXANDRE (Antjac). Logiciel libre sous licence GNU AGPL v3 : utilisation libre pour tous ; toute version modifiée, même mise en ligne, doit publier son code source sous la même licence. Fourni « tel quel », sans aucune garantie. Les calculs sont des approximations. Les auteurs ne sauraient être tenus responsables de son utilisation.',
+    en: '© 2026 Antoine ALEXANDRE (Antjac). Free software under the GNU AGPL v3 licence: free to use for everyone; any modified version, including one put online, must publish its source code under the same licence. Provided “as is”, without any warranty. Calculations are approximations. The authors cannot be held liable for its use.',
   },
   target: { fr: 'Cible', en: 'Target' },
   ascentRate: { fr: 'Vitesse verticale', en: 'Vertical speed' },
