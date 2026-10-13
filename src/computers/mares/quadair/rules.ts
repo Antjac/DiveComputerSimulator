@@ -4,7 +4,7 @@ import { type AlertCue, ComputerView, DiveComputer, SettingDef, type AlertExplai
 import { imperial } from '../../../units';
 import { standardNoFly } from '../../common/dives';
 import { ttsAfter } from '../../common/predict';
-import { FastAscentRgbm, GasSequence, MissedStop, maresCues, maresRgbmParams } from '../common';
+import { DeepStop, FastAscentRgbm, GasSequence, MissedStop, maresCues, maresRgbmParams } from '../common';
 import { CNS100, RGBM_ASCENT, gasSwitch } from '../alerts';
 import { GasPrompt } from '../../common/gasSwitch';
 import { ppo2Setting } from '../../common/ppo2';
@@ -28,8 +28,8 @@ export abstract class QuadAirRules extends DiveComputer {
   readonly transmitter = 'Tank module';
   readonly gasTimeName = 'TTR';
   readonly notes = {
-    fr: 'Le RGBM Mares-Wienke (10 tissus) est propriétaire : approximation identique à celle du Puck Pro (Bühlmann + P0/P1/P2, pénalité en successives). Conforme au manuel : SLOW dès 10 m/min ; remontée incontrôlée (> 12 m/min au-delà de 12 m, sur les 2/3 de la profondeur) ou palier manqué (> 1 m pendant > 3 min) = profondimètre seul pendant 24 h ; ▼ et clignotement à plus de 0,3 m au-dessus du palier, désaturation arrêtée ; RUNAWAY DECO ; TTR, réserve (au moins 50 bar) et demi-bloc (100 bar) avec le module de bloc. Boutons du haut : champ en haut à droite ; du bas : champ en bas à droite ; appui long en haut : rétroéclairage. Après la plongée : deux pages alternées (4 s). Multigaz (§3.5) : jusqu’à 3 gaz G1 à G3 (bloc principal puis gaz de déco de la page) ; au MOD d’un gaz plus riche pendant la remontée, bip et O2 % de G1 clignotant avec SWITCH pendant 20 s ; bouton du bas : gaz suivant (O2 % et MOD clignotants), appui long : confirmation ; le temps de remontée ne compte que le gaz respiré (mis à jour 20 s après le changement, §3.5.2 : « within 20 seconds ») ; ppO2max des gaz de déco 1,6 bar supposé. Palier de sécurité, comportement incertain (le manuel n’en dit rien) : redescendu sous 6 m, l’écran revient à NO DECO (constaté sur un Quad) ; le décompte reprend là où il s’était arrêté entre 6 et 3 m (témoignage sur un Mares Matrix) et repart de zéro au-delà de 10 m (supposé). Non simulés : deep stops (le manuel ne donne pas leur calcul), altitude, menus de surface, planificateur, carnet.',
-    en: 'Mares RGBM-Wienke (10 tissues) is proprietary: same approximation as the Puck Pro (Bühlmann + P0/P1/P2, repetitive-dive penalty). As per the manual: SLOW from 10 m/min; uncontrolled ascent (> 12 m/min deeper than 12 m, over 2/3 of the depth) or missed stop (> 1 m for > 3 min) = bottom timer only for 24 h; ▼ and blinking more than 0.3 m above the stop, desaturation halted; RUNAWAY DECO; TTR, reserve (at least 50 bar) and half tank (100 bar) with the tank module. Upper buttons: top-right field; lower buttons: bottom-right field; upper hold: backlight. After the dive: two alternating pages (4 s). Multigas (§3.5): up to 3 gases G1 to G3 (the main tank, then the deco gases set on the page); at the MOD of a richer gas during the ascent, a beep and the O2 % of G1 blinking with SWITCH for 20 s; lower button: next gas (O2 % and MOD blinking), hold: confirm; the ascent time only counts the gas breathed (updated 20 s after the switch, §3.5.2: "within 20 seconds"); ppO2max of the deco gases 1.6 bar assumed. Safety stop, uncertain behaviour (the manual is silent): back deeper than 6 m, the display returns to NO DECO (reported on a Quad); the countdown resumes where it stopped between 6 and 3 m (reported on a Mares Matrix) and restarts deeper than 10 m (assumed). Not simulated: deep stops (the manual does not give how they are computed), altitude, surface menus, planner, logbook.',
+    fr: 'Le RGBM Mares-Wienke (10 tissus) est propriétaire : approximation identique à celle du Puck Pro (Bühlmann + P0/P1/P2, pénalité en successives). Conforme au manuel : SLOW dès 10 m/min ; remontée incontrôlée (> 12 m/min au-delà de 12 m, sur les 2/3 de la profondeur) ou palier manqué (> 1 m pendant > 3 min) = profondimètre seul pendant 24 h ; ▼ et clignotement à plus de 0,3 m au-dessus du palier, désaturation arrêtée ; RUNAWAY DECO ; TTR, réserve (au moins 50 bar) et demi-bloc (100 bar) avec le module de bloc. Boutons du haut : champ en haut à droite ; du bas : champ en bas à droite ; appui long en haut : rétroéclairage. Après la plongée : deux pages alternées (4 s). Multigaz (§3.5) : jusqu’à 3 gaz G1 à G3 (bloc principal puis gaz de déco de la page) ; au MOD d’un gaz plus riche pendant la remontée, bip et O2 % de G1 clignotant avec SWITCH pendant 20 s ; bouton du bas : gaz suivant (O2 % et MOD clignotants), appui long : confirmation ; le temps de remontée ne compte que le gaz respiré (mis à jour 20 s après le changement, §3.5.2 : « within 20 seconds ») ; ppO2max des gaz de déco 1,6 bar supposé. Palier de sécurité, comportement incertain (le manuel n’en dit rien) : redescendu sous 6 m, l’écran revient à NO DECO (constaté sur un Quad) ; le décompte reprend là où il s’était arrêté entre 6 et 3 m (témoignage sur un Mares Matrix) et repart de zéro au-delà de 10 m (supposé). Deep stop facultatif (§3.3, réglage DEEp, activé par défaut supposé) : proposé à l’approche de la limite sans palier, affiché en haut à droite (DEEP et sa profondeur), puis à ±1 m de sa profondeur DEEP clignotant et décompte de 2 min ; non compté dans l’ASC ; sa profondeur n’est pas donnée par le manuel : règle du Quad 2 et du Quad Ci supposée (profondeur où le 5e compartiment, 27 min, cesse de se charger) ; une seule fois 2 min (la variante « deux paliers de 1 min » n’est pas décrite). Non simulés : altitude, menus de surface, planificateur, carnet.',
+    en: 'Mares RGBM-Wienke (10 tissues) is proprietary: same approximation as the Puck Pro (Bühlmann + P0/P1/P2, repetitive-dive penalty). As per the manual: SLOW from 10 m/min; uncontrolled ascent (> 12 m/min deeper than 12 m, over 2/3 of the depth) or missed stop (> 1 m for > 3 min) = bottom timer only for 24 h; ▼ and blinking more than 0.3 m above the stop, desaturation halted; RUNAWAY DECO; TTR, reserve (at least 50 bar) and half tank (100 bar) with the tank module. Upper buttons: top-right field; lower buttons: bottom-right field; upper hold: backlight. After the dive: two alternating pages (4 s). Multigas (§3.5): up to 3 gases G1 to G3 (the main tank, then the deco gases set on the page); at the MOD of a richer gas during the ascent, a beep and the O2 % of G1 blinking with SWITCH for 20 s; lower button: next gas (O2 % and MOD blinking), hold: confirm; the ascent time only counts the gas breathed (updated 20 s after the switch, §3.5.2: "within 20 seconds"); ppO2max of the deco gases 1.6 bar assumed. Safety stop, uncertain behaviour (the manual is silent): back deeper than 6 m, the display returns to NO DECO (reported on a Quad); the countdown resumes where it stopped between 6 and 3 m (reported on a Mares Matrix) and restarts deeper than 10 m (assumed). Optional deep stop (§3.3, DEEp setting, on by default assumed): suggested as the no deco limit approaches, shown top right (DEEP and its depth), then within ±1 m of its depth DEEP blinking and a 2-minute countdown; not counted in the ASC; its depth is not given by the manual: the Quad 2 and Quad Ci rule is assumed (depth where the 5th compartment, 27 min, stops loading); a single 2-minute stop (the "two 1-minute stops" variant is not described). Not simulated: altitude, surface menus, planner, logbook.',
   };
   readonly settingDefs: SettingDef[] = [
     {
@@ -60,6 +60,15 @@ export abstract class QuadAirRules extends DiveComputer {
       label: { fr: 'Runaway deco', en: 'Runaway deco' },
       options: [{ value: 'off', label: 'Off' }, { value: '10', label: '10' }, { value: '15', label: '15' }, { value: '20', label: '20' }],
       default: '10',
+    },
+    {
+      // §2.2.1 (SEt dIVE table): "DEEp: Allows you to activate or deactivate the visualization of deep
+      // stops"; §3.3: "Deep stops can be deactivated in a dedicated settings menu". Default not given: on
+      // assumed (§3.3 describes them as generated on every dive).
+      key: 'deepstop',
+      label: { fr: 'Deep stop (DEEp)', en: 'Deep stop (DEEp)' },
+      options: [{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }],
+      default: 'on',
     },
     {
       // §2.2.1.7 FASt: the uncontrolled ascent lock can be turned off (instructors).
@@ -111,6 +120,12 @@ export abstract class QuadAirRules extends DiveComputer {
   /** §3.5.2: gas switch prompt (O2 % of G1 blinking with SWITCH, 20 s) and the switch sequence. */
   protected prompt = new GasPrompt();
   protected seq = new GasSequence();
+  /**
+   * §3.3: deep stops "generated as you approach the no deco limit", "one 2-minute stop or two 1-minute
+   * stops" (a single 2-minute stop here), "NOT mandatory", counted down within "+/- 1m /3ft of the
+   * displayed depth". Their depth is not given: the rule of the Quad 2 and Quad Ci (5th tissue) is assumed.
+   */
+  protected deep = new DeepStop(1);
 
   /** §3.5: up to three gases, G1 to G3. */
   get maxGases(): number {
@@ -171,6 +186,7 @@ export abstract class QuadAirRules extends DiveComputer {
     this.fast.reset();
     this.fastBlink = this.fastViolation = this.decoViolation = false;
     this.missed.reset();
+    this.deep.reset();
     this.hadDeco = false;
     // §3.4: a dive started with remaining desaturation is a repetitive dive.
     this.repetitive = this.lastView !== null && this.lastView.desat > 0;
@@ -235,6 +251,7 @@ export abstract class QuadAirRules extends DiveComputer {
     } else {
       this.missed.reset();
     }
+    this.deep.update(s, ceil, p, dt, this.settings.deepstop !== 'off');
   }
 
 
@@ -268,7 +285,7 @@ export abstract class QuadAirRules extends DiveComputer {
   /**
    * Alert bubble (app/alertHelp.ts): §3.2.1 ascent (SLOW, uncontrolled ascent icon), §3.2.2 MOD,
    * §3.2.3 CNS, §3.2.4 missed stop (desaturation halted) and §3.2.4.1 violation, §3.2.5 tank alarms,
-   * §3.3.1 runaway deco, §3.5.2 gas switch; `msg:` keys: what the screen shows with no sound of its own.
+   * §3.3 deep stop, §3.3.1 runaway deco, §3.5.2 gas switch; `msg:` keys: what the screen shows with no sound of its own.
    */
   alertExplain(key: string): AlertExplain | null {
     const untilBtn = { fr: 'L’alarme sonne jusqu’à l’appui sur un bouton.', en: 'The alarm sounds until a button is pressed.' };
@@ -289,6 +306,9 @@ export abstract class QuadAirRules extends DiveComputer {
         return { code: 'PPO2_HIGH', what: { fr: 'Alarme sonore, profondeur clignotante et MOD affichée en haut à droite.', en: 'Audible alarm, blinking depth and MOD shown top right.' } };
       case 'cns-100':
         return CNS100;
+      case 'msg:DEEP':
+        // §3.3: deep stops; their depth is not given by the manual (assumed, see the notes).
+        return { screen: 'DEEP', what: { fr: 'Palier profond (deep stop) facultatif, proposé à l’approche de la limite sans palier : sa profondeur s’affiche en haut à droite avec DEEP. À ±1 m de cette profondeur, DEEP clignote et un décompte de 2 min démarre. Il n’est pas compté dans la durée de remontée (ASC) et peut être désactivé (réglage DEEp). Le temps passé au deep stop entre dans le calcul comme le reste de la plongée : les paliers obligatoires n’en sont que peu modifiés.', en: 'Optional deep stop, suggested as the no-deco limit approaches: its depth is shown top right with DEEP. Within ±1 m of that depth, DEEP blinks and a 2-minute countdown starts. It is not counted in the ascent time (ASC) and can be turned off (DEEp setting). The time spent at the deep stop enters the calculation like the rest of the dive: the mandatory stops are only slightly changed by it.' }, todo: { fr: 'Arrêtez-vous à sa profondeur pendant le décompte, ou continuez la remontée : il n’est pas obligatoire.', en: 'Stop at its depth during the countdown, or carry on ascending: it is not mandatory.' } };
       case 'msg:rUn AWAY':
         return { screen: 'rUn AWAY', what: { fr: `La décompression s’emballe : en restant 5 min de plus, la durée de remontée (ASC+5, qui clignote) augmenterait de 10 min ou plus (réglage run AWAy dECO : 10, 15 ou 20). ${untilBtn.fr}`, en: `Decompression is running away: staying 5 more minutes, the ascent time (ASC+5, blinking) would grow by 10 minutes or more (run AWAy dECO setting: 10, 15 or 20). ${untilBtn.en}` }, todo: { fr: 'Commencez la remontée.', en: 'Start the ascent.' } };
       case 'ttr':
