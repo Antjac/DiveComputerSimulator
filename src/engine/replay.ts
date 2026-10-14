@@ -18,7 +18,7 @@ export interface DiveState {
 }
 
 /** Fields of the session that are not state: the replay's own, and the journal. */
-const SESSION_SKIP = ['journal', 'lastJournal', 'journalToken', 'replaying', 'applying', 'listeners', 'onJournalStart'];
+const SESSION_SKIP = ['journal', 'lastJournal', 'journalToken', 'replaying', 'applying', 'listeners', 'onJournalStart', 'interruptedEntry'];
 /** The current dive's samples are rebuilt by the replay; a stored state leaves them out (and the logged dives' profiles). */
 const SESSION_SLIM_SKIP = ['profile', 'track'];
 /** What a computer is (not what it did) and its real-time timers (backlight, flashes…): never stored. */
@@ -72,13 +72,22 @@ export class Replayer {
     start: DiveState,
     private readonly events: readonly JournalEvent[],
     endClock: number,
+    /** The state at `endClock` when it is at hand (a dive still going on): the replay starts there, at its end, without simulating. */
+    from?: DiveState,
   ) {
     session.replaying = true;
     restoreState(session, computers, start);
     this.startClock = session.clock;
     this.duration = Math.max(0, endClock - this.startClock);
     this.frames = [{ t: 0, state: start, next: 0 }];
-    this.apply();
+    if (from) {
+      this.frames.push({ t: this.duration, state: from, next: events.length });
+      restoreState(session, computers, from);
+      this.pos = this.lastFrame = this.duration;
+      this.next = events.length;
+    } else {
+      this.apply();
+    }
   }
 
   /** Leaves replay mode (the caller puts the live state back). */

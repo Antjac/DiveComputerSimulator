@@ -116,15 +116,15 @@ function buildRecord(entry: DiveLogEntry): DiveRecord {
 }
 
 /** The session closed a dive (after the MN90 tracker saw it end): its record, and the recap. */
-export function onDiveClosed(): void {
+export function onDiveClosed(cut: DiveLogEntry | null = null): void {
   if (app.replaying) return; // the replay of a dive ends too
-  const entry = session.log[session.log.length - 1];
+  const entry = cut ?? session.log[session.log.length - 1];
   if (!entry) return;
   const rec = buildRecord(entry);
   addRecord(rec);
   app.selectedDive = rec.id;
   renderLog();
-  const busy = exerciseBusy() || tourRunning() || !!session.emergency || !!document.querySelector('dialog[open]');
+  const busy = exerciseBusy() || tourRunning() || !!document.querySelector('dialog[open]');
   if (app.recapAuto && !busy) openRecap(rec.id);
 }
 
@@ -146,6 +146,10 @@ function keyPoints(r: DiveRecord): { ok: boolean; text: string }[] {
   const bad = (text: string) => ({ ok: false, text });
   const good = (text: string) => ({ ok: true, text });
   const list: { ok: boolean; text: string }[] = [];
+  if (e.interrupted) {
+    const why = e.interrupted.map((x) => t(({ OUT_OF_AIR: 'rescueAirT', RAPID_ASCENT: 'rescueRapidT', MISSED_DECO: 'rescueDecoT' } as const)[x]).toLowerCase()).join(', ');
+    list.push(bad(fill(t('kpInterrupted'), { why })));
+  }
   if (f.rapid) {
     list.push(bad(fill(t('kpRapid'), { rate: rateLabel(f.rapid.rate), from: depthLabel(f.rapid.fromDepth), to: depthLabel(f.rapid.toDepth), max: rateLabel(RAPID_RATE) })));
   }
@@ -227,7 +231,7 @@ function sheetHtml(r: DiveRecord): string {
     ? `<section class="rc-sec rc-mn90"><h3>${t('rcMn90')}</h3><p class="rc-help">${t('rcMn90Note')}</p><div class="mn-page rc-mnpage"><div class="mn-card">${mn90Summary(r.mn90.dive, r.mn90.decoGases)}</div></div></section>`
     : '';
   return `<header class="rc-title">
-      <h2>${t('rcTitle')} · ${fill(t('rcDiveN'), { n })}</h2>
+      <h2>${t('rcTitle')} · ${fill(t('rcDiveN'), { n })}${e.interrupted ? ` <span class="rc-cut">⛔ ${t('rcInterrupted')}</span>` : ''}</h2>
       <p>${esc(date)} · ${esc(r.computer.name)} · ${t('rcAlgo')} : ${esc(r.computer.algorithm)}</p>
     </header>
     <section class="rc-sec"><h3>${t('rcSummary')}</h3><div class="rc-figs">${figs}</div>${settings}</section>
@@ -355,7 +359,7 @@ export function setupRecap(): void {
   });
   dlg.addEventListener('close', () => {
     shownId = null;
-    if (resumeOnClose && !session.emergency) app.paused = false;
+    if (resumeOnClose) app.paused = false; // after a rescue alert too: the simulation is stopped by it anyway
     resumeOnClose = false;
     renderControls();
   });

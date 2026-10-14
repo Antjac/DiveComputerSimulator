@@ -125,3 +125,8 @@
 /* Icon alone: no gap after it. */
 .log-recap .ico { margin-right: 0; }
 @media (max-width: 640px) { .rc-bar .ico { margin-right: 0; } }
+
+/* A dive cut short by the rescue alert: a sign in the logbook and on the recap's title. */
+.log-cut { margin-right: 4px; cursor: help; }
+table.compare tr.interrupted td { background: rgba(255, 92, 92, 0.07); }
+.rc-cut { margin-left: 8px; padding: 1px 8px; border-radius: 6px; background: #c62828; color: #fff; font-size: 12px; font-weight: 600; vertical-align: middle; }

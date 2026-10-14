@@ -20,7 +20,14 @@ Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or ch
   rejoués / New: replay mode in the dive recap ("Replay the dive"). The dive is played again in 2D on
   the computers: pause, speeds, forward and back, jump to a moment or an alert, switch computers; the
   diver can no longer be steered. Only for dives made after this version; button presses on the
-  computer are not replayed.
+  computer are not replayed. Depuis la pause, la plongée en cours peut aussi être revue sans
+  l'interrompre ; « Reprendre » la relance là où elle en était / From the pause, the dive in
+  progress can also be replayed without interrupting it; "Resume" carries on where it left off.
+- Tous / All · Quand l'alerte de secours arrête la simulation (panne d'air, remontée trop rapide,
+  paliers non faits), la plongée est maintenant ajoutée au carnet avec le signe ⛔ « Interrompue » et
+  son récapitulatif s'ouvre, replay compris / When the rescue alert stops the simulation (out of air,
+  ascent too fast, stops not done), the dive is now added to the logbook with a ⛔ "Cut short" sign
+  and its recap opens, replay included.
 
 ## 2026-10-13
 

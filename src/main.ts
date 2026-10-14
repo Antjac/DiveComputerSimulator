@@ -33,13 +33,17 @@ import { setupTissues } from './app/tissues';
 applyPrefs();
 
 session.on((e) => {
-  for (const c of computers) {
-    if (e === 'start') c.onDiveStart(session);
-    else c.onDiveEnd(session);
+  // A dive cut short by the rescue alert is not over for the computers (the simulation just stops): only the logbook hears of it.
+  if (e !== 'interrupt') {
+    for (const c of computers) {
+      if (e === 'start') c.onDiveStart(session);
+      else c.onDiveEnd(session);
+    }
   }
   if (e === 'start') resetRecapTrack();
   // The recap once the step is over: the MN90 tracker sees the dive end right after the session.
-  if (e === 'end') queueMicrotask(onDiveClosed);
+  if (e === 'end') queueMicrotask(() => onDiveClosed());
+  if (e === 'interrupt') queueMicrotask(() => onDiveClosed(session.interruptedEntry));
   renderControls();
 });
 

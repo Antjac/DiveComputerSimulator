@@ -8,6 +8,7 @@ import { advance } from './loop';
 import { SPEEDS } from './options';
 import { savePrefs } from './prefs';
 import { refresh } from './render';
+import { resumeFromReplay, startLiveReplay } from './replay';
 import { resetRescue } from './rescue';
 import { renderControls } from './settings';
 import { $, app, computers, mn90, session } from './state';
@@ -115,6 +116,7 @@ export function setupDiveControls(): void {
   });
 
   $('btn-pause').addEventListener('click', () => {
+    if (resumeFromReplay()) return; // the replay of the dive in progress: the dive resumes
     app.paused = !app.paused;
     renderControls();
   });
@@ -126,6 +128,7 @@ export function setupDiveControls(): void {
   });
 
   $('btn-reset').addEventListener('click', resetAll);
+  $('btn-replay').addEventListener('click', startLiveReplay);
 
   window.addEventListener('keydown', (e) => {
     if ((e.target as HTMLElement).tagName === 'SELECT') return;
@@ -135,6 +138,7 @@ export function setupDiveControls(): void {
     else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && app.view === '3d' && app.scene3d) app.scene3d.steer(e.key === 'ArrowLeft' ? -1 : 1);
     else if (e.key === ' ') {
       if (session.emergency) return;
+      if (resumeFromReplay()) return;
       app.paused = !app.paused;
       renderControls();
     } else if (e.key === '+' || e.key === '=' || e.key === '-') {

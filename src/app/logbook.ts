@@ -43,8 +43,9 @@ export function renderLog(): void {
     .map((r, i) => {
       const d = r.entry;
       const date = new Date(r.savedAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' });
-      return `<tr data-log="${esc(r.id)}" class="${r.id === app.selectedDive ? 'active' : ''}">
-      <td>${i + 1}</td><td class="num">${esc(date)}</td><td>${esc(r.computer.name)}</td><td class="num">${Math.round(d.duration / 60)} min</td><td class="num">${depthLabel(d.maxDepth)}</td>
+      const cut = d.interrupted ? `<span class="log-cut" title="${t('logInterrupted')}" aria-label="${t('logInterrupted')}">⛔</span>` : '';
+      return `<tr data-log="${esc(r.id)}" class="${r.id === app.selectedDive ? 'active' : ''}${d.interrupted ? ' interrupted' : ''}">
+      <td>${cut}${i + 1}</td><td class="num">${esc(date)}</td><td>${esc(r.computer.name)}</td><td class="num">${Math.round(d.duration / 60)} min</td><td class="num">${depthLabel(d.maxDepth)}</td>
       <td class="num">${depthLabel(d.avgDepth)}</td><td>${(d.gasesUsed ?? [d.gas]).map((g) => (g.o2 >= 0.995 ? 'O₂' : gasLabel(g))).join(' + ')}</td><td class="num">${tempVal(d.minTemp).toFixed(0)} ${tempUnit()}</td>
       <td class="num">${d.surfaceIntervalBefore === null ? '—' : hmm(d.surfaceIntervalBefore / 60)}</td><td>${t(diveType(d.surfaceIntervalBefore))}</td>
       <td class="num">${pressText(d.tankStart)} → ${pressText(d.tankEnd)} ${pressUnit()}</td><td class="num">${d.cnsEnd.toFixed(0)} %</td>

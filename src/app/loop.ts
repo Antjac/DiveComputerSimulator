@@ -3,7 +3,7 @@
 // requestAnimationFrame.
 import { placeBoatBubble } from './boat';
 import { refresh, scene } from './render';
-import { tickReplay } from './replay';
+import { replayPlaying, tickReplay } from './replay';
 import { app, compactMq, computers, mn90, session } from './state';
 
 /** Simulated seconds not drawn yet (the scenes animate the diver over them). */
@@ -31,7 +31,7 @@ export function startLoop(): void {
     lastTick = now;
     if (app.replaying) {
       // The replay of a dive: the dive plays again, the live session is set aside.
-      if (!app.paused) {
+      if (replayPlaying()) {
         const simDt = realDt * app.speed;
         tickReplay(simDt);
         pendingSimDt += simDt;

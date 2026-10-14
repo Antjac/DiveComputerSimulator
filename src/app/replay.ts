@@ -5,6 +5,7 @@
 // recap opens again.
 import { Replayer, captureState, restoreState, type DiveState } from '../engine/replay';
 import { lang, t } from '../i18n';
+import { diveAlerts } from './alertHelp';
 import { findRecord, type DiveRecord } from './diveStore';
 import { setView } from './diveControls';
 import { exerciseBusy } from './exercises';
@@ -14,14 +15,21 @@ import { profileChart, refresh } from './render';
 import { renderControls } from './settings';
 import { $, app, computers, session } from './state';
 
+/** What a replay needs of the dive: a record of the logbook, or the dive in progress as it stands. */
+export type ReplayedDive = Pick<DiveRecord, 'id' | 'entry' | 'alerts'>;
+
 interface Run {
   rp: Replayer;
-  rec: DiveRecord;
+  rec: ReplayedDive;
   /** The live state, put back when the replay is left. */
-  live: DiveState;
+  liveState: DiveState;
   liveRunning: boolean;
   speed: number;
   view: '2d' | '3d';
+  /** The replay of the dive in progress, started from the pause: the dive itself stays open and resumes where it was. */
+  ongoing: boolean;
+  /** Ongoing replay only: the replay is playing (the pause button of the page is then the dive's own). */
+  playing: boolean;
 }
 
 let run: Run | null = null;
@@ -31,61 +39,104 @@ const START_SPEED = 10;
 
 const mmss = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
 
-/** Whether a replay may start now: not during an exercise, the guided tour or a rescue alert. */
+/** Whether a replay may start now: not during an exercise or the guided tour (a dive cut short by the rescue alert can be replayed). */
 export function canReplay(): boolean {
-  return !app.replaying && !exerciseBusy() && !tourRunning() && !session.emergency;
+  return !app.replaying && !exerciseBusy() && !tourRunning();
+}
+
+/** Whether the dive in progress, paused, can be replayed (the button next to "resume"). */
+export function canReplayLive(): boolean {
+  return app.paused && session.inDive && !session.emergency && canReplay() && !!session.openJournal() && !document.querySelector('dialog[open]');
 }
 
 /** The dive being replayed (null: none). */
-export function replayRecord(): DiveRecord | null {
+export function replayRecord(): ReplayedDive | null {
   return run?.rec ?? null;
+}
+
+/** The replay of the dive in progress is on: the page's pause button resumes the dive. */
+export function replayOngoing(): boolean {
+  return !!run?.ongoing;
+}
+
+/** Whether the replay is playing (it has its own play button when it is of the dive in progress). */
+export function replayPlaying(): boolean {
+  return !!run && (run.ongoing ? run.playing : !app.paused);
+}
+
+function begin(r: Run): void {
+  run = r;
+  app.replaying = true;
+  document.body.classList.add('replaying');
+  document.body.classList.toggle('replaying-live', r.ongoing);
+  if (r.view === '3d') void setView('2d'); // the replay is drawn in 2D only
+  renderControls();
+  refresh(true);
 }
 
 export function startReplay(id: string): void {
   const rec = findRecord(id);
   if (!rec?.replay || !canReplay()) return;
   const liveRunning = closeRecapForReplay();
-  const live = captureState(session, computers);
+  const liveState = captureState(session, computers);
   const view = app.view;
   const rp = new Replayer(session, computers, rec.replay.start, rec.replay.events, rec.replay.endClock);
-  run = { rp, rec, live, liveRunning, speed: app.speed, view };
-  app.replaying = true;
+  const speed = app.speed;
   app.selectedDive = rec.id;
-  document.body.classList.add('replaying');
   app.speed = START_SPEED;
   app.paused = false;
-  if (view === '3d') void setView('2d'); // the replay is drawn in 2D only
-  renderControls();
-  refresh(true);
+  begin({ rp, rec, liveState, liveRunning, speed, view, ongoing: false, playing: false });
 }
 
-/** Leaves the replay: the live state comes back, and the recap of the dive opens again. */
-export function stopReplay(reopen = true): void {
+/** From the pause: the dive in progress is replayed from its start, at the moment it was paused. */
+export function startLiveReplay(): void {
+  const j = session.openJournal();
+  const entry = session.currentEntry();
+  if (!j || !entry || !canReplayLive()) return;
+  const liveState = captureState(session, computers);
+  const rec: ReplayedDive = { id: 'live', entry, alerts: diveAlerts(session.diveStart) };
+  const rp = new Replayer(session, computers, j.token as DiveState, j.events, j.endClock, liveState);
+  begin({ rp, rec, liveState, liveRunning: false, speed: app.speed, view: app.view, ongoing: true, playing: false });
+}
+
+/**
+ * Leaves the replay: the live state comes back. A closed dive's recap opens again; the dive in progress
+ * stays paused, or resumes where it was (`resume`).
+ */
+export function stopReplay(reopen = true, resume = false): void {
   if (!run) return;
   const r = run;
   run = null;
   r.rp.stop();
-  restoreState(session, computers, r.live);
+  restoreState(session, computers, r.liveState);
   app.replaying = false;
-  document.body.classList.remove('replaying');
+  document.body.classList.remove('replaying', 'replaying-live');
   app.speed = r.speed;
-  app.paused = !r.liveRunning;
+  app.paused = resume ? false : !r.liveRunning;
   profileChart.cursor = null;
   lockFields(false);
   if (r.view === '3d') void setView('3d');
   renderControls();
   refresh(true);
-  if (reopen) openRecap(r.rec.id);
+  if (reopen && !r.ongoing) openRecap(r.rec.id);
 }
 
-/** Advances the replay by `simDt` simulated seconds (from the loop). At the end it pauses; resuming starts again. */
+/** The page's pause button (or the space bar) in the replay of the dive in progress: the dive resumes. Tells whether it did. */
+export function resumeFromReplay(): boolean {
+  if (!run?.ongoing) return false;
+  stopReplay(false, true);
+  return true;
+}
+
+/** Advances the replay by `simDt` simulated seconds (from the loop). At the end it pauses; playing again starts over. */
 export function tickReplay(simDt: number): void {
   if (!run) return;
   const { rp } = run;
   if (rp.atEnd) rp.seek(0);
   rp.seek(rp.pos + simDt);
   if (rp.atEnd) {
-    app.paused = true;
+    if (run.ongoing) run.playing = false;
+    else app.paused = true;
     renderControls();
   }
 }
@@ -105,13 +156,14 @@ function diveNow(): number {
   return run ? Math.min(run.rec.entry.duration, Math.max(0, session.clock - run.rec.entry.start)) : 0;
 }
 
-function barHtml(rec: DiveRecord, rp: Replayer): string {
+function barHtml(rec: ReplayedDive, rp: Replayer, ongoing: boolean): string {
   const n = rec.entry.number;
   return `
     <div class="rp-head">
       <span class="rp-badge">${t('rpBadge')}</span>
-      <span class="rp-title">${t('rcDiveN').replace('{n}', String(n))}</span>
+      <span class="rp-title">${ongoing ? t('rpOngoing') : t('rcDiveN').replace('{n}', String(n))}</span>
       <span class="rp-gap"></span>
+      ${ongoing ? `<button type="button" class="btn primary" data-rp="resume">▶ ${t('rpResume')}</button>` : ''}
       <button type="button" class="btn" data-rp="exit">${t('rpExit')}</button>
     </div>
     <div class="rp-seek">
@@ -120,6 +172,7 @@ function barHtml(rec: DiveRecord, rp: Replayer): string {
       <span class="rp-time" id="rp-total">${mmss(rec.entry.duration)}</span>
     </div>
     <div class="rp-ctl">
+      ${ongoing ? `<button type="button" class="btn" data-rp="toggle" id="rp-toggle"></button>` : ''}
       <button type="button" class="btn" data-rp="start" title="${t('rpStart')}">|◀</button>
       <button type="button" class="btn" data-rp="-60">−1&nbsp;min</button>
       <button type="button" class="btn" data-rp="-10">−10&nbsp;s</button>
@@ -154,11 +207,12 @@ export function updateReplayBar(): void {
     return;
   }
   lockFields(true);
-  const key = `${run.rec.id}|${lang()}`;
+  const key = `${run.rec.id}|${lang()}|${run.ongoing}`;
   if (builtFor !== key) {
     builtFor = key;
-    bar.innerHTML = barHtml(run.rec, run.rp);
+    bar.innerHTML = barHtml(run.rec, run.rp, run.ongoing);
   }
+  if (run.ongoing) $('rp-toggle').textContent = run.playing ? `❚❚ ${t('pause')}` : `▶ ${t('rpPlay')}`;
   const range = $<HTMLInputElement>('rp-range');
   if (!sliding) range.value = String(Math.round(run.rp.pos));
   $('rp-time').textContent = mmss(diveNow());
@@ -184,6 +238,11 @@ export function setupReplay(): void {
     const act = b.dataset.rp!;
     const { rp, rec } = run;
     if (act === 'exit') return stopReplay();
+    if (act === 'resume') return void resumeFromReplay();
+    if (act === 'toggle') {
+      run.playing = !run.playing;
+      return refresh();
+    }
     if (act === 'start') return goTo(0);
     if (act === 'end') return goTo(rp.duration);
     if (act === 'prev-alert' || act === 'next-alert') {

@@ -251,6 +251,10 @@ const dict = {
   rcReplay: { fr: 'Revoir la plongée', en: 'Replay the dive' },
   // Replay of a dive (app/replay.ts).
   rpBadge: { fr: 'REPLAY', en: 'REPLAY' },
+  rpOngoing: { fr: 'Plongée en cours (en pause)', en: 'Dive in progress (paused)' },
+  rpResume: { fr: 'Reprendre la plongée', en: 'Resume the dive' },
+  rpPlay: { fr: 'Lire le replay', en: 'Play the replay' },
+  rpFromPause: { fr: 'Revoir la plongée en cours', en: 'Replay the dive in progress' },
   rpExit: { fr: '✕ Quitter le replay', en: '✕ Leave the replay' },
   rpSeek: { fr: 'Instant de la plongée', en: 'Moment of the dive' },
   rpStart: { fr: 'Début de la plongée', en: 'Start of the dive' },
@@ -302,6 +306,12 @@ const dict = {
     fr: 'Simulation pédagogique : ne remplace ni une formation ni le manuel de l’ordinateur.',
     en: 'Teaching simulation: it replaces neither training nor the computer’s manual.',
   },
+  kpInterrupted: {
+    fr: 'Plongée interrompue par l’alerte de secours ({why}) : la simulation s’est arrêtée à cet instant, le récapitulatif s’arrête avec elle.',
+    en: 'Dive cut short by the rescue alert ({why}): the simulation stopped at that moment, and the recap stops with it.',
+  },
+  logInterrupted: { fr: 'Plongée interrompue par l’alerte de secours', en: 'Dive cut short by the rescue alert' },
+  rcInterrupted: { fr: 'Interrompue', en: 'Cut short' },
   kpNone: { fr: 'Aucune alerte : l’ordinateur n’a rien signalé.', en: 'No alert: the computer reported nothing.' },
   kpRapid: {
     fr: 'Remontée trop rapide : {rate} de {from} à {to} (au-delà de {max}, seuil pédagogique du simulateur). Déclenchez la procédure adaptée selon votre formation.',

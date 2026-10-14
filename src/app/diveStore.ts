@@ -8,7 +8,7 @@ import type { Gas } from '../engine/buhlmann';
 import type { Mn90Dive } from '../engine/mn90';
 import { looksPlain } from '../engine/plainState';
 import type { DiveState } from '../engine/replay';
-import type { DiveLogEntry, JournalEvent, ProfileSample, RapidAscent } from '../engine/session';
+import type { DiveLogEntry, EmergencyReason, JournalEvent, ProfileSample, RapidAscent } from '../engine/session';
 
 /** An alert shown by the computer during the dive, with its explanation in both languages. */
 export interface RecAlert {
@@ -330,6 +330,8 @@ function cleanRecord(v: unknown): DiveRecord | null {
     gasUsed: num(e.gasUsed),
     alarms: arr(e.alarms).filter((a): a is string => typeof a === 'string').map((a) => a.slice(0, 200)),
   };
+  const cut = arr(e.interrupted).filter((x): x is EmergencyReason => x === 'OUT_OF_AIR' || x === 'RAPID_ASCENT' || x === 'MISSED_DECO');
+  if (cut.length) entry.interrupted = cut;
   return {
     id: r.id.slice(0, 100),
     savedAt: num(r.savedAt),

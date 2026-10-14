@@ -22,6 +22,7 @@ import { exerciseBusy } from './exercises';
 import { tourRunning } from './guidedTour';
 import { savePrefs } from './prefs';
 import { openRecap, shownRecord } from './recap';
+import { replayRecord } from './replay';
 import { renderControls } from './settings';
 import { $, app, compactMq, computers, q, session } from './state';
 
@@ -300,7 +301,7 @@ export function updateAlertHelp(v: ComputerView, screen: string): void {
 /** The alerts of the dive drawn on the profile: the current dive, or the logbook dive shown. */
 export function alertMarkers(depthOf: (m: number) => number): ProfileMarker[] {
   if (!session.inDive || app.replaying) {
-    const rec = shownRecord();
+    const rec = app.replaying ? replayRecord() : shownRecord();
     if (!rec) return [];
     return rec.alerts.map((a, i) => ({
       t: a.t,

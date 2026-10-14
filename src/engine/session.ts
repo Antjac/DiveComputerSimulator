@@ -26,6 +26,9 @@ export const RAPID_RATE = 15; // m/min
  *  principe / safety stop never triggers it. */
 export const MISSED_DECO_GF = 100; // %
 
+/** What the session tells its listeners: a dive starts, ends, or is cut short by the rescue alert. */
+export type SessionEvent = 'start' | 'end' | 'interrupt';
+
 export type EmergencyReason = 'OUT_OF_AIR' | 'RAPID_ASCENT' | 'MISSED_DECO';
 export interface Emergency {
   reasons: EmergencyReason[];
@@ -91,6 +94,8 @@ export interface DiveLogEntry {
   tankEnd: number; // bar
   gasUsed: number; // surface litres
   alarms: string[];
+  /** The dive was cut short by the rescue alert (the simulation stopped there): the reasons. */
+  interrupted?: EmergencyReason[];
 }
 
 /**
@@ -322,9 +327,9 @@ export class DiveSession {
   private historyTimer = 0;
 
   private sampleTimer = 0;
-  private listeners: Array<(e: 'start' | 'end') => void> = [];
+  private listeners: Array<(e: SessionEvent) => void> = [];
 
-  on(fn: (e: 'start' | 'end') => void): void {
+  on(fn: (e: SessionEvent) => void): void {
     this.listeners.push(fn);
   }
 
@@ -420,7 +425,7 @@ export class DiveSession {
     this.breathe(prevDepth, minutes, dt);
     this.clock += dt;
 
-    if (!this.inDive && this.depth > DIVE_START_DEPTH) this.startDive();
+    if (!this.inDive && this.depth > DIVE_START_DEPTH && !this.emergency) this.startDive();
 
     if (this.inDive) {
       this.track.push([this.clock, this.depth]);
@@ -448,6 +453,7 @@ export class DiveSession {
       } else {
         this.surfaceTimer = 0;
       }
+      if (this.emergency && !this.interrupted) this.interrupt(this.emergency);
     }
   }
 
@@ -585,6 +591,8 @@ export class DiveSession {
     this.tankAtStart = this.tankPressure;
     this.gasUsed = 0;
     this.inDive = true;
+    this.interrupted = false;
+    this.interruptedEntry = null;
     this.diveNumber += 1;
     this.diveStart = this.clock;
     this.diveTime = 0;
@@ -602,10 +610,9 @@ export class DiveSession {
     this.listeners.forEach((l) => l('start'));
   }
 
-  private endDive(): void {
-    // The dive ends when the diver surfaced; the trailing surface time is not counted.
-    const duration = this.diveTime - this.surfaceTimer;
-    this.log.push({
+  /** The log entry of the dive in progress, `duration` long. */
+  private logEntry(duration: number, profile: ProfileSample[]): DiveLogEntry {
+    return {
       number: this.diveNumber,
       start: this.diveStart,
       duration,
@@ -616,13 +623,44 @@ export class DiveSession {
       gasesUsed: this.allGases.filter((_, i) => this.usedGases.has(i)).map((g) => ({ ...g })),
       minTemp: this.minTemp,
       surfaceIntervalBefore: this.lastDiveEnd === null ? null : this.diveStart - this.lastDiveEnd,
-      profile: this.profile.filter((p) => p.t <= duration + 5),
+      profile,
       cnsEnd: this.oxygen.cns,
       tankStart: this.tankAtStart,
       tankEnd: this.tankPressure,
       gasUsed: this.gasUsed,
       alarms: [...this.diveAlarms],
-    });
+    };
+  }
+
+  /** The dive in progress as it stands, as a log entry (null: not diving). */
+  currentEntry(): DiveLogEntry | null {
+    if (!this.inDive) return null;
+    const last: ProfileSample = { t: this.diveTime, depth: this.depth, ceiling: this.reportedCeiling, gf99: this.tissues.maxGradientPercent(this.pressure), surfGf: this.tissues.maxGradientPercent(SURFACE_PRESSURE) };
+    return this.logEntry(this.diveTime, [...this.profile, last]);
+  }
+
+  /** The journal of the dive in progress, up to now (null: not diving, or nothing to replay from). */
+  openJournal(): ClosedJournal | null {
+    if (!this.inDive || !this.journalToken) return null;
+    return { token: this.journalToken, events: [...this.journal], endClock: this.clock };
+  }
+
+  /** The rescue alert stops the simulation: the dive is over for the logbook and the recap, though the diver stays where they are. */
+  private interrupt(e: Emergency): void {
+    this.interrupted = true;
+    this.interruptedEntry = { ...this.currentEntry()!, interrupted: [...e.reasons] };
+    this.lastJournal = { token: this.journalToken, events: [...this.journal], endClock: this.clock };
+    this.listeners.forEach((l) => l('interrupt'));
+  }
+
+  /** The dive cut short by the rescue alert, as a log entry (null: none). Not in `log`: the dive is still open, and a reset wipes it. */
+  interruptedEntry: DiveLogEntry | null = null;
+  private interrupted = false;
+
+  private endDive(): void {
+    // The dive ends when the diver surfaced; the trailing surface time is not counted.
+    const duration = this.diveTime - this.surfaceTimer;
+    this.log.push(this.logEntry(duration, this.profile.filter((p) => p.t <= duration + 5)));
     if (!this.replaying) this.lastJournal = { token: this.journalToken, events: [...this.journal], endClock: this.clock };
     this.inDive = false;
     // Back on the main tank between dives.
@@ -664,6 +702,8 @@ export class DiveSession {
     this.journal = [];
     this.lastJournal = null;
     this.journalToken = null;
+    this.interrupted = false;
+    this.interruptedEntry = null;
   }
 
 }
