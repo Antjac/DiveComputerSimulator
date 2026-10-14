@@ -6,8 +6,6 @@ import { type I18nKey, lang, t } from '../i18n';
 import { depthLabel, imperial, setUnits, units, type UnitSystem } from '../units';
 import { renderLog } from './logbook';
 import { renderRecap } from './recap';
-import { canReplayLive } from './replay';
-import { icon } from '../ui/icons';
 import { DECO_GASES, ENVS, GASES, RMVS, SITES, SPEEDS, STAGES, TANKS, applyDecoGases, applyTank, tankLabel } from './options';
 import { savePrefs } from './prefs';
 import { refresh } from './render';
@@ -168,11 +166,6 @@ export function renderControls(): void {
   const pause = $('btn-pause');
   const label = t(app.paused ? 'play' : 'pause');
   pause.innerHTML = `<span aria-hidden="true">${app.paused ? '▶' : '❚❚'}</span> <span class="lbl">${label}</span>`;
-  // Paused in the water: the dive can be replayed (it resumes where it was).
-  const replayBtn = $('btn-replay');
-  replayBtn.hidden = !canReplayLive();
-  replayBtn.innerHTML = `${icon('replay')}<span class="lbl">${t('rcReplay')}</span>`;
-  replayBtn.title = t('rpFromPause');
   pause.title = label;
   pause.setAttribute('aria-label', label);
   // After a rescue alert, only a reset restarts the simulation.

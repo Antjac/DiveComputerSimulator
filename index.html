@@ -65,11 +65,10 @@
             <div id="rescue-body"></div>
             <div class="button-row">
               <button class="btn primary" id="rescue-reset" data-i18n="rescueReset"></button>
-              <button class="btn" id="rescue-hide" data-i18n="rescueHide"></button>
+              <button class="btn" id="rescue-recap" data-i18n="rescueRecap"></button>
             </div>
           </div>
         </div>
-        <button class="rescue-mini" id="rescue-mini" data-i18n-title="rescueShow" hidden><span class="beacon" aria-hidden="true"><i class="beam"></i><i class="glint"></i></span></button>
         <!-- Boat alongside at the surface (app/boat.ts): break on board, fresh tank, or carry on. -->
         <div class="boat-offer" id="boat-offer" role="dialog" aria-labelledby="boat-warn boat-text" hidden>
           <p class="boat-warn" id="boat-warn" hidden></p>
@@ -91,7 +90,6 @@
       </section>
       <div class="panel time-bar" id="time-bar">
         <button id="btn-pause" class="btn"></button>
-        <button id="btn-replay" class="btn" hidden></button>
         <div id="speed-group" class="seg-toggle" role="group" data-i18n-title="speed"></div>
       </div>
       <!-- Replay of a closed dive (app/replay.ts): moment, transport, exit. -->

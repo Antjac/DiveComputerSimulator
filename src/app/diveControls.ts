@@ -9,7 +9,6 @@ import { SPEEDS } from './options';
 import { savePrefs } from './prefs';
 import { refresh } from './render';
 import { resumeFromReplay, startLiveReplay } from './replay';
-import { resetRescue } from './rescue';
 import { renderControls } from './settings';
 import { $, app, computers, mn90, session } from './state';
 
@@ -49,7 +48,6 @@ export function resetAll(): void {
   if (app.replaying) return;
   session.reset();
   mn90.reset();
-  resetRescue();
   for (const c of computers) {
     c.locked = false;
     c.onDiveStart(session);
@@ -119,6 +117,7 @@ export function setupDiveControls(): void {
     if (resumeFromReplay()) return; // the replay of the dive in progress: the dive resumes
     app.paused = !app.paused;
     renderControls();
+    if (app.paused) startLiveReplay(); // paused in the water: the dive can be replayed
   });
 
   $('btn-skip').addEventListener('click', () => {
@@ -128,7 +127,6 @@ export function setupDiveControls(): void {
   });
 
   $('btn-reset').addEventListener('click', resetAll);
-  $('btn-replay').addEventListener('click', startLiveReplay);
 
   window.addEventListener('keydown', (e) => {
     if ((e.target as HTMLElement).tagName === 'SELECT') return;
@@ -141,6 +139,7 @@ export function setupDiveControls(): void {
       if (resumeFromReplay()) return;
       app.paused = !app.paused;
       renderControls();
+      if (app.paused) startLiveReplay();
     } else if (e.key === '+' || e.key === '=' || e.key === '-') {
       const i = SPEEDS.indexOf(app.speed) + (e.key === '-' ? -1 : 1);
       app.speed = SPEEDS[Math.max(0, Math.min(SPEEDS.length - 1, i))];

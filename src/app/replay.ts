@@ -1,4 +1,4 @@
-// Replay of a closed dive, from its recap: the dive is played again on the computers, in 2D, from the
+// Replay of a dive, from its recap (a closed dive) or by itself when the dive in progress is paused: the dive is played again on the computers, in 2D, from the
 // state before the descent and the commands given (engine/replay.ts). The diver can no longer be steered;
 // the time controls of the page (pause, speed) and the bar of this module go forward, back, or to a given
 // moment; any computer can be looked at. The live state is put back when the replay is left, and the
@@ -44,7 +44,7 @@ export function canReplay(): boolean {
   return !app.replaying && !exerciseBusy() && !tourRunning();
 }
 
-/** Whether the dive in progress, paused, can be replayed (the button next to "resume"). */
+/** Whether the dive in progress, just paused, can be replayed (it starts by itself on the pause). */
 export function canReplayLive(): boolean {
   return app.paused && session.inDive && !session.emergency && canReplay() && !!session.openJournal() && !document.querySelector('dialog[open]');
 }

@@ -111,7 +111,7 @@
   position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; padding: 10px;
   background: rgba(3, 10, 30, 0.55);
 }
-.rescue[hidden], .rescue-mini[hidden] { display: none; }
+.rescue[hidden] { display: none; }
 /* The text scrolls if needed, the buttons always stay in view. */
 .rescue-card {
   width: min(360px, 100%); max-height: 100%; display: flex; flex-direction: column; padding: 14px 16px; text-align: center;
@@ -176,11 +176,6 @@
   25%, 75% { box-shadow: 0 0 20px 6px rgba(60, 130, 255, 0.7); filter: brightness(1); }
   50% { box-shadow: 0 0 12px 3px rgba(60, 130, 255, 0.45); filter: brightness(0.8); }
 }
-.rescue-mini {
-  position: absolute; z-index: 3; left: 50%; top: 44px; transform: translateX(-50%); padding: 4px 10px 0; cursor: pointer;
-  background: rgba(10, 20, 36, 0.85); border: 1px solid #2f7bff; border-radius: 10px; isolation: isolate;
-}
-.rescue-mini .beacon { transform: scale(0.6); margin: -12px -14px -10px; }
 @media (prefers-reduced-motion: reduce) {
   .beacon .beam, .beacon .glint, .beacon::before, .scene-panel.emergency { animation: none; }
   .beacon .beam { transform: scaleX(0.6); }

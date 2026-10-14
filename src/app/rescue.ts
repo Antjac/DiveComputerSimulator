@@ -4,10 +4,10 @@ import { DIVE_START_DEPTH, RAPID_RATE, type EmergencyReason, type RapidAscent } 
 import { lang, t, type I18nKey } from '../i18n';
 import { depthLabel, imperial, rateLabel, units } from '../units';
 import { resetAll } from './diveControls';
+import { findRecord } from './diveStore';
+import { openRecap } from './recap';
 import { renderControls } from './settings';
-import { $, session } from './state';
-
-let rescueHidden = false;
+import { $, app, session } from './state';
 
 /** "{rate} from {from} to {to} (above {max})" with the speed and depths of a rapid ascent. */
 export function fillRapid(text: string, r: RapidAscent): string {
@@ -20,23 +20,18 @@ export function fillRapid(text: string, r: RapidAscent): string {
 }
 let rescueShown = '';
 
-/** After a reset: the next alert opens in full. */
-export function resetRescue(): void {
-  rescueHidden = false;
-}
-
 export function renderRescue(): void {
   const e = session.emergency;
   $('scene-panel').classList.toggle('emergency', !!e);
-  $('rescue').hidden = !e || rescueHidden;
-  $('rescue-mini').hidden = !e || !rescueHidden;
+  $('rescue').hidden = !e;
+  // The dive cut short is in the logbook: its recap can be opened (not while it is replayed).
+  $('rescue-recap').hidden = !e || !findRecord(app.selectedDive)?.entry.interrupted;
   if (!e) {
     rescueShown = '';
     return;
   }
   const key = `${lang()}|${units()}|${e.clock}`;
   if (key === rescueShown) return;
-  const first = rescueShown === '';
   rescueShown = key;
   renderControls();
   const line: Record<EmergencyReason, () => string> = {
@@ -47,17 +42,15 @@ export function renderRescue(): void {
   const title: Record<EmergencyReason, I18nKey> = { OUT_OF_AIR: 'rescueAirT', RAPID_ASCENT: 'rescueRapidT', MISSED_DECO: 'rescueDecoT' };
   $('rescue-title').textContent = e.reasons.map((r) => t(title[r])).join(' · ');
   $('rescue-body').innerHTML = e.reasons.map((r) => `<p>${line[r]()}</p>`).join('') + `<p class="muted">${t('rescueFoot')}</p>`;
-  if (first && !rescueHidden) $('rescue-reset').focus({ preventScroll: true });
 }
 
 export function setupRescue(): void {
-  $('rescue-reset').addEventListener('click', resetAll);
-  $('rescue-hide').addEventListener('click', () => {
-    rescueHidden = true;
-    renderRescue();
+  $('rescue-reset').addEventListener('click', () => {
+    // A new dive starts running, whatever paused the simulation meanwhile (the recap, an explanation bubble).
+    app.paused = false;
+    resetAll();
   });
-  $('rescue-mini').addEventListener('click', () => {
-    rescueHidden = false;
-    renderRescue();
+  $('rescue-recap').addEventListener('click', () => {
+    if (app.selectedDive) openRecap(app.selectedDive);
   });
 }
