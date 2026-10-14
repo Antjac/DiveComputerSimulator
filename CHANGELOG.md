@@ -13,6 +13,13 @@ Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or ch
 
 ## 2026-10-14
 
+- Tous / All · Replay : le bateau restait affiché pendant tout le replay quand il était venu en fin de
+  plongée. Il suit maintenant la plongée rejouée : présent en surface (après 5 s, comme en direct) et
+  après la fin de la plongée, absent sous l'eau. Un replay lancé pendant une pause à bord ne fait plus
+  avancer la pause sur la plongée rejouée / Replay: the boat stayed on screen for the whole replay when
+  it had come at the end of the dive. It now follows the replayed dive: there at the surface (after 5 s,
+  as live) and once the dive is over, gone underwater. A replay opened during a break on board no longer
+  runs the break on the replayed dive.
 - Tous / All · Mises à jour de l'application : une nouvelle version n'efface plus les fichiers de la
   page encore ouverte (la vue 3D devenait « indisponible » jusqu'à une actualisation). Elle est
   cherchée aussi au retour dans l'application et toutes les heures, puis installée d'elle-même si

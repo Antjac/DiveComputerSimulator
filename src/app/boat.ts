@@ -40,11 +40,19 @@ let breakMin = 30;
 /** Break on board: simulated seconds still to run, and the interval that runs them. */
 let breakLeft = 0;
 let breakTimer = 0;
+/** The diver is drawn on the boat (break on board), as the scenes were told outside a replay. */
+let aboardShown = false;
 /** Divers' joke shown during the break on board. */
 let joke: Record<Lang, string> | null = null;
 
 const tankText = () => `${pressText(session.tankPressure)} ${pressUnit()}`;
 const durText = (min: number) => (min < 60 ? `${Math.round(min)} min` : `${Math.floor(min / 60)} h${min % 60 >= 1 ? ` ${String(Math.floor(min % 60)).padStart(2, '0')}` : ''}`);
+
+function setAboard(on: boolean): void {
+  aboardShown = on;
+  scene.aboard = on;
+  if (app.scene3d) app.scene3d.aboard = on;
+}
 
 function setBoat(state: typeof boat, text = ''): void {
   boat = state;
@@ -88,8 +96,7 @@ function takeBreak(min: number): void {
   breakMin = min;
   joke = randomJoke();
   session.boardBoat();
-  scene.aboard = true;
-  if (app.scene3d) app.scene3d.aboard = true;
+  setAboard(true);
   breakLeft = min * 60;
   setBoat('aboard');
   refresh(true);
@@ -98,6 +105,8 @@ function takeBreak(min: number): void {
   boatTimer = window.setTimeout(() => {
     const id = window.setInterval(() => {
       if (boat !== 'aboard') return clearInterval(id); // interrupted (reset)
+      // A replay opened from the recap during the break: the session is the replayed one, the break waits.
+      if (app.replaying) return;
       const dt = Math.min(chunk, breakLeft);
       advance(dt, 5);
       breakLeft -= dt;
@@ -114,8 +123,7 @@ function takeBreak(min: number): void {
 
 function backInWater(): void {
   breakLeft = 0;
-  scene.aboard = false;
-  if (app.scene3d) app.scene3d.aboard = false;
+  setAboard(false);
   boatTimer = window.setTimeout(() => {
     session.leaveBoat();
     boatAsked = true; // not offered again until the next descent
@@ -128,18 +136,43 @@ function backInWater(): void {
 function cancelBreak(): void {
   clearInterval(breakTimer);
   breakLeft = 0;
-  scene.aboard = false;
-  if (app.scene3d) app.scene3d.aboard = false;
+  setAboard(false);
   session.leaveBoat();
   setBoat('away');
 }
 
+/**
+ * Replay: the boat as it came during the replayed dive, from the replayed session (the choices made then
+ * are not journaled): alongside BOAT_DELAY s after surfacing, and once the dive is closed. A break on
+ * board ends the dive, so it is never part of a replay. Its bubble is hidden (replay.css).
+ */
+function replayBoat(): void {
+  const s = session;
+  const surfaced = s.inDive ? s.surfaceTimer >= BOAT_DELAY : s.lastDiveEnd !== null;
+  scene.boatWanted = s.depth < DIVE_START_DEPTH && surfaced && !s.emergency;
+  scene.aboard = false;
+  if (app.scene3d) {
+    app.scene3d.boatWanted = scene.boatWanted;
+    app.scene3d.aboard = false;
+  }
+}
+
+/** The scenes show the live boat (again after a replay; the 3D view may also have been opened since). */
+function liveBoat(): void {
+  scene.boatWanted = boat !== 'away';
+  scene.aboard = aboardShown;
+  if (app.scene3d) {
+    app.scene3d.boatWanted = scene.boatWanted;
+    app.scene3d.aboard = aboardShown;
+  }
+}
+
 export function updateBoat(): void {
-  if (app.replaying) return;
+  if (app.replaying) return replayBoat();
   const s = session;
   if (boat === 'aboard') {
     if (!s.aboard) cancelBreak(); // reset during the break
-    return;
+    return liveBoat();
   }
   const underwater = s.depth >= DIVE_START_DEPTH;
   if (underwater) boatAsked = false;
@@ -154,10 +187,7 @@ export function updateBoat(): void {
     setBoat('ask');
   }
   if (boat === 'ask') renderBoatText();
-  if (app.scene3d) {
-    app.scene3d.boatWanted = scene.boatWanted; // the 3D view may have been opened since
-    app.scene3d.aboard = scene.aboard;
-  }
+  liveBoat();
 }
 
 /** Vertical placement of the bubble, kept while nothing changes its layout: the boat rides the swell,
