@@ -299,7 +299,7 @@ export function updateAlertHelp(v: ComputerView, screen: string): void {
 
 /** The alerts of the dive drawn on the profile: the current dive, or the logbook dive shown. */
 export function alertMarkers(depthOf: (m: number) => number): ProfileMarker[] {
-  if (!session.inDive) {
+  if (!session.inDive || app.replaying) {
     const rec = shownRecord();
     if (!rec) return [];
     return rec.alerts.map((a, i) => ({

@@ -1,14 +1,26 @@
 # Journal des corrections / Change log
 
 Ce journal recense les corrections de calcul et de comportement (écarts avec un manuel, erreurs de
-paliers, de NDL, d'alarmes…), avec leur date. Pour signaler une erreur : une issue GitHub ou
-antoalex@free.fr. Les ajouts de fonctions et les changements d'interface sont dans l'historique Git.
+paliers, de NDL, d'alarmes…) et les changements notables du simulateur (nouvelles fonctions,
+changements d'interface), avec leur date. Pour signaler une erreur : une issue GitHub ou
+antoalex@free.fr. Le détail est dans l'historique Git.
 
 This log records fixes to calculations and behaviour (gaps with a manual, wrong stops, NDL,
-alarms…), with their date. To report an error: a GitHub issue or antoalex@free.fr. New features and
-interface changes are in the Git history.
+alarms…) and notable changes to the simulator (new features, interface changes), with their date.
+To report an error: a GitHub issue or antoalex@free.fr. Details are in the Git history.
 
-Format : `AAAA-MM-JJ` · modèle(s) · correction (FR) / fix (EN).
+Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or change (EN).
+
+## 2026-10-14
+
+- Tous / All · Nouveau : mode replay dans le récapitulatif de plongée (« Revoir la plongée »). La
+  plongée est rejouée en 2D sur les ordinateurs : pause, vitesses, avance et retour, saut à un instant
+  ou à une alerte, changement d'ordinateur ; le plongeur ne peut plus être manœuvré. Réservé aux
+  plongées faites après cette version ; les appuis sur les boutons de l'ordinateur ne sont pas
+  rejoués / New: replay mode in the dive recap ("Replay the dive"). The dive is played again in 2D on
+  the computers: pause, speeds, forward and back, jump to a moment or an alert, switch computers; the
+  diver can no longer be steered. Only for dives made after this version; button presses on the
+  computer are not replayed.
 
 ## 2026-10-09
 

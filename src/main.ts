@@ -23,6 +23,7 @@ import { startLoop } from './app/loop';
 import { applyPrefs } from './app/prefs';
 import { onDiveClosed, resetRecapTrack, setupRecap } from './app/recap';
 import { refresh } from './app/render';
+import { setupReplay } from './app/replay';
 import { setupRescue } from './app/rescue';
 import { renderControls, setupSettings } from './app/settings';
 import { app, computers, session } from './app/state';
@@ -62,6 +63,7 @@ setupSpg();
 setupSound();
 setupAlertHelp();
 setupRecap();
+setupReplay();
 setupBackup();
 if (import.meta.env.DEV) installDevHook();
 

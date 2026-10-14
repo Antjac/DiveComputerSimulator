@@ -4,6 +4,7 @@ import type { ProfileSample } from '../engine/session';
 const MUTED = '#8b9bb0';
 const GRID = 'rgba(139,155,176,0.18)';
 const SERIES = '#4cc3ff';
+const CURSOR = '#ffd34d';
 const CEIL = 'rgba(255, 99, 88, 0.28)';
 const CEIL_LINE = '#ff6358';
 const STATUS = { under: '#4c8dff', ok: '#3ecf8e', warn: '#f5b83d', crit: '#ff5c5c' };
@@ -66,11 +67,27 @@ export class ProfileChart {
   markers: ProfileMarker[] = [];
   /** A marker was clicked (or tapped). */
   onMarker: (m: ProfileMarker) => void = () => {};
+  /** Replay of a dive: the moment shown (s), drawn as a vertical line. Null: none, and the chart cannot be used to go to a moment. */
+  cursor: number | null = null;
+  /** A moment (s) was picked on the chart: click, or drag with the button down. */
+  onSeek: (t: number) => void = () => {};
+  private geom = { l: 44, pw: 1, maxT: 600 };
+  private dragging = false;
 
   constructor(private canvas: HTMLCanvasElement, private tip: HTMLElement) {
+    canvas.addEventListener('pointerdown', (e) => {
+      if (this.cursor === null || this.markerAt(e.offsetX, e.offsetY)) return;
+      this.dragging = true;
+      canvas.setPointerCapture(e.pointerId);
+      this.onSeek(this.timeAt(e.offsetX));
+    });
+    const endDrag = () => (this.dragging = false);
+    canvas.addEventListener('pointerup', endDrag);
+    canvas.addEventListener('pointercancel', endDrag);
     canvas.addEventListener('pointermove', (e) => {
       this.hoverX = e.offsetX;
       this.hoverY = e.offsetY;
+      if (this.dragging) this.onSeek(this.timeAt(e.offsetX));
       this.draw(this.samples);
     });
     canvas.addEventListener('pointerleave', () => {
@@ -82,6 +99,12 @@ export class ProfileChart {
       const hit = this.markerAt(e.offsetX, e.offsetY);
       if (hit) this.onMarker(hit.m);
     });
+  }
+
+  /** Dive time (s) under the horizontal position `px` of the chart. */
+  private timeAt(px: number): number {
+    const { l, pw, maxT } = this.geom;
+    return Math.min(maxT, Math.max(0, ((px - l) / pw) * maxT));
   }
 
   private markerAt(px: number, py: number): (typeof this.placed)[number] | null {
@@ -104,6 +127,7 @@ export class ProfileChart {
     const maxD = Math.max(10, ...samples.map((p) => Math.max(p.depth, p.ceiling))) * 1.08;
     const x = (s: number) => l + (s / maxT) * pw;
     const y = (d: number) => t + (d / maxD) * ph;
+    this.geom = { l, pw, maxT };
 
     // Grid + axes labels
     ctx.font = '11px Inter, sans-serif';
@@ -152,6 +176,22 @@ export class ProfileChart {
     ctx.beginPath();
     samples.forEach((p, i) => (i ? ctx.lineTo(x(p.t), y(p.depth)) : ctx.moveTo(x(p.t), y(p.depth))));
     ctx.stroke();
+
+    // Replay: the moment shown.
+    if (this.cursor !== null) {
+      const cx = x(Math.min(maxT, Math.max(0, this.cursor)));
+      ctx.strokeStyle = CURSOR;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, t);
+      ctx.lineTo(cx, h - b);
+      ctx.stroke();
+      const cur = samples.reduce((a, p) => (Math.abs(p.t - this.cursor!) < Math.abs(a.t - this.cursor!) ? p : a), samples[0]);
+      ctx.fillStyle = CURSOR;
+      ctx.beginPath();
+      ctx.arc(cx, y(cur.depth), 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Alert markers, the most serious drawn last (on top).
     const rank = { warn: 0, serious: 1, crit: 2 };

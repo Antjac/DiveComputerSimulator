@@ -14,6 +14,7 @@ import { renderMn90 } from './mn90';
 import { shownRecord, trackRecap } from './recap';
 import { updateExercise } from './exercises';
 import { decorateButtons, fitDevice } from './device';
+import { replayRecord, updateReplayBar } from './replay';
 import { renderRescue } from './rescue';
 import { renderControls } from './settings';
 import { $, app, computers, session } from './state';
@@ -80,7 +81,7 @@ export function refresh(full = false): void {
       return `<span class="alarm ${sev}" data-alarm="${a}">${icon} ${t(a as I18nKey)}</span>`;
     })
     .join(''));
-  updateAlertHelp(v, out.innerHTML);
+  if (!app.replaying) updateAlertHelp(v, out.innerHTML); // a replay does not explain nor record alerts again
   trackRecap(v);
 
   // Every computer is computed only while the comparison is on screen.
@@ -115,9 +116,14 @@ export function refresh(full = false): void {
     : `${t('atSurface')}${session.surfaceInterval !== null ? ` · ${t('surfaceSince')} ${hmm(session.surfaceInterval / 60)}` : ''}`;
 
   // Charts
-  const samples = session.inDive
-    ? [...session.profile, { t: session.diveTime, depth: session.depth, ceiling: v.ceiling }]
-    : (shownRecord()?.entry.profile ?? []);
+  // A replay shows the whole dive, with a cursor at the moment shown.
+  const replayed = replayRecord();
+  const samples = replayed
+    ? replayed.entry.profile
+    : session.inDive
+      ? [...session.profile, { t: session.diveTime, depth: session.depth, ceiling: v.ceiling }]
+      : (shownRecord()?.entry.profile ?? []);
+  updateReplayBar();
   profileChart.unit = depthUnit();
   profileChart.markers = alertMarkers(depthVal);
   const shown = samples.map((p) => ({ t: p.t, depth: depthVal(p.depth), ceiling: depthVal(p.ceiling) }));

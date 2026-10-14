@@ -6,6 +6,7 @@
 // exercise, the guided tour or a rescue alert; the dive is paused while it is read, as for the tables.
 import { hmm, type ComputerView } from '../computers/base';
 import { SURFACE_PRESSURE, COMPARTMENTS, gasLabel } from '../engine/buhlmann';
+import type { DiveState } from '../engine/replay';
 import { RAPID_RATE, type DiveLogEntry } from '../engine/session';
 import { lang, t, type I18nKey } from '../i18n';
 import { icon } from '../ui/icons';
@@ -18,6 +19,7 @@ import { tourRunning } from './guidedTour';
 import { renderLog } from './logbook';
 import { mn90Summary } from './mn90';
 import { savePrefs } from './prefs';
+import { canReplay, startReplay } from './replay';
 import { renderControls, settingGroup } from './settings';
 import { $, app, mn90, session } from './state';
 
@@ -35,12 +37,13 @@ const track = { safetyAsked: false, safetyDone: false, deco: false, ttsMax: 0, c
 
 /** A new dive starts (session 'start'). */
 export function resetRecapTrack(): void {
+  if (app.replaying) return;
   Object.assign(track, { safetyAsked: false, safetyDone: false, deco: false, ttsMax: 0, ceilingSec: 0, locked: false, lastTime: 0 });
 }
 
 /** Called on every refresh with the shown computer's view. */
 export function trackRecap(v: ComputerView): void {
-  if (!session.inDive) return;
+  if (!session.inDive || app.replaying) return;
   const dt = session.diveTime - track.lastTime;
   track.lastTime = session.diveTime;
   const st = v.safety.state;
@@ -76,6 +79,9 @@ function buildRecord(entry: DiveLogEntry): DiveRecord {
     });
   const last = entry.profile[entry.profile.length - 1];
   const m = mn90.last;
+  // The replay: the state before the descent and the commands given (engine/replay.ts).
+  const j = session.lastJournal;
+  const replay = j && j.token ? { start: j.token as DiveState, events: j.events, endClock: j.endClock } : null;
   return {
     id: newRecordId(),
     savedAt: Date.now(),
@@ -105,11 +111,13 @@ function buildRecord(entry: DiveLogEntry): DiveRecord {
       surfGfOut: r1(last?.surfGf ?? 0),
     },
     mn90: m && m.end !== null ? { dive: structuredClone(m), decoGases: (entry.decoGases?.length ?? 0) > 0 } : null,
+    ...(replay ? { replay } : {}),
   };
 }
 
 /** The session closed a dive (after the MN90 tracker saw it end): its record, and the recap. */
 export function onDiveClosed(): void {
+  if (app.replaying) return; // the replay of a dive ends too
   const entry = session.log[session.log.length - 1];
   if (!entry) return;
   const rec = buildRecord(entry);
@@ -272,6 +280,7 @@ function render(scrollTo: number | null = null): void {
       <span class="muted small">${i + 1} / ${list.length}</span>
       <button type="button" class="btn" data-rc-go="${next ? esc(next.id) : ''}" ${next ? '' : 'disabled'}><span class="rc-bar-lbl">${t('rcNext')}</span> ▶</button>
       <span class="rc-bar-gap"></span>
+      ${r.replay && canReplay() ? `<button type="button" class="btn" data-rc="replay" title="${t('rcReplayHelp')}">${icon('replay')}<span class="rc-bar-lbl">${t('rcReplay')}</span></button>` : ''}
       <button type="button" class="btn" data-rc="print">${icon('print')}<span class="rc-bar-lbl">${t('rcPrint')}</span></button>
       <form method="dialog"><button class="mn-x" aria-label="${t('close')}" title="${t('close')}">✕</button></form>
     </div>
@@ -297,6 +306,14 @@ export function openRecap(id: string, alert: number | null = null): void {
     dlg.showModal();
   }
   render(alert);
+}
+
+/** Closes the recap to replay the dive; tells whether the simulation was running before the recap opened. */
+export function closeRecapForReplay(): boolean {
+  const was = resumeOnClose;
+  resumeOnClose = false;
+  $<HTMLDialogElement>('recap').close();
+  return was;
 }
 
 /** Language or units changed: the open recap follows. */
@@ -327,6 +344,7 @@ export function setupRecap(): void {
       return;
     }
     if (el.closest('[data-rc="print"]')) printRecap();
+    else if (el.closest('[data-rc="replay"]') && shownId) startReplay(shownId);
   });
   dlg.addEventListener('change', (e) => {
     const box = e.target as HTMLInputElement;

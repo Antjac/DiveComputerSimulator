@@ -32,6 +32,8 @@ export const app = {
   selectedDive: null as string | null,
   /** The dive recap opens by itself when a dive is closed (app/recap.ts). */
   recapAuto: true,
+  /** A closed dive is being replayed (app/replay.ts): the session and the computers show it, the diver cannot be steered. */
+  replaying: false,
   activeTab: 'settings',
   /** Phones: the sheet is closed at start. */
   sheetOpen: !compactMq.matches,

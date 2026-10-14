@@ -13,7 +13,8 @@
     "scenario": "tsx scripts/scenario.ts",
     "stops": "tsx scripts/stops.ts",
     "snapshot": "tsx scripts/snapshot.ts",
-    "exercises": "tsx scripts/exercises.ts"
+    "exercises": "tsx scripts/exercises.ts",
+    "replay": "tsx scripts/replay.ts"
   },
   "devDependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",

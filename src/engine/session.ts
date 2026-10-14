@@ -93,6 +93,28 @@ export interface DiveLogEntry {
   alarms: string[];
 }
 
+/**
+ * What the diver (or the interface) did to the session, with the session clock: with the state the
+ * session was in before the first of them, it is all that is needed to replay the dive (app/replay.ts).
+ */
+export type JournalEvent =
+  | { t: number; k: 'target' | 'rate' | 'gas' | 'seabed' | 'site' | 'rmv'; v: number }
+  | { t: number; k: 'refill' };
+
+/** The journal of a dive that ended: `token` is whatever `onJournalStart` returned before the first command. */
+export interface ClosedJournal {
+  token: unknown;
+  events: JournalEvent[];
+  /** Session clock when the dive ended. */
+  endClock: number;
+}
+
+/** Seabed moves smaller than this (m) are not journaled. */
+const SEABED_STEP = 0.25;
+
+/** Longest journal kept (events other than the diver's own commands are dropped beyond it). */
+const MAX_JOURNAL = 20_000;
+
 /** Water temperature model: warm surface layer, thermocline around 12–18 m. */
 export function waterTemperature(depth: number): number {
   const surface = 24;
@@ -121,6 +143,7 @@ export class DiveSession {
   }
 
   set gas(g: Gas) {
+    if (this.inputsLocked) return;
     this.backGas = { ...g };
     this.breathing = 0;
   }
@@ -132,7 +155,13 @@ export class DiveSession {
 
   /** Breathes from gas `i` (0 = main tank, as in allGases). */
   switchGas(i: number): void {
+    if (this.inputsLocked) return;
     if (i < 0 || i > this.decoGases.length || i === this.breathing) return;
+    this.note('gas', i, true);
+    this.doSwitchGas(i);
+  }
+
+  private doSwitchGas(i: number): void {
     this.breathing = i;
     this.usedGases.add(i);
     // The breathing rate measured on the main tank must not include the time spent on another tank
@@ -161,9 +190,82 @@ export class DiveSession {
   /** Speeds used to reach a target depth: the last ones chosen with ▲/▼ (m/min). */
   ascentSpeed = DEFAULT_ASCENT;
   descentSpeed = DEFAULT_DESCENT;
-  siteDepth = 40;
+  private _siteDepth = 40;
+  get siteDepth(): number {
+    return this._siteDepth;
+  }
+
+  set siteDepth(v: number) {
+    if (this.inputsLocked) return;
+    this.note('site', v);
+    this._siteDepth = v;
+  }
+
   /** Depth of whatever lies under the diver (seabed, wreck…), set by the 3D view; the diver rests on it. */
-  seabed = Infinity;
+  private _seabed = Infinity;
+  private seabedNoted = Infinity;
+  get seabed(): number {
+    return this._seabed;
+  }
+
+  set seabed(v: number) {
+    if (this.inputsLocked) return;
+    // The 3D view sets it on every frame: only moves that matter are journaled.
+    if (v !== this.seabedNoted && (!Number.isFinite(v) || !Number.isFinite(this.seabedNoted) || Math.abs(v - this.seabedNoted) >= SEABED_STEP)) {
+      this.seabedNoted = v;
+      this.note('seabed', v);
+    }
+    this._seabed = v;
+  }
+
+  // --- Journal, for the replay of the dive (app/replay.ts) ---
+
+  /** Commands since the last one given at the surface. */
+  journal: JournalEvent[] = [];
+  /** The journal of the dive that ended last. */
+  lastJournal: ClosedJournal | null = null;
+  /** Called before the first command of a descent, with the session still untouched; what it returns is kept as the journal's token. */
+  onJournalStart: (() => unknown) | null = null;
+  private journalToken: unknown = null;
+  /** A replay is running: the commands of the interface are ignored, only the journal's are applied. */
+  replaying = false;
+  private applying = false;
+
+  private get inputsLocked(): boolean {
+    return this.replaying && !this.applying;
+  }
+
+  /**
+   * Notes a command. A command given out of the water starts a new journal (the last one before the
+   * descent is the one that counts), after the hook has recorded the state the command finds.
+   */
+  private note(k: JournalEvent['k'], v?: number, restart = false): void {
+    if (this.replaying) return;
+    if (restart && !this.inDive) {
+      this.journal = [];
+      this.journalToken = this.onJournalStart ? this.onJournalStart() : null;
+    }
+    if (this.journal.length >= MAX_JOURNAL && !restart) return;
+    this.journal.push(k === 'refill' ? { t: this.clock, k } : { t: this.clock, k, v: v ?? 0 });
+  }
+
+  /** Replays one journaled command. */
+  applyEvent(e: JournalEvent): void {
+    this.applying = true;
+    try {
+      switch (e.k) {
+        case 'target': this.setTarget(e.v); break;
+        case 'rate': this.setRate(e.v); break;
+        case 'gas': this.switchGas(e.v); break;
+        case 'seabed': this.seabed = e.v; break;
+        case 'site': this.siteDepth = e.v; break;
+        case 'rmv': this.rmv = e.v; break;
+        case 'refill': this.refillTank(); break;
+      }
+    } finally {
+      this.applying = false;
+    }
+  }
 
   inDive = false;
   diveNumber = 0;
@@ -201,7 +303,17 @@ export class DiveSession {
   /** Wireless tank transmitter paired with the computer (used when the model supports one). */
   transmitterOn = true;
   /** Surface respiratory minute volume (RMV / "SAC"), in litres per minute. */
-  rmv = 20;
+  private _rmv = 20;
+  get rmv(): number {
+    return this._rmv;
+  }
+
+  set rmv(v: number) {
+    if (this.inputsLocked) return;
+    this.note('rmv', v);
+    this._rmv = v;
+  }
+
   tankPressure = 200;
   private tankAtStart = 200;
   private gasUsed = 0;
@@ -243,14 +355,16 @@ export class DiveSession {
   }
 
   setTarget(depth: number): void {
-    if (this.aboard) return;
+    if (this.aboard || this.inputsLocked) return;
+    this.note('target', depth, true);
     this.control = 'target';
     this.targetDepth = Math.min(this.siteDepth, Math.max(0, depth));
   }
 
   /** Vertical speed command in m/min, positive when descending. */
   setRate(rate: number): void {
-    if (this.aboard) return;
+    if (this.aboard || this.inputsLocked) return;
+    this.note('rate', rate, true);
     this.control = 'rate';
     this.commandRate = Math.min(MAX_DESCENT, Math.max(-MAX_ASCENT, Math.round(rate)));
     if (this.commandRate < 0) this.ascentSpeed = -this.commandRate;
@@ -393,7 +507,8 @@ export class DiveSession {
   }
 
   private raise(e: Emergency): void {
-    if (!this.emergency) this.emergency = e;
+    // A replay never stops: the dive was played through to its end.
+    if (!this.emergency && !this.replaying) this.emergency = e;
   }
 
   /** Gas consumption: RMV scaled by ambient pressure, drawn from the tank. */
@@ -423,6 +538,7 @@ export class DiveSession {
   /** Fresh tank: at reset, when the tank model is changed at the surface, or handed from the boat
    *  (boardBoat, or a tank swap in the water). There is no automatic refill between dives. */
   refillTank(): void {
+    if (this.inDive) this.note('refill');
     this.tankPressure = this.tank.fill;
     for (const d of this.decoGases) d.pressure = d.tank.fill;
     this.pressureHistory = [];
@@ -436,7 +552,7 @@ export class DiveSession {
     if (this.breathing === 0 || !this.outOfGas) return;
     const other = [0, ...this.decoGases.map((_, i) => i + 1)].find((i) => this.gasPressure(i) > 0);
     if (other === undefined) return;
-    this.switchGas(other);
+    this.doSwitchGas(other); // not journaled: the same thing happens when the dive is replayed
     this.diveAlarms.add('STAGE_EMPTY');
     this.stageEmptyAt = this.clock;
   }
@@ -507,6 +623,7 @@ export class DiveSession {
       gasUsed: this.gasUsed,
       alarms: [...this.diveAlarms],
     });
+    if (!this.replaying) this.lastJournal = { token: this.journalToken, events: [...this.journal], endClock: this.clock };
     this.inDive = false;
     // Back on the main tank between dives.
     this.breathing = 0;
@@ -544,6 +661,9 @@ export class DiveSession {
     this.track = [];
     this.rapid = null;
     this.emergency = null;
+    this.journal = [];
+    this.lastJournal = null;
+    this.journalToken = null;
   }
 
 }

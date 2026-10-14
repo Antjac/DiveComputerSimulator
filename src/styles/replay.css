@@ -1,0 +1,27 @@
+/* Replay of a closed dive (app/replay.ts): the bar under the time controls, and what the replay switches off. */
+.replay-bar { flex: none; display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid #ffd34d; }
+.replay-bar[hidden] { display: none; }
+.rp-head, .rp-ctl, .rp-seek { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rp-gap { flex: 1; }
+.rp-badge {
+  padding: 2px 8px; border-radius: 6px; background: #ffd34d; color: #1b2430;
+  font-weight: 700; font-size: 12px; letter-spacing: 0.08em;
+}
+.rp-title { color: var(--ink-2); font-size: 13px; }
+.rp-seek { flex-wrap: nowrap; }
+.rp-seek input[type='range'] { flex: 1; min-width: 0; accent-color: #ffd34d; }
+.rp-time { font-variant-numeric: tabular-nums; font-size: 13px; min-width: 3.2em; text-align: center; }
+.rp-ctl .btn { padding: 4px 8px; font-size: 12px; white-space: nowrap; }
+.rp-ctl .btn:disabled { opacity: 0.4; cursor: default; }
+.rp-note { margin: 0; font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+
+/* The diver cannot be steered, nor the 3D view used, during a replay. */
+body.replaying .scene-ctl,
+body.replaying #btn-skip,
+body.replaying #btn-reset,
+body.replaying [data-pane='exercises'] { opacity: 0.35; pointer-events: none; }
+body.replaying .scene-top,
+body.replaying .scene-hint,
+body.replaying .boat-offer,
+body.replaying .rescue-mini { display: none !important; }
+body.replaying #scene-panel { box-shadow: inset 0 0 0 2px #ffd34d; }

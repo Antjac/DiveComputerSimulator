@@ -6,7 +6,9 @@
 import type { AlarmCode, Bi } from '../computers/base';
 import type { Gas } from '../engine/buhlmann';
 import type { Mn90Dive } from '../engine/mn90';
-import type { DiveLogEntry, ProfileSample, RapidAscent } from '../engine/session';
+import { looksPlain } from '../engine/plainState';
+import type { DiveState } from '../engine/replay';
+import type { DiveLogEntry, JournalEvent, ProfileSample, RapidAscent } from '../engine/session';
 
 /** An alert shown by the computer during the dive, with its explanation in both languages. */
 export interface RecAlert {
@@ -45,6 +47,14 @@ export interface RecFacts {
   surfGfOut: number;
 }
 
+/** What the replay of the dive is made from (engine/replay.ts): the state before the descent and the commands given. */
+export interface RecReplay {
+  start: DiveState;
+  events: JournalEvent[];
+  /** Session clock when the dive ended. */
+  endClock: number;
+}
+
 export interface DiveRecord {
   id: string;
   /** When the dive was closed (ms since 1970, the browser's clock: the simulated clock restarts on every page load). */
@@ -61,6 +71,8 @@ export interface DiveRecord {
   facts: RecFacts;
   /** The dive in the MN90 tables (consecutive immersions merged), and whether deco gases were carried. */
   mn90: { dive: Mn90Dive; decoGases: boolean } | null;
+  /** Dives made before the replay existed, or whose start was not recorded, have none. */
+  replay?: RecReplay;
 }
 
 const DB_NAME = 'divesim';
@@ -263,6 +275,35 @@ function cleanMn90(v: unknown): DiveRecord['mn90'] {
   };
 }
 
+const EVENT_KINDS = ['target', 'rate', 'gas', 'seabed', 'site', 'rmv'] as const;
+
+const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/** The replay data, or undefined when it is missing or not what the simulator writes. */
+function cleanReplay(v: unknown): RecReplay | undefined {
+  const r = v as { start?: unknown; events?: unknown; endClock?: unknown } | null;
+  if (!isObj(r) || !isObj(r.start) || !isObj(r.start.session) || !isObj(r.start.computers) || !Array.isArray(r.events)) return undefined;
+  const budget = { n: 400_000 };
+  if (!looksPlain(r.start, budget)) return undefined;
+  const computers: DiveState['computers'] = {};
+  for (const [id, c] of Object.entries(r.start.computers)) if (isObj(c)) computers[id.slice(0, 60)] = c;
+  const events: JournalEvent[] = [];
+  for (const raw of r.events.slice(0, 20_000)) {
+    const e = raw as { t?: unknown; k?: unknown; v?: unknown };
+    if (!isObj(e) || typeof e.t !== 'number' || !Number.isFinite(e.t)) continue;
+    if (e.k === 'refill') events.push({ t: e.t, k: 'refill' });
+    else if (EVENT_KINDS.some((k) => k === e.k)) {
+      // JSON turns Infinity (no seabed under the diver) into null.
+      const val = typeof e.v === 'number' && !Number.isNaN(e.v) ? e.v : e.k === 'seabed' ? Infinity : null;
+      if (val !== null) events.push({ t: e.t, k: e.k as (typeof EVENT_KINDS)[number], v: val });
+    }
+  }
+  const end = num(r.endClock, NaN);
+  if (!Number.isFinite(end) || end <= 0) return undefined;
+  events.sort((a, b) => a.t - b.t);
+  return { start: { session: r.start.session, computers }, events, endClock: end };
+}
+
 /** A well-formed record from what was read back, or null. */
 function cleanRecord(v: unknown): DiveRecord | null {
   const r = v as Partial<DiveRecord> | null;
@@ -318,5 +359,6 @@ function cleanRecord(v: unknown): DiveRecord | null {
       surfGfOut: num(f.surfGfOut),
     },
     mn90: cleanMn90(r.mn90),
+    ...(r.replay ? { replay: cleanReplay(r.replay) } : {}),
   };
 }

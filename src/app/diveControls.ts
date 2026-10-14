@@ -45,6 +45,7 @@ export async function setView(v: '2d' | '3d'): Promise<void> {
 
 /** Full reset: fresh tissues, computers unlocked (the logbook saved in the browser stays). */
 export function resetAll(): void {
+  if (app.replaying) return;
   session.reset();
   mn90.reset();
   resetRescue();
@@ -119,7 +120,7 @@ export function setupDiveControls(): void {
   });
 
   $('btn-skip').addEventListener('click', () => {
-    if (session.inDive) return;
+    if (session.inDive || app.replaying) return;
     advance(3600, 5);
     refresh(true);
   });

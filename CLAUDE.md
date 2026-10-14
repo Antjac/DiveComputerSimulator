@@ -15,6 +15,7 @@ npm run calib      # tables de NDL (calibration des algorithmes approchés)
 npm run snapshot   # non-régression : vues et HTML de tous les ordinateurs × états × unités × mises en page
                    # comparés à .snapshots/baseline.json (-- --save pour la créer avant un refactoring,
                    # -- <id> pour un seul ordinateur). Un changement voulu d'affichage la rend obsolète.
+npm run replay     # replay d'une plongée (journal des commandes + état de départ) : doit redonner la même plongée
 npm run exercises  # joue chaque exercice de l'onglet Exercices sur chaque ordinateur : tous doivent être réussis
 ```
 
@@ -48,6 +49,12 @@ npm run exercises  # joue chaque exercice de l'onglet Exercices sur chaque ordin
   font que déclarer ; `src/main.ts` les branche dans l'ordre.
 - `src/ui/` : scène 2D, graphiques, visite guidée ; `src/ui/scene3d/` : vue 3D (three.js, chargée à
   la demande). `src/styles/` : feuilles de la page.
+
+## Changelog
+
+Noter dans `CHANGELOG.md` (en français **et** en anglais, daté, une entrée par changement) toute
+correction de calcul ou de comportement **et** tout changement notable : nouvelle fonction,
+changement d'interface, modèle ajouté. À faire dans le même commit que le changement.
 
 ## Règle d'or : le manuel officiel fait foi
 

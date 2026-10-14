@@ -135,6 +135,7 @@ function cancelBreak(): void {
 }
 
 export function updateBoat(): void {
+  if (app.replaying) return;
   const s = session;
   if (boat === 'aboard') {
     if (!s.aboard) cancelBreak(); // reset during the break

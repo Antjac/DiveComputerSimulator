@@ -3,6 +3,7 @@
 // requestAnimationFrame.
 import { placeBoatBubble } from './boat';
 import { refresh, scene } from './render';
+import { tickReplay } from './replay';
 import { app, compactMq, computers, mn90, session } from './state';
 
 /** Simulated seconds not drawn yet (the scenes animate the diver over them). */
@@ -28,7 +29,14 @@ export function startLoop(): void {
     const now = performance.now();
     const realDt = Math.min(60, (now - lastTick) / 1000);
     lastTick = now;
-    if (!app.paused && !session.emergency) {
+    if (app.replaying) {
+      // The replay of a dive: the dive plays again, the live session is set aside.
+      if (!app.paused) {
+        const simDt = realDt * app.speed;
+        tickReplay(simDt);
+        pendingSimDt += simDt;
+      }
+    } else if (!app.paused && !session.emergency) {
       const simDt = realDt * app.speed;
       // Coarser steps for big jumps (background tab, surface interval): Schreiner stays exact on
       // linear segments, only the kinematics and timers get less granular.

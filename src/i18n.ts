@@ -248,6 +248,23 @@ const dict = {
   rcPrev: { fr: 'Plongée précédente', en: 'Previous dive' },
   rcNext: { fr: 'Plongée suivante', en: 'Next dive' },
   rcPrint: { fr: 'Imprimer', en: 'Print' },
+  rcReplay: { fr: 'Revoir la plongée', en: 'Replay the dive' },
+  // Replay of a dive (app/replay.ts).
+  rpBadge: { fr: 'REPLAY', en: 'REPLAY' },
+  rpExit: { fr: '✕ Quitter le replay', en: '✕ Leave the replay' },
+  rpSeek: { fr: 'Instant de la plongée', en: 'Moment of the dive' },
+  rpStart: { fr: 'Début de la plongée', en: 'Start of the dive' },
+  rpEnd: { fr: 'Fin de la plongée', en: 'End of the dive' },
+  rpPrevAlert: { fr: 'Alerte précédente', en: 'Previous alert' },
+  rpNextAlert: { fr: 'Alerte suivante', en: 'Next alert' },
+  rpNote: {
+    fr: 'Tu ne peux plus manœuvrer le plongeur. Tu peux changer d’ordinateur (onglet Réglages) et utiliser ses boutons ; ceux que tu avais pressés pendant la plongée ne sont pas rejoués. Clique ou fais glisser sur le profil pour aller à un instant.',
+    en: 'The diver can no longer be steered. You can switch computers (Settings tab) and use their buttons; the buttons pressed during the dive are not replayed. Click or drag on the profile to go to a moment.',
+  },
+  rcReplayHelp: {
+    fr: 'Rejoue la plongée en 2D sur l’ordinateur : avancer, reculer, accélérer, aller à un instant précis.',
+    en: 'Plays the dive again in 2D on the computer: forward, back, faster, or jump to a given moment.',
+  },
   rcSummary: { fr: 'En bref', en: 'At a glance' },
   rcKey: { fr: 'Points à retenir', en: 'Key points' },
   rcAlgo: { fr: 'Algorithme', en: 'Algorithm' },
