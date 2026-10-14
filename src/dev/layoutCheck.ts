@@ -49,6 +49,9 @@ export function checkLayout(): string[] {
   const scr = document.querySelector(`#device :is(${SCREENS})`);
   if (!scr) return ['no screen found'];
   const sr = scr.getBoundingClientRect();
+  // The device may be scaled (CSS transform): tolerances are in screen CSS pixels.
+  const zoom = scr instanceof HTMLElement && scr.offsetWidth ? sr.width / scr.offsetWidth : 1;
+  const hz = 2 * zoom;
   const round = scr.tagName.toLowerCase() === 'svg';
   const items: Item[] = [];
   const seen = new Set<Element>();
@@ -91,8 +94,8 @@ export function checkLayout(): string[] {
       const ar = a.getBoundingClientRect();
       if (ar.width === 0 && ar.height === 0) continue;
       // Descenders (p, g, y) may hang below a tight line box: allow a fifth of the glyph height.
-      const vt = Math.max(2, 0.2 * (rc.bottom - rc.top));
-      if (rc.left < ar.left - 2 || rc.right > ar.right + 2 || rc.top < ar.top - vt || rc.bottom > ar.bottom + vt) {
+      const vt = Math.max(hz, 0.2 * (rc.bottom - rc.top));
+      if (rc.left < ar.left - hz || rc.right > ar.right + hz || rc.top < ar.top - vt || rc.bottom > ar.bottom + vt) {
         issues.push(`overflows ${tag(a)}: "${t}"`);
         break;
       }
