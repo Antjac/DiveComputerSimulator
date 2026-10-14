@@ -13,6 +13,14 @@ Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or ch
 
 ## 2026-10-14
 
+- Tous / All · Mises à jour de l'application : une nouvelle version n'efface plus les fichiers de la
+  page encore ouverte (la vue 3D devenait « indisponible » jusqu'à une actualisation). Elle est
+  cherchée aussi au retour dans l'application et toutes les heures, puis installée d'elle-même si
+  rien n'est perdu (pas de plongée depuis l'ouverture) ; sinon un bandeau propose « Mettre à jour » /
+  App updates: a new version no longer removes the files of the page still open (the 3D view became
+  "unavailable" until a reload). It is also looked for when coming back to the app and every hour,
+  then put in by itself when nothing is lost (no dive since the app was opened); otherwise a banner
+  offers "Update".
 - Tous / All · Replay sur téléphone : la barre du replay, trop haute, écrasait la colonne d'eau et
   passait sous les onglets. Elle tient désormais sur trois lignes courtes : boutons en icônes (libellé
   en infobulle) sauf « Reprendre », sans les sauts de ±1 min (le curseur les remplace), note dans

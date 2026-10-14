@@ -247,6 +247,12 @@
       <p><span data-i18n="aboutSource"></span> <a href="https://github.com/Antjac/DiveComputerSimulator" target="_blank" rel="noopener">github.com/Antjac/DiveComputerSimulator</a></p>
       <form method="dialog"><button class="btn primary" data-i18n="close" autofocus></button></form>
     </dialog>
+    <!-- A new version of the app is ready (app/update.ts). -->
+    <div class="update-bar" id="update-bar" role="status" hidden>
+      <p><span data-i18n="updReady"></span> <span id="update-lose" data-i18n="updLose"></span></p>
+      <button class="btn primary" id="update-apply" data-i18n="updApply"></button>
+      <button class="btn" id="update-later" data-i18n="updLater"></button>
+    </div>
     <div id="print-root"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

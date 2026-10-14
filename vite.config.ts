@@ -9,7 +9,9 @@ export default defineConfig({
     // Installable and fully offline: the service worker precaches every file of the build
     // (including the lazy three.js chunk and the embedded fonts); the app has no network dependency.
     VitePWA({
-      registerType: 'autoUpdate',
+      // A new version waits until the app puts it in (src/app/update.ts), which registers the worker itself.
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],

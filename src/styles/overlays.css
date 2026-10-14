@@ -316,3 +316,16 @@
 /* "Install the app" (app/install.ts): the button hides unless the app can be installed. */
 .modal .btn[hidden] { display: none; }
 .install-steps { margin: 0 0 10px; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--ink-2); }
+
+/* A new version is ready (app/update.ts): a banner at the top, over the page. */
+.update-bar {
+  position: fixed; top: 8px; left: 50%; translate: -50% 0; z-index: 1000; width: min(560px, calc(100vw - 16px));
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--accent); border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.update-bar[hidden] { display: none; }
+.update-bar p { flex: 1; margin: 0; font-size: 13px; line-height: 1.4; }
+.update-bar #update-lose { color: var(--muted); font-size: 12px; }
+.update-bar .btn { flex: none; }
+@media (max-width: 640px) { .update-bar { flex-wrap: wrap; } .update-bar p { flex-basis: 100%; } }

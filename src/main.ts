@@ -29,6 +29,7 @@ import { renderControls, setupSettings } from './app/settings';
 import { app, computers, session } from './app/state';
 import { setupTabs } from './app/tabs';
 import { setupTissues } from './app/tissues';
+import { setupUpdate } from './app/update';
 
 applyPrefs();
 
@@ -69,6 +70,7 @@ setupAlertHelp();
 setupRecap();
 setupReplay();
 setupBackup();
+setupUpdate();
 if (import.meta.env.DEV) installDevHook();
 
 applyI18n();
