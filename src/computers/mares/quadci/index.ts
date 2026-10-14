@@ -345,28 +345,54 @@ export class MaresQuadCi extends QuadCiRules {
     return `<div class="qc-row top sm"><div class="qc-depth">${depthText(v.depth)}<u>${du}</u></div></div><div class="qc-gtab">${rows}</div>`;
   }
 
-  /** Magenta N2 divider (nitrogen bar graph), or the ascent speed graph while ascending. */
-  private n2Bar(v: ComputerView, forceN2 = false, label = true): string {
+  /**
+   * §11: "Ascent rate: in presence of a depth change in excess of 80cm / 3ft, Quad Ci calculates the
+   * corresponding ascent speed and displays it both numerically and via the screen divider bars which,
+   * for the duration of the ascent, replace the nitrogen saturation and tank pressure bars. The bars are
+   * green for speeds up to 80% of the allowed limit, yellow for speeds between 80% and 100%, and red".
+   */
+  private ascending(v: ComputerView): boolean {
+    return v.inDive && v.depth >= 1.2 && v.ascentRate > 0.5;
+  }
+
+  private speedBar(v: ComputerView): string {
+    const pct = v.ascentRate / quadAscentLimit(v.depth);
+    const cls = pct > 1 ? 'red' : pct > 0.8 ? 'yellow' : 'green';
+    return `<div class="qc-bar speed ${cls}"><i style="width:${Math.round(Math.min(100, pct * 100))}%"></i></div>`;
+  }
+
+  /** Magenta N2 divider (nitrogen bar graph), or the ascent speed graph while ascending (§11, both layouts). */
+  private n2Bar(v: ComputerView, label = true): string {
     const line = this.gasLine();
     if (line) return line;
-    if (!forceN2 && v.ascentRate > 0.5) {
-      const pct = v.ascentRate / quadAscentLimit(v.depth);
-      const cls = pct > 1 ? 'red' : pct > 0.8 ? 'yellow' : 'green';
-      return `<div class="qc-bar speed ${cls}"><i style="width:${Math.round(Math.min(100, pct * 100))}%"></i></div>`;
-    }
+    if (this.ascending(v)) return this.speedBar(v);
     return `<div class="qc-bar n2"><i style="width:${Math.round(Math.min(100, v.n2Load))}%"></i>${label ? '<em>N2</em>' : ''}</div>`;
   }
 
   /** Lower divider of FULL: tank pressure graph in the pressure range colour, battery at the end. */
   private tankBar(v: ComputerView): string {
+    // §11 FULL: "graphically it is shown with both bar graphs" during an ascent.
+    if (this.ascending(v)) return this.speedBar(v);
     // No tank module: the lower divider replicates the upper one (§11), without a second N2 caption.
-    if (!v.tank.ai) return this.n2Bar(v, true, false);
+    if (!v.tank.ai) return this.n2Bar(v, false);
     const fill = Math.max(0, Math.min(100, (v.tank.pressure / v.tank.fill) * 100));
     return `<div class="qc-bar tank ${this.tankColor(v)}"><i style="width:${Math.round(fill)}%"></i><span class="qc-batt"></span></div>`;
   }
 
-  /** Right part of the dive time row: no deco, deco stop, safety or deep stop, or an alarm. */
+  /**
+   * Right part of the dive time row, with the ascent speed in front while ascending. §11 (E-Z and FULL):
+   * "in case of an ascent, the value in m/min or ft/min is displayed next to the NO DECO or DECO
+   * information" (no figure: position, size and the absence of a caption are deduced from the text).
+   */
   private stopCells(v: ComputerView, s: DiveSession, full: boolean): string {
+    const cells = this.stopInfo(v, s, full);
+    if (!this.ascending(v)) return cells;
+    const rate = Math.round(imperial() ? v.ascentRate * 3.28084 : v.ascentRate);
+    return `<div class="qc-c sm spd"><b>${rate}</b><u>${depthUnit()}/min</u></div>${cells}`;
+  }
+
+  /** No deco, deco stop, safety or deep stop. */
+  private stopInfo(v: ComputerView, s: DiveSession, full: boolean): string {
     const du = depthUnit();
     // FULL: the middle row is short, so timers sit beside their caption, as in the manual's figures
     // (§11.1 "SAFETY STOP 0:40"); E-Z has room for the caption above a big figure.
@@ -474,7 +500,7 @@ export class MaresQuadCi extends QuadCiRules {
         <div class="qc-depth ${depthRed}">${depth}<u>${du}</u></div>
         ${tr}
       </div>
-      ${this.n2Bar(v, true)}
+      ${this.n2Bar(v)}
       <div class="qc-row mid">${ai ? this.dtime(v, true) : ''}<div class="qc-right">${mid}</div></div>
       ${this.tankBar(v)}
       <div class="qc-row low">${bottomLeft}${bottomRight}</div>`;

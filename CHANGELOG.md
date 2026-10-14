@@ -13,6 +13,13 @@ Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or ch
 
 ## 2026-10-14
 
+- Mares Quad Ci · Vitesse de remontée (§11) : pendant une remontée, la valeur en m/min (ou ft/min)
+  s'affiche à côté de NO DECO / DECO dans les deux mises en page (elle n'apparaissait qu'avec l'alarme
+  SLOW!), et en FULL les deux barres (N2 et pression) deviennent le graphique de vitesse (vert, jaune
+  au-delà de 80 %, rouge au-delà de 100 %) au lieu de rester sur N2 / Ascent rate (§11): while
+  ascending, the value in m/min (or ft/min) is shown next to NO DECO / DECO in both layouts (it only
+  appeared with the SLOW! alarm), and in FULL both dividers (N2 and tank pressure) turn into the speed
+  graph (green, yellow above 80 %, red above 100 %) instead of staying on N2.
 - Tous / All · Nouveau : mode replay dans le récapitulatif de plongée (« Revoir la plongée »). La
   plongée est rejouée en 2D sur les ordinateurs : pause, vitesses, avance et retour, saut à un instant
   ou à une alerte, changement d'ordinateur ; le plongeur ne peut plus être manœuvré. Réservé aux

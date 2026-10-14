@@ -61,6 +61,11 @@
 .qc-c.sm b { font-size: 40px; }
 .qc-c.sm.xs b { font-size: 32px; }
 .qc-c.sm em { font-size: 12px; }
+/* §11: ascent speed in front of NO DECO / DECO while ascending (no caption, unit below). */
+.qc-c.spd { flex: none; justify-content: center; align-items: center; padding: 3px 2px; gap: 0; }
+.qc-c.spd b { font-size: 30px; }
+.qc-c.spd u { margin: 0; font-size: 11px; color: var(--qc-cyan); }
+.qc-dive .qc-row.mid .qc-c.spd b { font-size: 26px; }
 /* FULL: dive time with small seconds, "NO / DECO" label. */
 .qc-c.dt { flex-direction: row; align-items: flex-end; justify-content: flex-start; }
 .qc-c.dt b { font-size: 56px; }
