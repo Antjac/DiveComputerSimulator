@@ -160,11 +160,11 @@ function barHtml(rec: ReplayedDive, rp: Replayer, ongoing: boolean): string {
   const n = rec.entry.number;
   return `
     <div class="rp-head">
-      <span class="rp-badge">${t('rpBadge')}</span>
+      <span class="rp-badge" title="${t('rpNote')}">${t('rpBadge')}</span>
       <span class="rp-title">${ongoing ? t('rpOngoing') : t('rcDiveN').replace('{n}', String(n))}</span>
       <span class="rp-gap"></span>
-      ${ongoing ? `<button type="button" class="btn primary" data-rp="resume">▶ ${t('rpResume')}</button>` : ''}
-      <button type="button" class="btn" data-rp="exit">${t('rpExit')}</button>
+      ${ongoing ? `<button type="button" class="btn primary" data-rp="resume" title="${t('rpResume')}" aria-label="${t('rpResume')}">▶<span class="lbl"> ${t('rpResume')}</span><span class="lbl-s"> ${t('rpResumeShort')}</span></button>` : ''}
+      <button type="button" class="btn" data-rp="exit" title="${t('rpExit')}" aria-label="${t('rpExit')}">✕<span class="lbl"> ${t('rpExit')}</span></button>
     </div>
     <div class="rp-seek">
       <span class="rp-time" id="rp-time">0:00</span>
@@ -174,10 +174,10 @@ function barHtml(rec: ReplayedDive, rp: Replayer, ongoing: boolean): string {
     <div class="rp-ctl">
       ${ongoing ? `<button type="button" class="btn" data-rp="toggle" id="rp-toggle"></button>` : ''}
       <button type="button" class="btn" data-rp="start" title="${t('rpStart')}">|◀</button>
-      <button type="button" class="btn" data-rp="-60">−1&nbsp;min</button>
+      <button type="button" class="btn rp-min" data-rp="-60">−1&nbsp;min</button>
       <button type="button" class="btn" data-rp="-10">−10&nbsp;s</button>
       <button type="button" class="btn" data-rp="+10">+10&nbsp;s</button>
-      <button type="button" class="btn" data-rp="+60">+1&nbsp;min</button>
+      <button type="button" class="btn rp-min" data-rp="+60">+1&nbsp;min</button>
       <button type="button" class="btn" data-rp="end" title="${t('rpEnd')}">▶|</button>
       <span class="rp-gap"></span>
       <button type="button" class="btn" data-rp="prev-alert" ${rec.alerts.length ? '' : 'disabled'} title="${t('rpPrevAlert')}">⚠ ◀</button>
@@ -212,7 +212,14 @@ export function updateReplayBar(): void {
     builtFor = key;
     bar.innerHTML = barHtml(run.rec, run.rp, run.ongoing);
   }
-  if (run.ongoing) $('rp-toggle').textContent = run.playing ? `❚❚ ${t('pause')}` : `▶ ${t('rpPlay')}`;
+  if (run.ongoing) {
+    // Phones: the icon only (the label is hidden by replay.css), the label as a tooltip.
+    const lbl = run.playing ? t('pause') : t('rpPlay');
+    const tg = $('rp-toggle');
+    tg.innerHTML = `${run.playing ? '❚❚' : '▶'}<span class="lbl"> ${lbl}</span>`;
+    tg.title = lbl;
+    tg.setAttribute('aria-label', lbl);
+  }
   const range = $<HTMLInputElement>('rp-range');
   if (!sliding) range.value = String(Math.round(run.rp.pos));
   $('rp-time').textContent = mmss(diveNow());

@@ -13,7 +13,24 @@
 .rp-time { font-variant-numeric: tabular-nums; font-size: 13px; min-width: 3.2em; text-align: center; }
 .rp-ctl .btn { padding: 4px 8px; font-size: 12px; white-space: nowrap; }
 .rp-ctl .btn:disabled { opacity: 0.4; cursor: default; }
+.replay-bar .lbl-s { display: none; }
 .rp-note { margin: 0; font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+
+/* Phones (same query as compactMq): the bar sits under the water column in a short row; at full size it
+   squeezed the water column to nothing and ran under the tab bar. One row of controls, the buttons as
+   icons (labels as tooltips) except "Resume" (short label: three bare ▶ would be ambiguous), no ±1 min
+   (the slider does it), the note in the badge's tooltip. */
+@media (max-width: 640px), (max-height: 500px) and (orientation: landscape) {
+  .replay-bar { padding: 4px 6px; gap: 4px; }
+  .rp-head, .rp-ctl { flex-wrap: nowrap; gap: 4px; }
+  .rp-title { flex: 1; min-width: 0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rp-head .rp-gap, .rp-note, .replay-bar .lbl, .rp-ctl .rp-min { display: none; }
+  .replay-bar .lbl-s { display: inline; }
+  .rp-head .btn, .rp-ctl .btn { flex: none; min-height: 32px; padding: 2px 8px; font-size: 12px; }
+  .rp-ctl { overflow-x: auto; scrollbar-width: none; }
+  .rp-ctl .btn { padding: 2px 6px; }
+  .rp-time { font-size: 12px; min-width: 2.8em; }
+}
 
 /* The diver cannot be steered, nor the 3D view used, during a replay. */
 body.replaying .scene-ctl,

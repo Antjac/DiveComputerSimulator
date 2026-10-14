@@ -13,6 +13,13 @@ Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or ch
 
 ## 2026-10-14
 
+- Tous / All · Replay sur téléphone : la barre du replay, trop haute, écrasait la colonne d'eau et
+  passait sous les onglets. Elle tient désormais sur trois lignes courtes : boutons en icônes (libellé
+  en infobulle) sauf « Reprendre », sans les sauts de ±1 min (le curseur les remplace), note dans
+  l'infobulle du badge REPLAY / Replay on phones: the replay bar, too tall, squeezed the water column
+  to nothing and ran under the tabs. It now fits in three short rows: buttons as icons (label as a
+  tooltip) except "Resume", no ±1 min jumps (the slider does it), the note in the REPLAY badge's
+  tooltip.
 - Mares Quad Ci · Vitesse de remontée (§11) : pendant une remontée, la valeur en m/min (ou ft/min)
   s'affiche à côté de NO DECO / DECO dans les deux mises en page (elle n'apparaissait qu'avec l'alarme
   SLOW!), et en FULL les deux barres (N2 et pression) deviennent le graphique de vitesse (vert, jaune
