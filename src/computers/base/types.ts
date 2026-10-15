@@ -25,6 +25,8 @@ export interface SettingDef {
   group?: SettingGroup;
   /** Shown only when this returns true (e.g. custom GF values only with the Custom conservatism). */
   showIf?: (settings: Record<string, string>) => boolean;
+  /** Setting of the computer's gas n (1 = bottom gas, 2 = first deco gas…): shown only when the diver carries it. */
+  gas?: number;
 }
 
 export type AlarmCode =

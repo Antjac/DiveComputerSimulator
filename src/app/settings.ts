@@ -43,8 +43,13 @@ const DECO_KEYS = new Set([
 ]);
 
 /** The computer's alert settings (for the details dialog). */
+/** Is the setting offered now: its showIf condition holds, and its gas (if any) is carried by the diver. */
+export function settingShown(c: DiveComputer, d: SettingDef): boolean {
+  return (!d.showIf || d.showIf(c.settings)) && (!d.gas || d.gas <= session.allGases.length);
+}
+
 export function alertSettings(c: DiveComputer): SettingDef[] {
-  return c.settingDefs.filter((d) => settingGroup(d) === 'alerts' && (!d.showIf || d.showIf(c.settings)));
+  return c.settingDefs.filter((d) => settingGroup(d) === 'alerts' && settingShown(c, d));
 }
 
 /** Theme of a computer setting: given by the model, or guessed from its key. */
@@ -93,7 +98,7 @@ export function renderControls(): void {
     <select data-setting="${def.key}">${def.options
       .map((o) => `<option value="${o.value}" ${active.settings[def.key] === o.value ? 'selected' : ''}>${optText(o)}</option>`)
       .join('')}</select></label>`;
-  const shown = active.settingDefs.filter((d) => !d.showIf || d.showIf(active.settings));
+  const shown = active.settingDefs.filter((d) => settingShown(active, d));
   const advDefs = shown.filter((d) => !d.essential);
   $('computer-settings').innerHTML = shown.filter((d) => d.essential).map(settingField).join('');
   $('computer-settings-adv').innerHTML = GROUPS.map(({ id, title }) => {

@@ -10,7 +10,7 @@ import type { DiveState } from '../engine/replay';
 import { RAPID_RATE, type DiveLogEntry } from '../engine/session';
 import { lang, t, type I18nKey } from '../i18n';
 import { icon } from '../ui/icons';
-import { profileSvg, saturationSvg, tissuesSvg, type RecapMarker } from '../ui/recapCharts';
+import { CHART_W, profileSvg, saturationSvg, tissuesSvg, type RecapMarker } from '../ui/recapCharts';
 import { depthLabel, depthUnit, depthVal, pressText, pressUnit, rateLabel, tempUnit, tempVal, volumeLabel } from '../units';
 import { closeAlertBubble, diveAlerts, recAlertLabel } from './alertHelp';
 import { addRecord, allRecords, findRecord, newRecordId, type DiveRecord, type RecAlert } from './diveStore';
@@ -20,7 +20,7 @@ import { renderLog } from './logbook';
 import { mn90Summary } from './mn90';
 import { savePrefs } from './prefs';
 import { canReplay, startReplay } from './replay';
-import { renderControls, settingGroup } from './settings';
+import { renderControls, settingGroup, settingShown } from './settings';
 import { $, app, mn90, session } from './state';
 
 /** Usual reserve taught to recreational divers (bar): a teaching choice for the key points, not a computer setting. */
@@ -71,7 +71,7 @@ function buildRecord(entry: DiveLogEntry): DiveRecord {
     return r1(p <= pAmb ? (p / pAmb - 1) * 100 : gf[i]);
   });
   const settings = c.settingDefs
-    .filter((d) => settingGroup(d) === 'deco' && (!d.showIf || d.showIf(c.settings)))
+    .filter((d) => settingGroup(d) === 'deco' && settingShown(c, d))
     .flatMap((d) => {
       const o = d.options.find((x) => x.value === c.settings[d.key]);
       if (!o) return [];
@@ -193,7 +193,8 @@ function alertHtml(a: RecAlert, i: number, r: DiveRecord): string {
   </section>`;
 }
 
-function sheetHtml(r: DiveRecord): string {
+/** `chartW`: the width the charts are drawn at (that of the sheet, at most CHART_W). */
+function sheetHtml(r: DiveRecord, chartW = CHART_W): string {
   const L = lang();
   const list = allRecords();
   const n = list.indexOf(r) + 1;
@@ -237,11 +238,11 @@ function sheetHtml(r: DiveRecord): string {
     <section class="rc-sec"><h3>${t('rcSummary')}</h3><div class="rc-figs">${figs}</div>${settings}</section>
     <section class="rc-sec"><h3>${t('rcKey')}</h3><ul class="rc-key">${kp}</ul></section>
     <section class="rc-sec"><h3>${t('profile')}</h3><p class="rc-help">${t('rcProfileHelp')}</p>
-      ${profileSvg(points, markers, unit, { depth: t('depth'), ceiling: t('ceiling') })}</section>
+      ${profileSvg(points, markers, unit, { depth: t('depth'), ceiling: t('ceiling') }, chartW)}</section>
     ${sat.length > 1 ? `<section class="rc-sec"><h3>${t('rcSat')}</h3><p class="rc-help">${t('rcSatHelp')}</p>
-      ${saturationSvg(sat, Math.round(r.gfHigh), { mValue: t('rcMValue'), gfHigh: t('rcGfHigh') })}</section>` : ''}
+      ${saturationSvg(sat, Math.round(r.gfHigh), { mValue: t('rcMValue'), gfHigh: t('rcGfHigh') }, chartW)}</section>` : ''}
     ${r.tissues.length === COMPARTMENTS ? `<section class="rc-sec"><h3>${t('rcTissues')}</h3><p class="rc-help">${t('rcTissuesHelp')}</p>
-      ${tissuesSvg(r.tissues, Math.round(r.gfHigh) || 100)}</section>` : ''}
+      ${tissuesSvg(r.tissues, Math.round(r.gfHigh) || 100, chartW)}</section>` : ''}
     <section class="rc-sec"><h3>${t('rcAlerts')} (${r.alerts.length})</h3>${alerts}</section>
     ${tables}
     <p class="rc-foot">${t('rcFooter')}</p>`;
@@ -290,8 +291,11 @@ function render(scrollTo: number | null = null): void {
     </div>
     <article class="rc-sheet" id="recap-sheet" tabindex="-1">${sheetHtml(r)}</article>
     <label class="rc-auto"><input type="checkbox" data-rc="auto" ${app.recapAuto ? 'checked' : ''}> ${t('logAuto')}</label>`;
-  fitScreens(dlg);
   const sheet = $('recap-sheet');
+  // Narrower than the charts (a phone): drawn again at the sheet's width, their text kept at its size.
+  const chartW = Math.floor(sheet.querySelector('.rc-chart')?.getBoundingClientRect().width ?? CHART_W);
+  if (chartW > 0 && chartW < CHART_W) sheet.innerHTML = sheetHtml(r, chartW);
+  fitScreens(dlg);
   sheet.focus({ preventScroll: true });
   const target = scrollTo === null ? null : sheet.querySelector<HTMLElement>(`#rc-alert-${scrollTo}`);
   if (target) target.scrollIntoView({ block: 'start' });
@@ -373,6 +377,21 @@ export function setupRecap(): void {
     e.preventDefault();
     e.stopPropagation();
     dlg.querySelectorAll<HTMLButtonElement>('.rc-bar [data-rc-go]')[e.key === 'ArrowLeft' ? 0 : 1]?.click();
+  });
+  // Turning the phone: the charts follow the sheet's new width, the reading place kept (not when only
+  // the height changes, as when a phone's address bar hides).
+  let resizeTimer = 0;
+  let lastWidth = window.innerWidth;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      if (window.innerWidth === lastWidth) return;
+      lastWidth = window.innerWidth;
+      if (!dlg.open) return;
+      const top = $('recap-sheet').scrollTop;
+      render();
+      $('recap-sheet').scrollTop = top;
+    }, 200);
   });
   window.addEventListener('afterprint', () => {
     document.body.classList.remove('print-recap');

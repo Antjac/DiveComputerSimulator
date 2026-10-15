@@ -29,7 +29,7 @@ export function decoPpo2Setting(showIf: (s: Record<string, string>) => boolean):
 
 /**
  * Define Gas, On / Off of the programmed deco gases (gases 2 and 3 of the page; the simulator assumes
- * the gases are programmed as carried). Technical manual §10.2 Select Gas: "Gases that are turned off
+ * the gases are programmed as carried, and offers the setting only for a gas carried). Technical manual §10.2 Select Gas: "Gases that are turned off
  * are not used in decompression calculations"; Recreational and Peregrine TX manuals §11.4: "In 3 GasNx
  * mode gases may be edited and turned on or off during a dive". Turning them off during the dive is
  * done here with these settings (Dive Setup > Define Gas is not simulated).
@@ -41,6 +41,7 @@ export function gasOnSettings(showIf: (s: Record<string, string>) => boolean): S
     options: [{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }],
     default: 'on',
     group: 'deco' as const,
+    gas: n,
     showIf,
   }));
 }

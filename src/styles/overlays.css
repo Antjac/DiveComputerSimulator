@@ -1,6 +1,7 @@
 /* First-visit notice */
 .modal {
-  width: min(460px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 18px 20px;
+  width: min(460px, calc(100vw - 32px)); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); padding: 18px 20px;
+  overflow: auto; overscroll-behavior: contain;
   background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
 }
@@ -218,6 +219,9 @@
 .boat-choices .btn.primary { background: #1d2630; color: #fffdf5; }
 .boat-choices .btn:hover, .boat-pause select:hover { border-color: #1f6fa8; }
 .boat-offer.no-tail::before, .boat-offer.no-tail::after { display: none; }
+/* Taller than the water column (phones): over the computer (app/boat.ts, placeBoatBubble). */
+.boat-offer.float { position: fixed; max-height: calc(100dvh - 16px); overflow-y: auto; overscroll-behavior: contain; }
+.scene-area:has(.boat-offer.float) { position: relative; z-index: 5; }
 @media (max-width: 640px), (max-height: 500px) and (orientation: landscape) {
   .boat-offer { padding: 7px 10px; font-size: 12px; }
   .boat-choices { margin-top: 6px; gap: 4px; }

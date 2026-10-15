@@ -216,14 +216,24 @@ export function placeBoatBubble(): void {
   if (bubbleAt?.key !== key || Math.abs(top - bubbleAt.top) > BOB) {
     const below = top - 14 - bh < 8;
     const y = below ? bottom + 14 : top - 14 - bh;
-    // Short water column (phones): no room above or below, the bubble stays whole, without its tail.
+    // Short water column (phones): no room above or below, the bubble stays whole, without its tail,
+    // its bottom on the water column's and rising over the computer if it is taller (the water column
+    // would cut it, its last choice hidden under the time controls).
     const fits = y + bh <= pr.height - 8;
-    bubbleAt = { key, top, y: fits ? y : Math.max(8, pr.height - bh - 8), below, fits };
+    bubbleAt = { key, top, y: fits ? y : Math.max(8 - pr.top, pr.height - bh - 8), below, fits };
   }
   const { y, below, fits } = bubbleAt;
   const x = Math.max(8, Math.min(ax - bw * 0.65, pr.width - bw - 8));
+  el.classList.toggle('float', !fits);
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
+  if (!fits) {
+    // Fixed, out of the water column; its containing block is not the viewport (.scene-area is a
+    // size container): placed, then moved by the gap measured.
+    const r = el.getBoundingClientRect();
+    el.style.left = `${2 * x + pr.left - r.left}px`;
+    el.style.top = `${2 * y + pr.top - r.top}px`;
+  }
   el.style.setProperty('--tail', `${Math.max(14, Math.min(ax - x, bw - 14))}px`);
   el.classList.toggle('above', !below);
   el.classList.toggle('no-tail', !fits);
