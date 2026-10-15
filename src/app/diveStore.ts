@@ -275,7 +275,7 @@ function cleanMn90(v: unknown): DiveRecord['mn90'] {
   };
 }
 
-const EVENT_KINDS = ['target', 'rate', 'gas', 'seabed', 'site', 'rmv'] as const;
+const EVENT_KINDS = ['target', 'rate', 'gas', 'seabed', 'site', 'rmv', 'heading'] as const;
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 

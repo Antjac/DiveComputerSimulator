@@ -841,6 +841,9 @@ export class Scene3D {
     // The scenery only stops the diver from sinking into it; it never lifts them (the depth profile
     // stays entirely in the user's hands).
     s.seabed = Math.max(this.footprint(this.px, this.pz, this.heading) - CLEARANCE, s.depth);
+    // Compass heading: the scene's angle grows anticlockwise seen from above (steer(1) turns right by
+    // lowering it), a bearing clockwise: north is the scene's +z.
+    s.heading = (-this.heading * 180) / Math.PI;
   }
 
   /** Behind the diver, orbitable, pulled in when the scenery hides the diver. */

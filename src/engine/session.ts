@@ -103,7 +103,7 @@ export interface DiveLogEntry {
  * session was in before the first of them, it is all that is needed to replay the dive (app/replay.ts).
  */
 export type JournalEvent =
-  | { t: number; k: 'target' | 'rate' | 'gas' | 'seabed' | 'site' | 'rmv'; v: number }
+  | { t: number; k: 'target' | 'rate' | 'gas' | 'seabed' | 'site' | 'rmv' | 'heading'; v: number }
   | { t: number; k: 'refill' };
 
 /** The journal of a dive that ended: `token` is whatever `onJournalStart` returned before the first command. */
@@ -116,6 +116,8 @@ export interface ClosedJournal {
 
 /** Seabed moves smaller than this (m) are not journaled. */
 const SEABED_STEP = 0.25;
+/** Turns smaller than this (degrees) are not journaled. */
+const HEADING_STEP = 5;
 
 /** Longest journal kept (events other than the diver's own commands are dropped beyond it). */
 const MAX_JOURNAL = 20_000;
@@ -223,6 +225,28 @@ export class DiveSession {
     this._seabed = v;
   }
 
+  /**
+   * Compass heading of the diver, degrees clockwise from north (0–360), set by the 3D view as the diver
+   * turns (north being the scene's own reference); it stays as it is in the 2D view. Read by the
+   * computers that have a compass.
+   */
+  private _heading = 0;
+  private headingNoted = 0;
+  get heading(): number {
+    return this._heading;
+  }
+
+  set heading(v: number) {
+    if (this.inputsLocked) return;
+    v = ((v % 360) + 360) % 360;
+    const turn = Math.abs(((v - this.headingNoted + 540) % 360) - 180);
+    if (turn >= HEADING_STEP) {
+      this.headingNoted = v;
+      this.note('heading', v);
+    }
+    this._heading = v;
+  }
+
   // --- Journal, for the replay of the dive (app/replay.ts) ---
 
   /** Commands since the last one given at the surface. */
@@ -263,6 +287,7 @@ export class DiveSession {
         case 'rate': this.setRate(e.v); break;
         case 'gas': this.switchGas(e.v); break;
         case 'seabed': this.seabed = e.v; break;
+        case 'heading': this.heading = e.v; break;
         case 'site': this.siteDepth = e.v; break;
         case 'rmv': this.rmv = e.v; break;
         case 'refill': this.refillTank(); break;

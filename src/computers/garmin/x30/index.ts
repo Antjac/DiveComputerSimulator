@@ -32,7 +32,7 @@ export class GarminDescentX30 extends DescentXDevice {
     this.init();
   }
 
-  protected screens(): ('primary' | 'dynamic' | 'tank')[] {
+  protected screens(): ('primary' | 'compass' | 'dynamic' | 'tank')[] {
     return ['primary', 'dynamic'];
   }
 

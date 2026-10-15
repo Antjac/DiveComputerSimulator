@@ -25,7 +25,7 @@ export function gasName(g: { o2: number; he?: number }): string {
 }
 
 /** Simulator values the device would measure (marked as such: not data of the dive). */
-export const FICTIVE = { battery: 100, heading: 0 };
+export const FICTIVE = { battery: 100 };
 
 /** Stop banner: depth, timer and colour of the box, or null outside any stop. */
 export interface StopBanner {
@@ -41,7 +41,7 @@ export interface StopBanner {
 
 export abstract class DescentXDevice extends DescentXRules {
   /** Data screens in the NEXT loop: primary, dynamic depth, transceiver (X50i with a transceiver). */
-  protected abstract screens(v: ComputerView): ('primary' | 'dynamic' | 'tank')[];
+  protected abstract screens(v: ComputerView): ('primary' | 'compass' | 'dynamic' | 'tank')[];
   /** SVG of the whole display (viewBox `vbW` × 320), the left column being drawn by `leftColumn`. */
   protected abstract primary(v: ComputerView, s: DiveSession): string;
   protected abstract tankScreen(v: ComputerView, s: DiveSession): string;
@@ -61,7 +61,44 @@ export abstract class DescentXDevice extends DescentXRules {
   private given = new Set<string>();
   private repeats = new Map<string, { last: number; count: number }>();
   /** In-dive menu (ENTER): "Press ENTER, select Switch Gas, and select a backup or decompression gas." */
-  private menu: { page: 'menu' | 'gas'; idx: number } | null = null;
+  private menu: { page: 'menu' | 'gas' | 'compass'; idx: number } | null = null;
+  /** The model has the dive compass (Navigating with the Dive Compass): Set Heading and Compass in the menu. */
+  protected readonly hasCompass: boolean = false;
+  /**
+   * Heading set with Set Heading (degrees), or null. Compass, Setting the Compass Heading: "If you begin
+   * a dive, the compass heading is retained": kept from one dive to the next.
+   */
+  refHeading: number | null = null;
+
+  /** Entries of a menu page (no figure: the wording of the manual's steps). */
+  private menuItems(page: 'menu' | 'gas' | 'compass', s: DiveSession): string[] {
+    if (page === 'gas') return this.knownGases(s).map((g, i) => `${gasName(g)}${i === s.breathing ? ' ✓' : ''}`);
+    // "To set the heading again, select Change Heading. [...] Set to Recip. [...] Set to 90L or Set to 90R
+    // [...] Clear Heading."
+    if (page === 'compass') return ['Change Heading', 'Set to Recip.', 'Set to 90L', 'Set to 90R', 'Clear Heading'];
+    return [
+      ...(this.knownGases(s).length > 1 ? ['Switch Gas'] : []),
+      // "Press ENTER. Select Set Heading. [...] Press ENTER. Select Compass."
+      ...(this.hasCompass ? ['Set Heading', ...(this.refHeading !== null ? ['Compass'] : [])] : []),
+    ];
+  }
+
+  private chooseMenu(item: string, s: DiveSession): void {
+    const h = Math.round(s.heading) % 360;
+    const ref = this.refHeading ?? h;
+    switch (item) {
+      case 'Switch Gas': this.menu = { page: 'gas', idx: s.breathing }; return;
+      case 'Compass': this.menu = { page: 'compass', idx: 0 }; return;
+      case 'Set Heading':
+      case 'Change Heading': this.refHeading = h; break;
+      case 'Set to Recip.': this.refHeading = (ref + 180) % 360; break;
+      // 90° left or right of the heading set (deduced: the manual does not say from which heading).
+      case 'Set to 90L': this.refHeading = (ref + 270) % 360; break;
+      case 'Set to 90R': this.refHeading = (ref + 90) % 360; break;
+      case 'Clear Heading': this.refHeading = null; break;
+    }
+    this.menu = null;
+  }
   /** Answer highlighted in the switch prompt: 0 Yes, 1 Not Now. */
   private promptSel = 0;
 
@@ -388,20 +425,20 @@ export abstract class DescentXDevice extends DescentXRules {
     }
     const m = this.menu;
     if (m && s.inDive) {
-      const n = m.page === 'menu' ? 1 : this.knownGases(s).length;
+      const items = this.menuItems(m.page, s);
+      const n = items.length;
       if (button === 'next') m.idx = (m.idx + 1) % n;
       else if (button === 'prev') m.idx = (m.idx + n - 1) % n;
-      else if (button === 'back') this.menu = m.page === 'gas' ? { page: 'menu', idx: 0 } : null;
+      else if (button === 'back') this.menu = m.page !== 'menu' ? { page: 'menu', idx: 0 } : null;
       else if (button === 'enter') {
-        if (m.page === 'menu') this.menu = { page: 'gas', idx: s.breathing };
-        else {
+        if (m.page === 'gas') {
           s.switchGas(m.idx);
           this.menu = null;
-        }
+        } else this.chooseMenu(items[m.idx], s);
       }
       return true;
     }
-    if (button === 'enter' && s.inDive && this.knownGases(s).length > 1) {
+    if (button === 'enter' && s.inDive && this.menuItems('menu', s).length > 0) {
       this.menu = { page: 'menu', idx: 0 };
       return true;
     }
@@ -435,7 +472,7 @@ export abstract class DescentXDevice extends DescentXRules {
         press: {
           real: { fr: 'Écran de données suivant (et boussole) ; dans un menu : élément suivant', en: 'Next data screen (and compass); in a menu: next item' },
           simulated: true,
-          note: { fr: 'la boussole n’est pas simulée', en: 'the compass is not simulated' },
+          ...(this.hasCompass ? {} : { note: { fr: 'la boussole n’est pas simulée', en: 'the compass is not simulated' } }),
         },
       },
       enter: {
@@ -443,7 +480,9 @@ export abstract class DescentXDevice extends DescentXRules {
         press: {
           real: { fr: 'Menu de plongée (Switch Gas, boussole, chronomètre…) ; dans un menu : sélection', en: 'In-dive menu (Switch Gas, compass, stopwatch…); in a menu: select' },
           simulated: true,
-          note: { fr: 'avec plusieurs gaz, entrée Switch Gas seulement', en: 'with several gases, Switch Gas item only' },
+          note: this.hasCompass
+            ? { fr: 'entrées Switch Gas (plusieurs gaz), Set Heading et Compass seulement', en: 'Switch Gas (several gases), Set Heading and Compass items only' }
+            : { fr: 'avec plusieurs gaz, entrée Switch Gas seulement', en: 'with several gases, Switch Gas item only' },
         },
       },
     };
@@ -454,13 +493,14 @@ export abstract class DescentXDevice extends DescentXRules {
   /** In-dive menu and gas list (no figure in the manual: a plain list, deduced). */
   private menuScreen(s: DiveSession): string {
     const m = this.menu!;
-    const items = m.page === 'menu' ? ['Switch Gas'] : this.knownGases(s).map((g, i) => `${gasName(g)}${i === s.breathing ? ' ✓' : ''}`);
+    const items = this.menuItems(m.page, s);
     const cx = this.vbW / 2;
+    const gap = items.length > 4 ? 44 : 46;
     const rows = items.map((it, i) => {
-      const y = 160 + (i - (items.length - 1) / 2) * 46;
+      const y = 172 + (i - (items.length - 1) / 2) * gap;
       return `${i === m.idx ? `<rect x="${cx - 150}" y="${y - 32}" width="300" height="42" rx="6" fill="#0a84ff"/>` : ''}${this.t(cx, y, 30, it, { anchor: 'middle' })}`;
     }).join('');
-    return `${this.t(cx, 40, 24, m.page === 'menu' ? 'DIVE' : 'SWITCH GAS', { anchor: 'middle', fill: GREY })}${rows}`;
+    return `${this.t(cx, 34, 24, m.page === 'menu' ? 'DIVE' : m.page === 'gas' ? 'SWITCH GAS' : 'COMPASS', { anchor: 'middle', fill: GREY })}${rows}`;
   }
 
   /** "Switch to %1 now?" (layout and answers deduced: no figure). */
@@ -472,6 +512,11 @@ export abstract class DescentXDevice extends DescentXRules {
       return `${i === this.promptSel ? `<rect x="${cx - 110}" y="${y - 34}" width="220" height="46" rx="6" fill="#0a84ff"/>` : ''}${this.t(cx, y, 32, it, { anchor: 'middle' })}`;
     }).join('');
     return `${this.t(cx, 70, 40, `Switch to ${name} now?`, { anchor: 'middle' })}${rows}`;
+  }
+
+  /** Full-screen dive compass (models with a compass). */
+  protected compassScreen(v: ComputerView, s: DiveSession): string {
+    return this.primary(v, s);
   }
 
   /** Dynamic depth screen (gas dives): left column, then @+5 / Δ+5 or NDL Δ 3M / STOPS and the chart. */
@@ -490,6 +535,7 @@ export abstract class DescentXDevice extends DescentXRules {
     else if (this.menu) content = this.menuScreen(s);
     else if (kind === 'dynamic' && v.inDive) content = this.dynamicScreen(v, s);
     else if (kind === 'tank') content = this.tankScreen(v, s);
+    else if (kind === 'compass') content = this.compassScreen(v, s);
     else content = this.primary(v, s);
     el.innerHTML = `
       <div class="dev gx ${this.frame}">
