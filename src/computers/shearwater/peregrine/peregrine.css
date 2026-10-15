@@ -50,6 +50,7 @@
 .pt-stop.done { font-size: 32px; margin-top: 12px; }
 .pt-mark { font-size: 26px; margin-right: 4px; vertical-align: 14px; }
 .pt-hl { display: inline-block; line-height: 1; background: #ffd400; color: #000; padding: 1px 3px 0; }
+.pt-rarrow { font-size: 0.55em; vertical-align: 0.15em; }
 .pt-hl-red { display: inline-block; line-height: 0.92; background: #ff2a1f; color: #000; padding: 0 2px; }
 .pt-hl-yellow { display: inline-block; line-height: 0.92; background: #ffd400; color: #000; padding: 0 2px; }
 .pt-ndlrow { flex: 1; display: flex; align-items: flex-end; gap: 4px; min-height: 0; }

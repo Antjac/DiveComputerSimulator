@@ -41,6 +41,10 @@
 .pd-stop.green { font-size: 32px; color: #2fdb4a; margin-top: 14px; }
 .pd-down { font-size: 26px; margin-right: 4px; vertical-align: middle; }
 .pd-hl { display: inline-block; line-height: 1; background: #ffd400; color: #000; padding: 1px 3px 0; }
+.pd-hl.pd-hl-red { background: #ff2a1f; }
+.pdt .pd-hl { color: #000; }
+/* RATE: unit stacked right of the value ("ft/min" in the §4.4 figure). */
+.pd-vunit { display: inline-block; font-size: 0.32em; line-height: 1.05; text-align: left; vertical-align: 0.3em; margin-left: 2px; }
 .pd-ndlrow { flex: 1; display: flex; align-items: flex-end; gap: 6px; }
 .pd-ndl { flex: 1; text-align: right; }
 .pd-big { font-size: 58px; font-weight: 500; }

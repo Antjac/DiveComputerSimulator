@@ -5,6 +5,7 @@ import { depthInt, depthText, depthUnit, imperial, pressText, pressUnit, tempUni
 import { ButtonHelp, ComputerView, clockOfDay, leadingOnGas } from '../../base';
 import { type PerdixNotice, PerdixRules } from './rules';
 import { SwMenu, bestGas, gasDensity, nxName, swO2, trimixName, turnGasOn } from '../multigas';
+import { rateColour } from '../rate';
 
 const NOTICE_TEXT: Record<PerdixNotice, string> = {
   'high-ppo2': 'HIGH PPO2',
@@ -433,6 +434,15 @@ export class ShearwaterPerdix extends PerdixRules {
         return d > 0 ? `+${d}` : String(d);
       }
       case 'TTS': return String(v.tts);
+      case 'RATE': {
+        // §4.4 table figure "↓43 ft/min": arrow for the direction (up ascending), unit stacked; release
+        // notes and Info Screen Descriptions: the ascent colours of rate.ts around the number.
+        const r = v.inDive ? v.ascentRate : 0;
+        const val = Math.round(Math.abs(imperial() ? r * 3.28084 : r));
+        const arrow = val === 0 ? '' : r > 0 ? '↑' : '↓';
+        const col = rateColour(r);
+        return `<small>${arrow}</small>${col ? `<span class="pd-hl${col === 'red' ? ' pd-hl-red' : ''}">${val}</span>` : val}<small class="pd-blue pd-vunit">${depthUnit()}<br>min</small>`;
+      }
       case 'TEMP': return `${Math.round(tempVal(v.temperature))}<small class="pd-blue">${tempUnit()}</small>`;
       case 'CLOCK': {
         const { h, m } = clockOfDay(s);

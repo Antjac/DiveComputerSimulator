@@ -5,6 +5,7 @@ import { depthInt, depthText, depthUnit, imperial, pressText, pressUnit, tempUni
 import { ButtonHelp, ComputerView, clockOfDay, leadingOnGas } from '../../base';
 import { type PeregrineNotice, PeregrineRules } from './rules';
 import { SwMenu, bestGas, gasDensity, nxName, swO2, turnGasOn } from '../multigas';
+import { rateColour } from '../rate';
 
 // §4.10 primary notifications: title ("Warning", or "Alert" for the custom alerts) and message, as on
 // the figures of the table.
@@ -345,7 +346,9 @@ export class ShearwaterPeregrine extends PeregrineRules {
         const r = v.inDive ? v.ascentRate : 0;
         const val = Math.round(Math.abs(imperial() ? r * 3.28084 : r));
         const arrow = val === 0 ? '' : r > 0 ? '↑' : '↓';
-        return cell('RATE', `${arrow}${val}<span class="pt-vunit u">${u}<br>min</span>`, pos);
+        // Release notes v78: yellow above 10.5 m/min, red above 19.5 m/min, during ascents (rate.ts).
+        const col = rateColour(r);
+        return cell('RATE', `${arrow ? `<span class="pt-rarrow">${arrow}</span>` : ''}${col ? `<span class="pt-hl-${col}">${val}</span>` : val}<span class="pt-vunit u">${u}<br>min</span>`, pos);
       }
       case 'temp': return cell('TEMP', `${Math.round(tempVal(v.temperature))}<small class="pt-cyan">${tempUnit()}</small>`, pos);
       case 'cyl': return v.tank.ai ? this.pressureCell(v, s, pos) : cell('T1', '---', pos);
