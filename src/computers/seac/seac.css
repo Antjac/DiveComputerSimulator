@@ -1,0 +1,21 @@
+/* SEAC Screen / Tablet: light-blue segmented LCD, two buttons (L, R) under the display. */
+.sc-case {
+  display: flex; flex-direction: column; align-items: center; padding: 26px 26px 14px;
+  background: linear-gradient(160deg, #3c4148, #15171a 70%); box-shadow: 0 16px 30px rgba(0,0,0,0.5), inset 0 0 0 3px #5a6068;
+}
+.sc-wrist .sc-case { border-radius: 70px; }
+.sc-tablet .sc-case { border-radius: 26px; padding: 30px 40px 16px; }
+.sc-glass { background: #0d1014; padding: 8px; border-radius: 22px; }
+.sc-tablet .sc-glass { border-radius: 10px; }
+.sc-screen { display: block; width: 300px; height: 240px; border-radius: 16px; }
+.sc-tablet .sc-screen { width: 340px; height: 272px; border-radius: 6px; }
+.sc-bg { fill: #c9e2f3; } .sc-band { fill: #e3e8ec; }
+.lit .sc-bg { fill: #ddf0ff; } .lit .sc-band { fill: #f2f6f8; }
+.sc-t { font-family: 'Barlow Condensed', 'Roboto Condensed', sans-serif; font-weight: 600; fill: #111; }
+.sc-t.sc-inv { fill: #c9e2f3; }
+.sc-t.sc-red { fill: #e0261b; }
+.sc-tag { font: 700 10px 'Roboto Condensed', sans-serif; fill: #c9e2f3; }
+.sc-on { fill: #111; } .sc-off { fill: none; stroke: #9db4c4; stroke-width: 1.5; }
+.sc-btns { display: flex; justify-content: space-between; width: 70%; margin-top: 12px; }
+.sc-btn { width: 30px; height: 30px; border: 0; cursor: pointer; transform: rotate(45deg); background: radial-gradient(circle at 40% 35%, #9aa1a8, #3e4348); box-shadow: 0 2px 3px rgba(0,0,0,0.5); }
+.sc-btn.pressed { translate: 0 2px; }

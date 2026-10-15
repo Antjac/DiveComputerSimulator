@@ -14,6 +14,9 @@
 @import './computers/shearwater/peregrine/peregrine.css';
 @import './computers/shearwater/teric/teric.css';
 @import './computers/garmin/garmin.css';
+@import './computers/garmin/descentx/descentx.css';
+@import './computers/seac/seac.css';
+@import './computers/cressi/davinci/davinci.css';
 @import './computers/suunto/d5/suunto.css';
 @import './computers/suunto/zoopnovo/zoopnovo.css';
 @import './computers/suunto/nautic/nautic.css';

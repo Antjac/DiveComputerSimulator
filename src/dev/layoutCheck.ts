@@ -15,7 +15,7 @@ export interface DevHook {
 type Box = { left: number; right: number; top: number; bottom: number };
 interface Item { t: string; el: Element; rc: Box }
 
-const SCREENS = '.pd-screen, .pt-screen, .tr-screen, .aq3-screen, .aq7-screen, .qc-screen, .qa-lcd, .q2-lcd, .gn-screen, .g2-screen, .g3-screen, .mr-lcd, .cg-lcd, .gm-screen, .su-screen, .ln-screen, .zn-lcd, .od-screen, .nt-screen, .ec-screen';
+const SCREENS = '.pd-screen, .pt-screen, .tr-screen, .aq3-screen, .aq7-screen, .qc-screen, .qa-lcd, .q2-lcd, .gn-screen, .g2-screen, .g3-screen, .mr-lcd, .cg-lcd, .gm-screen, .su-screen, .ln-screen, .zn-lcd, .od-screen, .nt-screen, .ec-screen, .gx-screen, .sc-screen, .dv-screen';
 const ctx = document.createElement('canvas').getContext('2d')!;
 
 /** Ink box of a text run: the line box shrunk to the glyphs actually drawn. */
@@ -52,7 +52,9 @@ export function checkLayout(): string[] {
   // The device may be scaled (CSS transform): tolerances are in screen CSS pixels.
   const zoom = scr instanceof HTMLElement && scr.offsetWidth ? sr.width / scr.offsetWidth : 1;
   const hz = 2 * zoom;
-  const round = scr.tagName.toLowerCase() === 'svg';
+  // Round screens (Garmin Mk3): a CSS radius of half the width; square SVG screens are not round.
+  const rad0 = getComputedStyle(scr).borderTopLeftRadius;
+  const round = scr.tagName.toLowerCase() === 'svg' && (rad0.endsWith('%') ? parseFloat(rad0) >= 40 : parseFloat(rad0) >= sr.width * 0.4);
   const items: Item[] = [];
   const seen = new Set<Element>();
   const walker = document.createTreeWalker(scr, NodeFilter.SHOW_TEXT);

@@ -11,6 +11,13 @@ To report an error: a GitHub issue or antoalex@free.fr. Details are in the Git h
 
 Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or change (EN).
 
+## 2026-10-15
+
+- Cressi DaVinci · Nouveau modèle (mode Computer), d'après son manuel : écran couleur des figures (NO DECO, palier, DECO ENTRY, BACK TO STOP DEPTH, SLOW!), barre ASC selon la profondeur, pénalité de 1,5 min par minute au-dessus du palier et mode violation, palier de sécurité et deep stop, 4 gaz et SWITCH TO, alarmes acquittées par R / New model (Computer mode), after its manual: colour display of the figures (NO DECO, stop, DECO ENTRY, BACK TO STOP DEPTH, SLOW!), depth-dependent ASC bar, 1.5 min penalty per minute above the stop and violation mode, safety stop and deep stop, 4 gases and SWITCH TO, alarms acknowledged with R.
+- Outil de mise en page (dev) · Les écrans SVG carrés ne sont plus contrôlés comme des écrans ronds / Layout tool (dev): square SVG screens are no longer checked as round ones.
+- SEAC Screen et Tablet · Nouveaux modèles (mode SCUBA), d'après leurs manuels : écran à segments des figures, palier de sécurité et deep stop réglables, points de pénalité et verrouillage de 18 h, changement de mélange, sonde de bloc du Tablet ; GF des niveaux de protection non publiés (valeurs du SEAC Guru supposées) / New models (SCUBA mode), after their manuals: segmented display of the figures, settable safety stop and deep stop, penalty points and 18 h lock, mix change, Tablet tank probe; GF of the protection levels not published (SEAC Guru values assumed).
+- Garmin Descent X30 et X50i · Nouveaux modèles (modes Single-Gas et Multi-Gas), d'après leurs manuels : écrans principaux, bandeaux STOP et DECO, écran Dynamic Depth, écran de l'émetteur (X50i), alertes du tableau Dive Alerts, invite de changement de gaz qui revient au bout de 2 min / New models (Single-Gas and Multi-Gas modes), after their manuals: main screens, STOP and DECO banners, Dynamic Depth screen, transceiver screen (X50i), alerts of the Dive Alerts table, gas switch prompt coming back after 2 minutes.
+
 ## 2026-10-14
 
 - Tous / All · Replay : le bateau restait affiché pendant tout le replay quand il était venu en fin de

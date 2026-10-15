@@ -14,121 +14,126 @@ export const PRESETS: Record<string, [number, number]> = { low: [45, 95], medium
 const GF_VALUES = Array.from({ length: 19 }, (_, i) => String(10 + i * 5));
 const customGf = (s: Record<string, string>) => s.gf === 'custom';
 
+/** Settings of the Descent family (Mk3 owner's manual, Dive Setup; the X models filter them). */
+export function descentSettings(): SettingDef[] {
+  return [
+  {
+    // Dive Modes: "Single-Gas: This mode allows you to dive with a single gas blend. You can set up to
+    // 11 additional gases as backup gases." / "Multi-Gas: This mode allows you to configure multiple
+    // gas blends and switch gases during your dive. [...] one bottom gas, and up to 11 additional gases
+    // as decompression or backup gases." The mode is chosen on the watch before the dive (no default
+    // in the manual: Single-Gas assumed).
+    key: 'diveMode',
+    label: { fr: 'Mode de plongée', en: 'Dive mode' },
+    options: [{ value: 'single', label: 'Single-Gas' }, { value: 'multi', label: 'Multi-Gas' }],
+    default: 'single',
+  },
+  {
+    key: 'gf',
+    label: { fr: 'Conservatisme', en: 'Conservatism' },
+    options: [
+      { value: 'low', label: 'Low (45/95)' },
+      { value: 'medium', label: 'Medium (40/85)' },
+      { value: 'high', label: 'High (35/70)' },
+      { value: 'custom', label: 'Custom' },
+    ],
+    default: 'medium',
+  },
+  {
+    key: 'gfLow',
+    label: { fr: 'GF bas (Custom)', en: 'GF low (Custom)' },
+    options: GF_VALUES.map((v) => ({ value: v, label: `${v} %` })),
+    default: '40',
+    showIf: customGf,
+  },
+  {
+    key: 'gfHigh',
+    label: { fr: 'GF haut (Custom)', en: 'GF high (Custom)' },
+    options: GF_VALUES.map((v) => ({ value: v, label: `${v} %` })),
+    default: '85',
+    showIf: customGf,
+  },
+  {
+    key: 'layout',
+    essential: true,
+    label: { fr: 'Affichage', en: 'Display' },
+    options: [{ value: 'big', label: 'Big Numbers' }, { value: 'std', label: 'Standard' }],
+    default: 'big',
+  },
+  {
+    key: 'safety',
+    label: { fr: 'Palier de sécurité', en: 'Safety stop' },
+    options: [{ value: '3', label: '3 min' }, { value: '4', label: '4 min' }, { value: '5', label: '5 min' }],
+    default: '3',
+  },
+  {
+    key: 'lastStop',
+    label: { fr: 'Dernier palier', en: 'Last deco stop' },
+    options: [{ value: '3', label: '3 m' }, { value: '6', label: '6 m' }],
+    default: '3',
+  },
+  {
+    // Manual, dive settings: "Silent Diving: Disables all tones and vibrations for alerts during dive
+    // activities". Default not given: off assumed.
+    key: 'silent',
+    label: { fr: 'Plongée silencieuse', en: 'Silent diving' },
+    options: [{ value: 'on', label: { fr: 'Activé', en: 'On' } }, { value: 'off', label: { fr: 'Désactivé', en: 'Off' } }],
+    default: 'off',
+  },
+  // Manual, Setting PO2 Thresholds (MOD/Deco PO2): range and default not given, 1.0–1.6 and 1.4 assumed.
+  { ...ppo2Setting(1.0, 1.6, 1.4, 'MOD/Deco PO2'), label: { fr: 'MOD/Deco PO2', en: 'MOD/Deco PO2' } },
+  // Manual, Transceiver Settings: "Reserve Pressure: Sets the threshold values for reserve pressure and
+  // critical pressure alerts" (both always on; no half tank or turn pressure alert on the device).
+  // Range and default not given: 20 to 100 bar by 5, 50 bar assumed (not verified).
+  pressureSetting('reserve', { fr: 'Pression de réserve (Reserve Pressure)', en: 'Reserve Pressure' }, 20, 100, 5, 50),
+  // Setting PO2 Thresholds: "PO2 Warning" (the PO2 value flashes yellow) and "PO2 Critical" (alert "PO2
+  // is high"). Ranges and defaults not given: 1.4 and 1.6 bar assumed.
+  {
+    key: 'po2Warn',
+    label: { fr: 'Seuil PO2 Warning', en: 'PO2 Warning' },
+    options: [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6].map((b) => ({ value: b.toFixed(1), label: `${b.toFixed(1)} bar` })),
+    default: '1.4',
+  },
+  {
+    key: 'po2Crit',
+    label: { fr: 'Seuil PO2 Critical', en: 'PO2 Critical' },
+    options: [1.4, 1.5, 1.6, 1.7, 1.8].map((b) => ({ value: b.toFixed(1), label: `${b.toFixed(1)} bar` })),
+    default: '1.6',
+  },
+  // Custom Dive Alerts (Scuba Alerts): "Depth: the alert occurs when you reach the selected depth",
+  // "Time: the alert occurs when the selected time interval elapses". None is set by default.
+  {
+    key: 'depthAlert',
+    label: { fr: 'Alerte personnalisée de profondeur (Depth)', en: 'Custom depth alert' },
+    options: [{ value: 'off', label: { fr: 'Aucune', en: 'None' } }, ...Array.from({ length: 20 }, (_, i) => ({ value: String(5 + i * 5), label: `${5 + i * 5} m` }))],
+    default: 'off',
+  },
+  {
+    key: 'timeAlert',
+    label: { fr: 'Alerte personnalisée de durée (Time, intervalle)', en: 'Custom time alert (interval)' },
+    options: [{ value: 'off', label: { fr: 'Aucune', en: 'None' } }, ...[5, 10, 15, 20, 30, 45, 60].map((m) => ({ value: String(m), label: `${m} min` }))],
+    default: 'off',
+  },
+];
+}
+
 /**
  * Garmin Descent Mk3, Single-Gas and Multi-Gas dive modes.
  * Layout and thresholds follow the Descent Mk3 Series owner's manual (Dive data screens, safety and
  * decompression stops, alerts).
  */
 export abstract class DescentRules extends DiveComputer {
-  readonly id = 'garmin';
-  readonly name = 'Garmin Descent Mk3i';
+  readonly id: string = 'garmin';
+  readonly name: string = 'Garmin Descent Mk3i';
   readonly algorithm = 'Bühlmann ZHL-16C + GF';
   readonly exact = true;
-  readonly transmitter = 'Descent T2';
-  readonly gasTimeName = 'ATR';
-  readonly notes = {
+  readonly transmitter: string | null = 'Descent T2';
+  readonly gasTimeName: string = 'ATR';
+  readonly notes: { fr: string; en: string } = {
     fr: 'Bühlmann ZHL-16C avec facteurs de gradient : Low, Medium, High ou Custom (GF bas et haut réglés séparément ; bornes et pas non donnés par le manuel, 10 à 100 % par 5 supposés). DOWN (et UP en sens inverse) : écrans de données ; LIGHT, START et BACK ne sont pas simulés. Verrouillage de déco après 3 min au-dessus du plafond. L’écran TTS / plafond / GF99 / Surface GF est un écran personnalisé : sur la montre, ces champs s’ajoutent via Dive Setup > Display Settings > Data Screens. Émetteur : pression de réserve réglable (valeur par défaut non indiquée : 50 bar supposé), alertes « T1 is below reserve pressure. » et « T1 pressure is critically low. » sous max(21 bar, réserve / 2) ; la montre n’a pas d’alerte de demi-bloc. Alertes du tableau Dive Alerts : Approaching NDL (10 et 5 min), NDL exceeded, Approaching Deco Stop, Decompression Cleared, Safety Stop Started / Cleared, CNS 80 % et 100 % (toutes les 2 min, 3 fois), OTU 250 et 300, PO2 Warning (valeur en jaune) et PO2 is high (toutes les 30 s, 3 fois ; seuils 1,4 / 1,6 bar supposés), alertes personnalisées de profondeur et de durée (texte non donné : « Depth Alert » / « Time Alert » déduits). Modes de plongée Single-Gas (par défaut supposé) et Multi-Gas (Dive Modes). Single-Gas : les gaz de déco de la page sont des gaz de secours (« backup gases »), hors NDL et TTS tant qu’ils ne sont pas activés. Multi-Gas : ce sont des gaz de décompression, comptés dans le NDL et la TTS ; à la MOD/Deco PO2 d’un gaz plus riche pendant la remontée, invite « Safe to switch to … Switch now? » (Yes / Not Now / Never, UP / DOWN puis START) ; Not Now, ou l’invite ignorée (30 s supposées) : « Continuing on … Switch at any time. », le gaz devient un gaz de secours et sort du calcul jusqu’à ce qu’on le choisisse ; Never : « No more gas switch alerts will be issued. », plus d’invite pour ce gaz. La montre ne change jamais de gaz d’elle-même. Dans les deux modes, START > Gas : choix d’un gaz, y compris le retour au gaz fond (UP / DOWN, START, BACK pour revenir) ; alerte « PO2 is high. Ascend or switch to lower O2 gas. ». Déduits : libellés Yes et « Switched to … » (non donnés), nouvelle invite après Not Now une fois redescendu sous la profondeur de changement. Non simulés : fin automatique de plongée, batterie, capteur, CCR, gaz de voyage (Travel Gas), ajout d’un gaz en plongée (Add New).',
     en: 'Bühlmann ZHL-16C with gradient factors: Low, Medium, High or Custom (GF low and high set separately; range and step not given by the manual, 10 to 100 % by 5 assumed). DOWN (and UP backwards): data screens; LIGHT, START and BACK are not simulated. Decompression lockout after 3 min above the ceiling. The TTS / ceiling / GF99 / Surface GF screen is a custom one: on the watch, these fields are added via Dive Setup > Display Settings > Data Screens. Transmitter: settable reserve pressure (default not given: 50 bar assumed), "T1 is below reserve pressure." and "T1 pressure is critically low." below max(21 bar, reserve / 2) alerts; the watch has no half tank alert. Dive Alerts table: Approaching NDL (10 and 5 min), NDL exceeded, Approaching Deco Stop, Decompression Cleared, Safety Stop Started / Cleared, CNS 80% and 100% (every 2 min, 3 times), OTU 250 and 300, PO2 Warning (yellow value) and PO2 is high (every 30 s, 3 times; 1.4 / 1.6 bar thresholds assumed), custom depth and time alerts (text not given: "Depth Alert" / "Time Alert" deduced). Single-Gas (assumed default) and Multi-Gas dive modes (Dive Modes). Single-Gas: the deco gases set on the page are backup gases, left out of the NDL and TTS until activated. Multi-Gas: they are decompression gases, counted in the NDL and TTS; at the MOD/Deco PO2 of a richer gas during the ascent, "Safe to switch to … Switch now?" prompt (Yes / Not Now / Never, UP / DOWN then START); Not Now, or the prompt ignored (30 s assumed): "Continuing on … Switch at any time.", the gas becomes a backup gas and leaves the calculation until selected; Never: "No more gas switch alerts will be issued.", no more prompt for that gas. The watch never switches gases by itself. In both modes, START > Gas: choose a gas, including back to the bottom gas (UP / DOWN, START, BACK to go back); "PO2 is high. Ascend or switch to lower O2 gas." alert. Deduced: the Yes and "Switched to …" wording (not given), a new prompt after Not Now once back below the switch depth. Not simulated: automatic dive end, battery, sensor, CCR, travel gas, adding a gas during the dive (Add New).',
   };
-  readonly settingDefs: SettingDef[] = [
-    {
-      // Dive Modes: "Single-Gas: This mode allows you to dive with a single gas blend. You can set up to
-      // 11 additional gases as backup gases." / "Multi-Gas: This mode allows you to configure multiple
-      // gas blends and switch gases during your dive. [...] one bottom gas, and up to 11 additional gases
-      // as decompression or backup gases." The mode is chosen on the watch before the dive (no default
-      // in the manual: Single-Gas assumed).
-      key: 'diveMode',
-      label: { fr: 'Mode de plongée', en: 'Dive mode' },
-      options: [{ value: 'single', label: 'Single-Gas' }, { value: 'multi', label: 'Multi-Gas' }],
-      default: 'single',
-    },
-    {
-      key: 'gf',
-      label: { fr: 'Conservatisme', en: 'Conservatism' },
-      options: [
-        { value: 'low', label: 'Low (45/95)' },
-        { value: 'medium', label: 'Medium (40/85)' },
-        { value: 'high', label: 'High (35/70)' },
-        { value: 'custom', label: 'Custom' },
-      ],
-      default: 'medium',
-    },
-    {
-      key: 'gfLow',
-      label: { fr: 'GF bas (Custom)', en: 'GF low (Custom)' },
-      options: GF_VALUES.map((v) => ({ value: v, label: `${v} %` })),
-      default: '40',
-      showIf: customGf,
-    },
-    {
-      key: 'gfHigh',
-      label: { fr: 'GF haut (Custom)', en: 'GF high (Custom)' },
-      options: GF_VALUES.map((v) => ({ value: v, label: `${v} %` })),
-      default: '85',
-      showIf: customGf,
-    },
-    {
-      key: 'layout',
-      essential: true,
-      label: { fr: 'Affichage', en: 'Display' },
-      options: [{ value: 'big', label: 'Big Numbers' }, { value: 'std', label: 'Standard' }],
-      default: 'big',
-    },
-    {
-      key: 'safety',
-      label: { fr: 'Palier de sécurité', en: 'Safety stop' },
-      options: [{ value: '3', label: '3 min' }, { value: '4', label: '4 min' }, { value: '5', label: '5 min' }],
-      default: '3',
-    },
-    {
-      key: 'lastStop',
-      label: { fr: 'Dernier palier', en: 'Last deco stop' },
-      options: [{ value: '3', label: '3 m' }, { value: '6', label: '6 m' }],
-      default: '3',
-    },
-    {
-      // Manual, dive settings: "Silent Diving: Disables all tones and vibrations for alerts during dive
-      // activities". Default not given: off assumed.
-      key: 'silent',
-      label: { fr: 'Plongée silencieuse', en: 'Silent diving' },
-      options: [{ value: 'on', label: { fr: 'Activé', en: 'On' } }, { value: 'off', label: { fr: 'Désactivé', en: 'Off' } }],
-      default: 'off',
-    },
-    // Manual, Setting PO2 Thresholds (MOD/Deco PO2): range and default not given, 1.0–1.6 and 1.4 assumed.
-    { ...ppo2Setting(1.0, 1.6, 1.4, 'MOD/Deco PO2'), label: { fr: 'MOD/Deco PO2', en: 'MOD/Deco PO2' } },
-    // Manual, Transceiver Settings: "Reserve Pressure: Sets the threshold values for reserve pressure and
-    // critical pressure alerts" (both always on; no half tank or turn pressure alert on the device).
-    // Range and default not given: 20 to 100 bar by 5, 50 bar assumed (not verified).
-    pressureSetting('reserve', { fr: 'Pression de réserve (Reserve Pressure)', en: 'Reserve Pressure' }, 20, 100, 5, 50),
-    // Setting PO2 Thresholds: "PO2 Warning" (the PO2 value flashes yellow) and "PO2 Critical" (alert "PO2
-    // is high"). Ranges and defaults not given: 1.4 and 1.6 bar assumed.
-    {
-      key: 'po2Warn',
-      label: { fr: 'Seuil PO2 Warning', en: 'PO2 Warning' },
-      options: [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6].map((b) => ({ value: b.toFixed(1), label: `${b.toFixed(1)} bar` })),
-      default: '1.4',
-    },
-    {
-      key: 'po2Crit',
-      label: { fr: 'Seuil PO2 Critical', en: 'PO2 Critical' },
-      options: [1.4, 1.5, 1.6, 1.7, 1.8].map((b) => ({ value: b.toFixed(1), label: `${b.toFixed(1)} bar` })),
-      default: '1.6',
-    },
-    // Custom Dive Alerts (Scuba Alerts): "Depth: the alert occurs when you reach the selected depth",
-    // "Time: the alert occurs when the selected time interval elapses". None is set by default.
-    {
-      key: 'depthAlert',
-      label: { fr: 'Alerte personnalisée de profondeur (Depth)', en: 'Custom depth alert' },
-      options: [{ value: 'off', label: { fr: 'Aucune', en: 'None' } }, ...Array.from({ length: 20 }, (_, i) => ({ value: String(5 + i * 5), label: `${5 + i * 5} m` }))],
-      default: 'off',
-    },
-    {
-      key: 'timeAlert',
-      label: { fr: 'Alerte personnalisée de durée (Time, intervalle)', en: 'Custom time alert (interval)' },
-      options: [{ value: 'off', label: { fr: 'Aucune', en: 'None' } }, ...[5, 10, 15, 20, 30, 45, 60].map((m) => ({ value: String(m), label: `${m} min` }))],
-      default: 'off',
-    },
-  ];
+  readonly settingDefs: SettingDef[] = descentSettings();
 
   /**
    * Setting Up Your Breathing Gases: "You can enter up to twelve gases for each gas dive mode.

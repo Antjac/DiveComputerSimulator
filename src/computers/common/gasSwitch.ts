@@ -138,6 +138,15 @@ export class GasPrompt {
     return g;
   }
 
+  /**
+   * A declined gas may be offered again where the diver is (Garmin Descent X: "You will be prompted
+   * again in two minutes"), without going back below its MOD.
+   */
+  rearm(i: number): void {
+    this.declined.delete(i);
+    this.armed.add(i);
+  }
+
   /** The diver declines it (stays on the current gas). */
   decline(): void {
     if (this.offer !== null) this.declined.add(this.offer);
