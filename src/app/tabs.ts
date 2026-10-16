@@ -9,6 +9,11 @@ export function showTabs(redraw = true): void {
   document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((x) => x.classList.toggle('on', open && x.dataset.tab === app.activeTab));
   document.querySelectorAll<HTMLElement>('[data-pane]').forEach((p) => (p.hidden = !open || p.dataset.pane !== app.activeTab));
   $('sheet').classList.toggle('open', open);
+  // Phones: the open tab's name heads the sheet (same i18n key as its button, so applyI18n follows it).
+  const btn = document.querySelector<HTMLButtonElement>(`[data-tab="${app.activeTab}"]`);
+  const title = $('sheet-title');
+  title.dataset.i18n = btn?.dataset.i18n ?? '';
+  title.textContent = btn?.textContent ?? '';
   if (redraw) refresh();
 }
 
