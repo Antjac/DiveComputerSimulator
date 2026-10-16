@@ -154,7 +154,8 @@ export abstract class TericRules extends DiveComputer {
     // at most 1 + MAX_DECO_GASES gases: only those are offered, and only when carried.
     ...Array.from({ length: MAX_DECO_GASES }, (_, i) => i + 2).map((n): SettingDef => ({
       key: `gas${n}`,
-      label: { fr: `Gaz ${n} (Edit Gases)`, en: `Gas ${n} (Edit Gases)` },
+      // Named after the page's deco gas it is (gas 2 = deco gas 1), with the device's gas number and menu.
+      label: { fr: `Gaz de déco ${n - 1} (gaz ${n}, Edit Gases)`, en: `Deco gas ${n - 1} (gas ${n}, Edit Gases)` },
       options: [{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }],
       default: 'on',
       group: 'deco',

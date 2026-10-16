@@ -37,7 +37,8 @@ export function decoPpo2Setting(showIf: (s: Record<string, string>) => boolean):
 export function gasOnSettings(showIf: (s: Record<string, string>) => boolean): SettingDef[] {
   return [2, 3].map((n) => ({
     key: `gas${n}`,
-    label: { fr: `Gaz ${n} (Define Gas)`, en: `Gas ${n} (Define Gas)` },
+    // Named after the page's deco gas it is (gas 2 = deco gas 1), with the device's gas number and menu.
+    label: { fr: `Gaz de déco ${n - 1} (gaz ${n}, Define Gas)`, en: `Deco gas ${n - 1} (gas ${n}, Define Gas)` },
     options: [{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }],
     default: 'on',
     group: 'deco' as const,

@@ -11,6 +11,10 @@ To report an error: a GitHub issue or antoalex@free.fr. Details are in the Git h
 
 Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or change (EN).
 
+## 2026-10-16
+
+- Shearwater Perdix 2, Peregrine TX et Teric · Réglages : « Gaz 2 / Gaz 3 (Define Gas / Edit Gases) » deviennent « Gaz de déco 1 / 2 (gaz 2 / 3, …) », comme les gaz de déco de la page / Settings: “Gas 2 / Gas 3 (Define Gas / Edit Gases)” become “Deco gas 1 / 2 (gas 2 / 3, …)”, as the page's deco gases.
+
 ## 2026-10-15
 
 - Tous / All · Téléphones : la bulle du bateau, plus haute que la colonne d'eau, avait son bas (dernier choix) caché sous les commandes de temps ; elle déborde maintenant sur l'ordinateur et reste entière. Les fenêtres (dont le récapitulatif de plongée) tiennent dans la partie visible de l'écran, sous la barre d'adresse ; dans le récapitulatif, les chiffres clés passent sur deux colonnes et les graphiques sont dessinés à la largeur de l'écran (leur texte devenait illisible) / Phones: the boat's speech bubble, taller than the water column, had its bottom (last choice) hidden under the time controls; it now spills over the computer and stays whole. Dialogs (the dive recap among them) fit in the visible part of the screen, under the address bar; in the recap, the key figures go in two columns and the charts are drawn at the screen's width (their text was unreadable).
