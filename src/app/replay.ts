@@ -30,6 +30,8 @@ interface Run {
   ongoing: boolean;
   /** Ongoing replay only: the replay is playing (the pause button of the page is then the dive's own). */
   playing: boolean;
+  /** Started from the recap, which opens again when the replay is left (from the logbook: it does not). */
+  fromRecap: boolean;
 }
 
 let run: Run | null = null;
@@ -74,10 +76,11 @@ function begin(r: Run): void {
   refresh(true);
 }
 
-export function startReplay(id: string): void {
+/** Replays closed dive `id`, from its recap or from its row of the logbook (`fromRecap` false). */
+export function startReplay(id: string, fromRecap = true): void {
   const rec = findRecord(id);
   if (!rec?.replay || !canReplay()) return;
-  const liveRunning = closeRecapForReplay();
+  const liveRunning = fromRecap ? closeRecapForReplay() : !app.paused;
   const liveState = captureState(session, computers);
   const view = app.view;
   const rp = new Replayer(session, computers, rec.replay.start, rec.replay.events, rec.replay.endClock);
@@ -85,7 +88,7 @@ export function startReplay(id: string): void {
   app.selectedDive = rec.id;
   app.speed = START_SPEED;
   app.paused = false;
-  begin({ rp, rec, liveState, liveRunning, speed, view, ongoing: false, playing: false });
+  begin({ rp, rec, liveState, liveRunning, speed, view, ongoing: false, playing: false, fromRecap });
 }
 
 /** From the pause: the dive in progress is replayed from its start, at the moment it was paused. */
@@ -96,11 +99,11 @@ export function startLiveReplay(): void {
   const liveState = captureState(session, computers);
   const rec: ReplayedDive = { id: 'live', entry, alerts: diveAlerts(session.diveStart) };
   const rp = new Replayer(session, computers, j.token as DiveState, j.events, j.endClock, liveState);
-  begin({ rp, rec, liveState, liveRunning: false, speed: app.speed, view: app.view, ongoing: true, playing: false });
+  begin({ rp, rec, liveState, liveRunning: false, speed: app.speed, view: app.view, ongoing: true, playing: false, fromRecap: false });
 }
 
 /**
- * Leaves the replay: the live state comes back. A closed dive's recap opens again; the dive in progress
+ * Leaves the replay: the live state comes back. A closed dive's recap opens again (if the replay started from it); the dive in progress
  * stays paused, or resumes where it was (`resume`).
  */
 export function stopReplay(reopen = true, resume = false): void {
@@ -118,7 +121,7 @@ export function stopReplay(reopen = true, resume = false): void {
   if (r.view === '3d') void setView('3d');
   renderControls();
   refresh(true);
-  if (reopen && !r.ongoing) openRecap(r.rec.id);
+  if (reopen && r.fromRecap) openRecap(r.rec.id);
 }
 
 /** The page's pause button (or the space bar) in the replay of the dive in progress: the dive resumes. Tells whether it did. */

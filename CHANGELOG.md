@@ -13,6 +13,7 @@ Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or ch
 
 ## 2026-10-16
 
+- Tous / All · Carnet : bouton « Revoir la plongée » sur chaque plongée enregistrée qui peut être rejouée, sans passer par le récapitulatif ; en sortant du replay, on revient au carnet / Logbook: “Replay the dive” button on each saved dive that can be replayed, without going through the recap; leaving the replay goes back to the logbook.
 - Tous / All · Téléphone : le bouton ✕ du panneau des onglets a sa propre bande en haut, avec le nom de l'onglet ouvert ; le contenu défile dessous au lieu de passer sous le bouton / Phone: the close button of the tabs sheet has a band of its own at the top, with the name of the open tab; the content scrolls below it instead of under the button.
 - Tous / All · Réglages avancés : dans le groupe des alertes, le libellé est désormais au-dessus de sa liste, comme partout ailleurs (il était à gauche), avec la même largeur de liste / Advanced settings: in the alerts group, the name is now above its list, as everywhere else (it was on its left), with the same list width.
 - Tous / All · Nouveau : volets redimensionnables sur grand écran (largeur de la colonne d'eau et des onglets, hauteur de la courbe de profil) en faisant glisser leurs bords ; double-clic pour revenir à la taille par défaut ; tailles mémorisées / New: resizable panes on wide screens (width of the water column and of the side panel, height of the profile chart) by dragging their edges; double-click for the default size; sizes remembered.
