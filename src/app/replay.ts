@@ -32,6 +32,12 @@ interface Run {
   playing: boolean;
   /** Started from the recap, which opens again when the replay is left (from the logbook: it does not). */
   fromRecap: boolean;
+  /**
+   * Replay time the page's clock has reached (s). The replay steps by 0.5 s in the water (5 s at the surface)
+   * and may stop a little beyond the time asked: it only steps again once this time has caught up, so that
+   * the speeds under ×10 are kept (a step at each tick of the loop made them all ×10).
+   */
+  target: number;
 }
 
 let run: Run | null = null;
@@ -88,7 +94,7 @@ export function startReplay(id: string, fromRecap = true): void {
   app.selectedDive = rec.id;
   app.speed = START_SPEED;
   app.paused = false;
-  begin({ rp, rec, liveState, liveRunning, speed, view, ongoing: false, playing: false, fromRecap });
+  begin({ rp, rec, liveState, liveRunning, speed, view, ongoing: false, playing: false, fromRecap, target: rp.pos });
 }
 
 /** From the pause: the dive in progress is replayed from its start, at the moment it was paused. */
@@ -99,7 +105,7 @@ export function startLiveReplay(): void {
   const liveState = captureState(session, computers);
   const rec: ReplayedDive = { id: 'live', entry, alerts: diveAlerts(session.diveStart) };
   const rp = new Replayer(session, computers, j.token as DiveState, j.events, j.endClock, liveState);
-  begin({ rp, rec, liveState, liveRunning: false, speed: app.speed, view: app.view, ongoing: true, playing: false, fromRecap: false });
+  begin({ rp, rec, liveState, liveRunning: false, speed: app.speed, view: app.view, ongoing: true, playing: false, fromRecap: false, target: rp.pos });
 }
 
 /**
@@ -135,8 +141,9 @@ export function resumeFromReplay(): boolean {
 export function tickReplay(simDt: number): void {
   if (!run) return;
   const { rp } = run;
-  if (rp.atEnd) rp.seek(0);
-  rp.seek(rp.pos + simDt);
+  if (rp.atEnd) rp.seek((run.target = 0));
+  run.target = Math.min(rp.duration, run.target + simDt);
+  if (run.target > rp.pos) rp.seek(run.target);
   if (rp.atEnd) {
     if (run.ongoing) run.playing = false;
     else app.paused = true;
@@ -148,6 +155,7 @@ export function tickReplay(simDt: number): void {
 function goTo(pos: number): void {
   if (!run) return;
   run.rp.seek(pos);
+  run.target = run.rp.pos;
   refresh();
 }
 

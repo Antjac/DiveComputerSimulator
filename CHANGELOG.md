@@ -13,6 +13,8 @@ Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or ch
 
 ## 2026-10-16
 
+- Azoth Odyssey · Champ en haut à droite : P moy. s'affiche en nombre entier, sans décimale (« 11 » et non « 11,2 »), comme sur les photos de l'appareil (ticket n° 17) / Top-right field: P moy. is shown as a whole number, without decimals (“11”, not “11,2”), as on the device's photos (issue #17).
+- Tous / All · Replay : les vitesses ×1, ×2 et ×5 restaient à ×10 dans l'eau (le replay avançait d'un pas de 0,5 s à chaque tick de 50 ms) ; la vitesse choisie est maintenant respectée / Replay: speeds ×1, ×2 and ×5 stayed at ×10 in the water (the replay moved one 0.5 s step on every 50 ms tick); the chosen speed is now kept.
 - Tous / All · Carnet : bouton « Revoir la plongée » sur chaque plongée enregistrée qui peut être rejouée, sans passer par le récapitulatif ; en sortant du replay, on revient au carnet / Logbook: “Replay the dive” button on each saved dive that can be replayed, without going through the recap; leaving the replay goes back to the logbook.
 - Tous / All · Téléphone : le bouton ✕ du panneau des onglets a sa propre bande en haut, avec le nom de l'onglet ouvert ; le contenu défile dessous au lieu de passer sous le bouton / Phone: the close button of the tabs sheet has a band of its own at the top, with the name of the open tab; the content scrolls below it instead of under the button.
 - Tous / All · Réglages avancés : dans le groupe des alertes, le libellé est désormais au-dessus de sa liste, comme partout ailleurs (il était à gauche), avec la même largeur de liste / Advanced settings: in the alerts group, the name is now above its list, as everywhere else (it was on its left), with the same list width.
