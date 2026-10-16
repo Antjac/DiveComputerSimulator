@@ -37,6 +37,7 @@ const dict = {
   updLose: { fr: 'La plongée en mémoire (et son intervalle de surface) sera perdue ; le carnet et les réglages sont gardés.', en: 'The dive in memory (and its surface interval) will be lost; the logbook and settings are kept.' },
   updApply: { fr: 'Mettre à jour', en: 'Update' },
   updLater: { fr: 'Plus tard', en: 'Later' },
+  paneResize: { fr: 'Glisser pour redimensionner · double-clic : taille par défaut', en: 'Drag to resize · double-click: default size' },
   speed: { fr: 'Vitesse du temps', en: 'Time speed' },
   pause: { fr: 'Pause', en: 'Pause' },
   play: { fr: 'Reprendre', en: 'Resume' },

@@ -25,6 +25,8 @@ export interface Prefs {
   alertHelp: 'off' | 'bubble' | 'pause';
   alertHelpMuted: string[];
   recapAuto: boolean;
+  /** Sizes of the resizable panes (app/panes.ts), px. */
+  panes?: { scene?: number; side?: number; profile?: number };
 }
 
 function loadPrefs(): Partial<Prefs> {
@@ -58,6 +60,7 @@ export function currentPrefs(): Prefs {
     alertHelp: app.alertHelp,
     alertHelpMuted: app.alertHelpMuted,
     recapAuto: app.recapAuto,
+    panes: app.panes,
   };
 }
 
@@ -101,7 +104,18 @@ export function cleanPrefs(v: unknown): Partial<Prefs> | null {
     }
     out.settings = settings;
   }
+  if (o.panes && typeof o.panes === 'object' && !Array.isArray(o.panes)) out.panes = cleanPanes(o.panes as Record<string, unknown>);
   return Object.keys(out).length ? (out as Partial<Prefs>) : null;
+}
+
+/** Pane sizes: numbers within reach of any screen only. */
+function cleanPanes(o: Record<string, unknown>): NonNullable<Prefs['panes']> {
+  const out: NonNullable<Prefs['panes']> = {};
+  for (const k of ['scene', 'side', 'profile'] as const) {
+    const v = o[k];
+    if (typeof v === 'number' && Number.isFinite(v) && v >= 50 && v <= 4000) out[k] = v;
+  }
+  return out;
 }
 
 /** Restores the saved preferences (at start). */
@@ -131,5 +145,6 @@ export function applyPrefs(): void {
   app.tips = prefs.tips !== false; // on unless turned off
   app.alertHelp = prefs.alertHelp === 'off' || prefs.alertHelp === 'pause' ? prefs.alertHelp : 'bubble'; // bubble unless changed
   app.recapAuto = prefs.recapAuto !== false; // on unless turned off
+  app.panes = prefs.panes && typeof prefs.panes === 'object' ? cleanPanes(prefs.panes as Record<string, unknown>) : {};
   app.alertHelpMuted = Array.isArray(prefs.alertHelpMuted) ? prefs.alertHelpMuted.filter((a) => typeof a === 'string') : [];
 }

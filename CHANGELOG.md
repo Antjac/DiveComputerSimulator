@@ -13,6 +13,7 @@ Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or ch
 
 ## 2026-10-16
 
+- Tous / All · Nouveau : volets redimensionnables sur grand écran (largeur de la colonne d'eau et des onglets, hauteur de la courbe de profil) en faisant glisser leurs bords ; double-clic pour revenir à la taille par défaut ; tailles mémorisées / New: resizable panes on wide screens (width of the water column and of the side panel, height of the profile chart) by dragging their edges; double-click for the default size; sizes remembered.
 - Shearwater Perdix 2, Peregrine TX et Teric · Réglages : « Gaz 2 / Gaz 3 (Define Gas / Edit Gases) » deviennent « Gaz de déco 1 / 2 (gaz 2 / 3, …) », comme les gaz de déco de la page / Settings: “Gas 2 / Gas 3 (Define Gas / Edit Gases)” become “Deco gas 1 / 2 (gas 2 / 3, …)”, as the page's deco gases.
 
 ## 2026-10-15

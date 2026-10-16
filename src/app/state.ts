@@ -16,6 +16,8 @@ export const mn90 = new Mn90Tracker();
 export const compactMq = window.matchMedia('(max-width: 640px), (max-height: 500px) and (orientation: landscape)');
 
 export const app = {
+  /** Sizes of the resizable panes (app/panes.ts), px; absent: the default size. */
+  panes: {} as { scene?: number; side?: number; profile?: number },
   /** Computer shown (and whose settings are edited). */
   active: (computers.find((c) => c.id === DEFAULT_COMPUTER) ?? computers[0]) as DiveComputer,
   /** Simulated seconds per real second. */

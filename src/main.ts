@@ -30,6 +30,7 @@ import { app, computers, session } from './app/state';
 import { setupTabs } from './app/tabs';
 import { setupTissues } from './app/tissues';
 import { setupUpdate } from './app/update';
+import { setupPanes } from './app/panes';
 
 applyPrefs();
 
@@ -71,6 +72,7 @@ setupRecap();
 setupReplay();
 setupBackup();
 setupUpdate();
+setupPanes();
 if (import.meta.env.DEV) installDevHook();
 
 applyI18n();
