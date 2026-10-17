@@ -11,6 +11,10 @@ To report an error: a GitHub issue or antoalex@free.fr. Details are in the Git h
 
 Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or change (EN).
 
+## 2026-10-17
+
+- Shearwater Teric · Personnalisation de l’écran d’accueil (§3.7) : en mode OC Rec (dispositions Big et Standard), emplacement droit de la ligne Déco réglable (TTS par défaut, T1, GTR, GF99, SurGF, CNS, MAX, AVG, @+5, heure) ; en disposition Standard (modes OC Rec et OC Tec), ligne Info réglable avec 1 à 3 zones personnalisables parmi les options du §3.7 ou pré-réglages (Gaz/PPO2, T1/SAC/GTR, Déco) ; gaz actif reporté en bas d'écran quand la ligne Info ne le contient pas (§3.4) / Home screen customization (§3.7): in OC Rec mode (Big and Standard layouts), settable Deco row right slot (TTS by default, T1, GTR, GF99, SurGF, CNS, MAX, AVG, @+5, clock); in Standard layout (OC Rec and OC Tec modes), settable Info row with 1 to 3 customizable slots among §3.7 options or presets (Gas/PPO2, T1/SAC/GTR, Deco); active gas shown at bottom when the Info row does not show it (§3.4).
+
 ## 2026-10-16
 
 - Azoth Odyssey · Champ en haut à droite : P moy. s'affiche en nombre entier, sans décimale (« 11 » et non « 11,2 »), comme sur les photos de l'appareil (ticket n° 17) / Top-right field: P moy. is shown as a whole number, without decimals (“11”, not “11,2”), as on the device's photos (issue #17).
