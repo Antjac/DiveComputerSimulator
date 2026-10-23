@@ -3,7 +3,7 @@ import { GasPrompt } from '../../common/gasSwitch';
 import type { DiveSession } from '../../../engine/session';
 import { type AlertCue, type AlertExplain, type Bi, ComputerView, SettingDef } from '../../base';
 import { IDEAL, SOS } from '../alerts';
-import { ScubaproRules, idealAscent, levelParams, reserveSetting } from '../common';
+import { ScubaproRules, scubaproCalibration, gfParams, idealAscent, levelParams, reserveSetting } from '../common';
 import { pressureSetting, pressureValue } from '../../common/tank';
 import { ppo2Setting } from '../../common/ppo2';
 
@@ -105,7 +105,7 @@ const GF_HIGH = Array.from({ length: 11 }, (_, i) => String(50 + i * 5));
  * 2023, whose figures show the English screens): choice of algorithm (§2.2.8), MB levels or gradient
  * factors (§2.2.1, §3.9, §3.10), Light / Classic screens (§3.8.1), §3.6 warnings and §3.7 alarms,
  * ideal ascent rate table (§3.7.1), safety stop timer (§2.2.3, §3.8.4), PDIS (§3.11), PMG (§3.5.2),
- * SOS (§1.11). ZH-L16D ADT MB has unpublished adjustments: approximated; ZH-L16C+GF is reproduced.
+ * SOS (§1.11). ZH-L16D ADT MB has unpublished adjustments: approximated; ZH-L16C+GF runs on the Scubapro tissues (common.ts): approximated too.
  */
 export abstract class G3Rules extends ScubaproRules {
   readonly id = 'g3';
@@ -115,17 +115,24 @@ export abstract class G3Rules extends ScubaproRules {
 
   /** §2.2.8: ZH-L16D ADT MB PMG (factory) or ZH-L16C+GF PMG. */
   get algorithm(): string {
-    return this.gfMode ? 'ZH-L16C + GF' : 'ZH-L16D ADT MB (≈)';
+    return this.gfMode ? 'ZH-L16C + GF (≈)' : 'ZH-L16D ADT MB (≈)';
   }
 
+  readonly calibration = scubaproCalibration('g3');
+  readonly decoCalibrated = true;
+  /** Both algorithms run on the Scubapro tissues fitted to chamber tests (common.ts): ≈, GF as an undocumented variant. */
   get exact(): boolean {
+    return false;
+  }
+
+  get undocumentedVariant(): boolean {
     return this.gfMode;
   }
 
   get notes(): { fr: string; en: string } {
     return {
-      fr: 'Deux algorithmes (§2.2.8) : ZH-L16D ADT MB PMG d’usine (ajustements non publiés : approximation, niveaux MB L0 à L9, PDIS) ou ZH-L16C+GF PMG (Bühlmann avec gradient factors : reproduit ; comme sur le Luna, la décompression obligatoire est celle de 100/100 et les paliers GF s’y ajoutent ; ignorés de plus de 1,5 m, les GF augmentent de 10 (bas) et 5 (haut), §2.5.14). Écran Light d’usine (Classic automatique dès qu’il y a des paliers) ou Classic (§3.8.1) ; les fenêtres d’informations défilent avec les flèches dans l’ordre du tableau du §3.8.1.2. Vitesse de remontée idéale selon la profondeur (jaune au-delà de 110 %, REMONTÉE TROP RAPIDE au-delà de 140 %) ; palier de sécurité de 3 min dès 5 m après 10 m (automatique, manuel ou désactivé, §2.2.3) ; PALIER DÉCO IGNORÉ 0,5 m au-dessus du palier ; SOS 24 h (§1.11). Boutons (§3.2) : en haut à gauche rétroéclairage (appui long : boussole, non simulée) ; en bas à gauche BOOK : repère, relance du palier de sécurité ou remise à zéro du chronomètre affiché (appui long : changement de gaz PMG) ; flèches à droite : fenêtre d’informations suivante / précédente (appui long : résumé des gaz, résumé de déco, profil, saturation). Avertissements du §3.6 en Off / Visual / Audible / Both, valeurs par défaut des figures du §2.5 (texte muet) ; RBT = 0 min en alarme d’usine (§2.6.2.2). Multigaz PMG (§3.5.2, désactivé d’usine supposé) : jusqu’à 8 gaz ; SWITCH TO GAS T2 au MOD pendant la remontée, SAVE confirme, flèche : autre gaz ; sans réponse en 30 s, EXCLUDING GAS T2. Non simulés : fréquence cardiaque, température cutanée, effort, altitude, eau douce, paliers superficiels (§2.2.9), Trimix, Sidemount, CCR, profondimètre, apnée, boussole, images, batterie (valeur fictive), perte du signal de l’émetteur, couleur d’affichage (vert).',
-      en: 'Two algorithms (§2.2.8): ZH-L16D ADT MB PMG from the factory (unpublished adjustments: approximation, MB levels L0 to L9, PDIS) or ZH-L16C+GF PMG (Bühlmann with gradient factors: reproduced; as on the Luna, the mandatory decompression is the 100/100 one and the GF stops come on top of it; ignored by more than 1.5 m, the GF rise by 10 (low) and 5 (high), §2.5.14). Light screen from the factory (Classic automatically once stops are needed) or Classic (§3.8.1); the information windows scroll with the arrows in the order of the §3.8.1.2 table. Depth-dependent ideal ascent rate (yellow above 110 %, ASCENT TOO FAST above 140 %); 3-min safety stop from 5 m after 10 m (automatic, manual or off, §2.2.3); MISSED DECO STOP 0.5 m above the stop; 24 h SOS (§1.11). Buttons (§3.2): upper left backlight (hold: compass, not simulated); lower left BOOK: bookmark, safety stop restart or reset of the stopwatch on display (hold: PMG gas switch); right arrows: next / previous information window (hold: gas summary, deco summary, profile, saturation). §3.6 warnings set to Off / Visual / Audible / Both, defaults of the §2.5 figures (the text gives none); RBT = 0 min is an alarm from the factory (§2.6.2.2). PMG multi-gas (§3.5.2, off from the factory assumed): up to 8 gases; SWITCH TO GAS T2 at the MOD during the ascent, SAVE confirms, arrow: another gas; no answer within 30 s: EXCLUDING GAS T2. Not simulated: heart rate, skin temperature, workload, altitude, fresh water, shallow stops (§2.2.9), Trimix, Sidemount, CCR, gauge, apnea, compass, pictures, battery (fictitious value), transmitter signal loss, display colour (green).',
+      fr: 'Deux algorithmes (§2.2.8) : ZH-L16D ADT MB PMG d’usine (ajustements non publiés : approximation, niveaux MB L0 à L9, PDIS) ou ZH-L16C+GF PMG (Bühlmann avec gradient factors, sur les tissus Scubapro calés sur les essais en caisson du Luna 2.0 : variante non documentée, approximation ; comme sur le Luna, la décompression obligatoire est celle de 100/100 et les paliers GF s’y ajoutent ; ignorés de plus de 1,5 m, les GF augmentent de 10 (bas) et 5 (haut), §2.5.14). Écran Light d’usine (Classic automatique dès qu’il y a des paliers) ou Classic (§3.8.1) ; les fenêtres d’informations défilent avec les flèches dans l’ordre du tableau du §3.8.1.2. Vitesse de remontée idéale selon la profondeur (jaune au-delà de 110 %, REMONTÉE TROP RAPIDE au-delà de 140 %) ; palier de sécurité de 3 min dès 5 m après 10 m (automatique, manuel ou désactivé, §2.2.3) ; PALIER DÉCO IGNORÉ 0,5 m au-dessus du palier ; SOS 24 h (§1.11). Boutons (§3.2) : en haut à gauche rétroéclairage (appui long : boussole, non simulée) ; en bas à gauche BOOK : repère, relance du palier de sécurité ou remise à zéro du chronomètre affiché (appui long : changement de gaz PMG) ; flèches à droite : fenêtre d’informations suivante / précédente (appui long : résumé des gaz, résumé de déco, profil, saturation). Avertissements du §3.6 en Off / Visual / Audible / Both, valeurs par défaut des figures du §2.5 (texte muet) ; RBT = 0 min en alarme d’usine (§2.6.2.2). Multigaz PMG (§3.5.2, désactivé d’usine supposé) : jusqu’à 8 gaz ; SWITCH TO GAS T2 au MOD pendant la remontée, SAVE confirme, flèche : autre gaz ; sans réponse en 30 s, EXCLUDING GAS T2. Non simulés : fréquence cardiaque, température cutanée, effort, altitude, eau douce, paliers superficiels (§2.2.9), Trimix, Sidemount, CCR, profondimètre, apnée, boussole, images, batterie (valeur fictive), perte du signal de l’émetteur, couleur d’affichage (vert).',
+      en: 'Two algorithms (§2.2.8): ZH-L16D ADT MB PMG from the factory (unpublished adjustments: approximation, MB levels L0 to L9, PDIS) or ZH-L16C+GF PMG (Bühlmann with gradient factors, on the Scubapro tissues fitted to the Luna 2.0 chamber tests: undocumented variant, approximation; as on the Luna, the mandatory decompression is the 100/100 one and the GF stops come on top of it; ignored by more than 1.5 m, the GF rise by 10 (low) and 5 (high), §2.5.14). Light screen from the factory (Classic automatically once stops are needed) or Classic (§3.8.1); the information windows scroll with the arrows in the order of the §3.8.1.2 table. Depth-dependent ideal ascent rate (yellow above 110 %, ASCENT TOO FAST above 140 %); 3-min safety stop from 5 m after 10 m (automatic, manual or off, §2.2.3); MISSED DECO STOP 0.5 m above the stop; 24 h SOS (§1.11). Buttons (§3.2): upper left backlight (hold: compass, not simulated); lower left BOOK: bookmark, safety stop restart or reset of the stopwatch on display (hold: PMG gas switch); right arrows: next / previous information window (hold: gas summary, deco summary, profile, saturation). §3.6 warnings set to Off / Visual / Audible / Both, defaults of the §2.5 figures (the text gives none); RBT = 0 min is an alarm from the factory (§2.6.2.2). PMG multi-gas (§3.5.2, off from the factory assumed): up to 8 gases; SWITCH TO GAS T2 at the MOD during the ascent, SAVE confirms, arrow: another gas; no answer within 30 s: EXCLUDING GAS T2. Not simulated: heart rate, skin temperature, workload, altitude, fresh water, shallow stops (§2.2.9), Trimix, Sidemount, CCR, gauge, apnea, compass, pictures, battery (fictitious value), transmitter signal loss, display colour (green).',
     };
   }
 
@@ -236,18 +243,22 @@ export abstract class G3Rules extends ScubaproRules {
     return this.settings.algo === 'gf';
   }
 
+  get adt(): boolean {
+    return !this.gfMode;
+  }
+
   /** The mandatory decompression: L0 (ADT MB) or ZH-L16C 100/100 (GF, §3.6.19). */
   baseParams(): DecoParams {
-    return this.gfMode ? { gfLow: 1, gfHigh: 1, lastStop: 3, stopStep: 3, ascentRate: 10 } : levelParams(0);
+    return this.gfMode ? gfParams(100, 100) : levelParams(0, this.baseDeco);
   }
 
   /** GF values in force during the dive (increased when GF stops are ignored, §2.5.14). */
   activeGf: [number, number] = [30, 70];
 
   stageParams(): DecoParams | null {
-    if (!this.gfMode) return this.activeLevel > 0 ? levelParams(this.activeLevel) : null;
+    if (!this.gfMode) return this.activeLevel > 0 ? levelParams(this.activeLevel, this.stageDeco) : null;
     const [lo, hi] = this.activeGf;
-    return lo >= 100 && hi >= 100 ? null : { gfLow: lo / 100, gfHigh: hi / 100, lastStop: 3, stopStep: 3, ascentRate: 10 };
+    return lo >= 100 && hi >= 100 ? null : gfParams(lo, hi);
   }
 
   protected resetStage(): void {
@@ -270,7 +281,7 @@ export abstract class G3Rules extends ScubaproRules {
     do {
       lo = Math.min(100, lo + 10);
       hi = Math.min(100, hi + 5);
-    } while ((lo < 100 || hi < 100) && ceilingDepth(s.tissues, 0, { gfLow: lo / 100, gfHigh: hi / 100, lastStop: 3, stopStep: 3, ascentRate: 10 }) > s.depth + 1.5);
+    } while ((lo < 100 || hi < 100) && ceilingDepth(s.tissues, 0, gfParams(lo, hi)) > s.depth + 1.5);
     this.activeGf = [lo, hi];
   }
 

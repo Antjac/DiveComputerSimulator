@@ -11,6 +11,10 @@ export const SAFETY: Record<string, number> = { SF0: 0.88, SF1: 0.82, SF2: 0.76 
 
 export abstract class CressiRules extends DiveComputer {
   readonly algorithm = 'Cressi RGBM (≈)';
+  readonly calibration = {
+    fr: ['Équivalents GF des facteurs de sécurité : approximation, sans table publiée ni mesure sur appareil réel pour la caler.'],
+    en: ['GF equivalents of the safety factors: approximation, with no published table nor measurement on a real computer to fit it to.'],
+  };
   readonly exact = false;
 
   protected deepState: 'none' | 'pending' | 'active' | 'done' = 'none';

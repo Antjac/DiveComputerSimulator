@@ -57,6 +57,10 @@ interface DeepStop { depth: number; left: number; state: 'shown' | 'counting' | 
 
 export abstract class SeacRules extends DiveComputer {
   readonly algorithm = 'Bühlmann ZHL-16C + GF';
+  readonly calibration = {
+    fr: ['GF de chaque niveau de protection non publiés pour ce modèle : repris de la table du SEAC Guru (autre modèle), non vérifiés ; aucune mesure sur appareil réel.'],
+    en: ['GF of each protection level not published for this model: taken from the SEAC Guru table (another model), not verified; no measurement on a real computer.'],
+  };
   // The algorithm is public and "unmodified", but the GF of each level is not published: approximation.
   readonly exact = false;
   protected abstract readonly mixes: 2 | 3;

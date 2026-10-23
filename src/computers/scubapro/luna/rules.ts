@@ -3,7 +3,7 @@ import { GasPrompt } from '../../common/gasSwitch';
 import type { DiveSession } from '../../../engine/session';
 import { type AlertCue, type AlertExplain, type Bi, ComputerView, SettingDef } from '../../base';
 import { IDEAL, SOS, STAGE } from '../alerts';
-import { ScubaproRules, idealAscent, levelParams, reserveSetting } from '../common';
+import { ScubaproRules, scubaproCalibration, gfParams, idealAscent, levelParams, reserveSetting } from '../common';
 import { pressureSetting, pressureValue } from '../../common/tank';
 import { ppo2Setting } from '../../common/ppo2';
 
@@ -48,19 +48,26 @@ export abstract class LunaRules extends ScubaproRules {
   readonly transmitter = 'Smart';
   readonly gasTimeName = 'RBT';
 
-  /** §2.1.2.2: ZH-L16 ADT MB PMG (proprietary: approximated) or ZH-L16C+GF PMG (Bühlmann + GF: reproduced). */
+  /** §2.1.2.2: ZH-L16 ADT MB PMG (proprietary: approximated) or ZH-L16C+GF PMG (Bühlmann + GF on the Scubapro tissues: approximated, see common.ts). */
   get algorithm(): string {
-    return this.gfMode ? 'ZH-L16C + GF' : 'ZH-L16 ADT MB (≈)';
+    return this.gfMode ? 'ZH-L16C + GF (≈)' : 'ZH-L16 ADT MB (≈)';
   }
 
+  readonly calibration = scubaproCalibration('luna');
+  readonly decoCalibrated = true;
+  /** Both algorithms run on the Scubapro tissues fitted to chamber tests (common.ts): ≈, GF as an undocumented variant. */
   get exact(): boolean {
+    return false;
+  }
+
+  get undocumentedVariant(): boolean {
     return this.gfMode;
   }
 
   get notes(): { fr: string; en: string } {
     return {
-      fr: 'Deux algorithmes (§2.1.2.2) : ZH-L16 ADT MB (ajustements non publiés : approximation, niveaux MB L0 à L5, PDIS) ou ZH-L16C+GF (Bühlmann avec gradient factors : reproduit ; les paliers GF s’ajoutent à la déco 100/100). Sonde désactivée : se comporte comme le Luna 2.0 (température et NDL en bas). Vitesse de remontée idéale selon la profondeur, SLOW DOWN au-delà de 110 % ; palier de sécurité de 3 min dès 5 m après 10 m ; MISSED DECO 0,5 m au-dessus du palier ; SOS 24 h. Bouton droit : écran suivant (appui long : confirmer une alarme, pause du chronomètre) ; bouton gauche : écran précédent (appui long : repère, remise à zéro du chronomètre). Multigaz PMG (§3.19, à activer dans DIVE > SCUBA > PMG ; désactivé par défaut supposé) : jusqu’à 3 gaz (bloc principal T1 et gaz de déco de la page), tous comptés dans la décompression ; au MOD d’un autre gaz pendant la remontée, son et CONFIRM T1→T2 ; appui long à droite : GAS CHANGE SAVED ; sans réponse en 30 s : GAS 2 EXCLUDED et le gaz sort du calcul jusqu’à la fin de la plongée, sauf changement manuel vers lui (§3.19.4) ; appui long à droite : SWITCH GAS (appuis courts : autre gaz ; appui long à gauche : sortie) ; PPO2max des gaz 2 et 3 : 1,40 bar d’usine (§2.3.2), 1,6 bar à partir de 80 % d’O2. Non simulés : fréquence cardiaque et charge de travail, altitude, apnée et profondimètre, perte du signal de l’émetteur. Avertissements du §3.9 (textes des figures), chacun quelques secondes (4 s supposées) : profondeur et durée (désactivés d’usine), les autres réglés dans LogTRAK (valeurs par défaut non indiquées : activés supposé) ; HALFTANK à 100 bar (figures). Alarme RESERVE à 50 bar par défaut.',
-      en: 'Two algorithms (§2.1.2.2): ZH-L16 ADT MB (unpublished adjustments: approximation, MB levels L0 to L5, PDIS) or ZH-L16C+GF (Bühlmann with gradient factors: reproduced; GF stops come on top of the 100/100 deco). Transmitter off: behaves as the Luna 2.0 (temperature and NDL at the bottom). Depth-dependent ideal ascent rate, SLOW DOWN above 110 %; 3-min safety stop from 5 m after 10 m; MISSED DECO 0.5 m above the stop; 24 h SOS. Right button: next screen (hold: confirm an alarm, pause the timer); left button: previous screen (hold: bookmark, reset the timer). PMG multi-gas (§3.19, to be enabled in DIVE > SCUBA > PMG; off by default assumed): up to 3 gases (the main tank T1 and the deco gases set on the page), all counted in the decompression; at the MOD of another gas during the ascent, a sound and CONFIRM T1→T2; right hold: GAS CHANGE SAVED; without an answer within 30 s: GAS 2 EXCLUDED and the gas leaves the calculation for the rest of the dive, unless switched to by hand (§3.19.4); right hold: SWITCH GAS (short presses: another gas; left hold: exit); PPO2max of gases 2 and 3: 1.40 bar from the factory (§2.3.2), 1.6 bar from 80 % O2. Not simulated: heart rate and workload, altitude, apnea and gauge modes, transmitter signal loss. §3.9 warnings (texts of the figures), each for a couple of seconds (4 s assumed): depth and time (off from the factory), the others set in LogTRAK (defaults not given: on assumed); HALFTANK at 100 bar (figures). RESERVE alarm at 50 bar by default.',
+      fr: 'Deux algorithmes (§2.1.2.2) : ZH-L16 ADT MB (ajustements non publiés : approximation, niveaux MB L0 à L5, PDIS) ou ZH-L16C+GF (Bühlmann avec gradient factors, sur les tissus Scubapro calés sur les essais en caisson du Luna 2.0 : variante non documentée, approximation ; les paliers GF s’ajoutent à la déco 100/100). Sonde désactivée : se comporte comme le Luna 2.0 (température et NDL en bas). Vitesse de remontée idéale selon la profondeur, SLOW DOWN au-delà de 110 % ; palier de sécurité de 3 min dès 5 m après 10 m ; MISSED DECO 0,5 m au-dessus du palier ; SOS 24 h. Bouton droit : écran suivant (appui long : confirmer une alarme, pause du chronomètre) ; bouton gauche : écran précédent (appui long : repère, remise à zéro du chronomètre). Multigaz PMG (§3.19, à activer dans DIVE > SCUBA > PMG ; désactivé par défaut supposé) : jusqu’à 3 gaz (bloc principal T1 et gaz de déco de la page), tous comptés dans la décompression ; au MOD d’un autre gaz pendant la remontée, son et CONFIRM T1→T2 ; appui long à droite : GAS CHANGE SAVED ; sans réponse en 30 s : GAS 2 EXCLUDED et le gaz sort du calcul jusqu’à la fin de la plongée, sauf changement manuel vers lui (§3.19.4) ; appui long à droite : SWITCH GAS (appuis courts : autre gaz ; appui long à gauche : sortie) ; PPO2max des gaz 2 et 3 : 1,40 bar d’usine (§2.3.2), 1,6 bar à partir de 80 % d’O2. Non simulés : fréquence cardiaque et charge de travail, altitude, apnée et profondimètre, perte du signal de l’émetteur. Avertissements du §3.9 (textes des figures), chacun quelques secondes (4 s supposées) : profondeur et durée (désactivés d’usine), les autres réglés dans LogTRAK (valeurs par défaut non indiquées : activés supposé) ; HALFTANK à 100 bar (figures). Alarme RESERVE à 50 bar par défaut.',
+      en: 'Two algorithms (§2.1.2.2): ZH-L16 ADT MB (unpublished adjustments: approximation, MB levels L0 to L5, PDIS) or ZH-L16C+GF (Bühlmann with gradient factors, on the Scubapro tissues fitted to the Luna 2.0 chamber tests: undocumented variant, approximation; GF stops come on top of the 100/100 deco). Transmitter off: behaves as the Luna 2.0 (temperature and NDL at the bottom). Depth-dependent ideal ascent rate, SLOW DOWN above 110 %; 3-min safety stop from 5 m after 10 m; MISSED DECO 0.5 m above the stop; 24 h SOS. Right button: next screen (hold: confirm an alarm, pause the timer); left button: previous screen (hold: bookmark, reset the timer). PMG multi-gas (§3.19, to be enabled in DIVE > SCUBA > PMG; off by default assumed): up to 3 gases (the main tank T1 and the deco gases set on the page), all counted in the decompression; at the MOD of another gas during the ascent, a sound and CONFIRM T1→T2; right hold: GAS CHANGE SAVED; without an answer within 30 s: GAS 2 EXCLUDED and the gas leaves the calculation for the rest of the dive, unless switched to by hand (§3.19.4); right hold: SWITCH GAS (short presses: another gas; left hold: exit); PPO2max of gases 2 and 3: 1.40 bar from the factory (§2.3.2), 1.6 bar from 80 % O2. Not simulated: heart rate and workload, altitude, apnea and gauge modes, transmitter signal loss. §3.9 warnings (texts of the figures), each for a couple of seconds (4 s assumed): depth and time (off from the factory), the others set in LogTRAK (defaults not given: on assumed); HALFTANK at 100 bar (figures). RESERVE alarm at 50 bar by default.',
     };
   }
 
@@ -264,15 +271,19 @@ export abstract class LunaRules extends ScubaproRules {
     return this.settings.algo === 'gf';
   }
 
+  get adt(): boolean {
+    return !this.gfMode;
+  }
+
   /** The mandatory decompression: L0 (ADT MB) or ZH-L16C 100/100 (GF algorithm, §3.9.13). */
   baseParams(): DecoParams {
-    return this.gfMode ? { gfLow: 1, gfHigh: 1, lastStop: 3, stopStep: 3, ascentRate: 10 } : levelParams(0);
+    return this.gfMode ? gfParams(100, 100) : levelParams(0, this.baseDeco);
   }
 
   stageParams(): DecoParams | null {
-    if (!this.gfMode) return this.activeLevel > 0 ? levelParams(this.activeLevel) : null;
+    if (!this.gfMode) return this.activeLevel > 0 ? levelParams(this.activeLevel, this.stageDeco) : null;
     const [lo, hi] = this.activeGf;
-    return lo >= 100 && hi >= 100 ? null : { gfLow: lo / 100, gfHigh: hi / 100, lastStop: 3, stopStep: 3, ascentRate: 10 };
+    return lo >= 100 && hi >= 100 ? null : gfParams(lo, hi);
   }
 
   protected resetStage(): void {
@@ -295,7 +306,7 @@ export abstract class LunaRules extends ScubaproRules {
     do {
       lo = Math.min(100, lo + 5);
       hi = Math.min(100, hi + 5);
-    } while ((lo < 100 || hi < 100) && ceilingDepth(s.tissues, 0, { gfLow: lo / 100, gfHigh: hi / 100, lastStop: 3, stopStep: 3, ascentRate: 10 }) > s.depth + 1.5);
+    } while ((lo < 100 || hi < 100) && ceilingDepth(s.tissues, 0, gfParams(lo, hi)) > s.depth + 1.5);
     this.activeGf = [lo, hi];
   }
 

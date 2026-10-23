@@ -3,7 +3,7 @@ import { GasPrompt } from '../../common/gasSwitch';
 import type { DiveSession } from '../../../engine/session';
 import { type AlertCue, type AlertExplain, type Bi, ComputerView, SettingDef } from '../../base';
 import { IDEAL, SOS, STAGE } from '../alerts';
-import { ScubaproRules, idealAscent, levelParams, reserveSetting } from '../common';
+import { ScubaproRules, scubaproCalibration, idealAscent, levelParams, reserveSetting } from '../common';
 import { pressureSetting, pressureValue } from '../../common/tank';
 import { ppo2Setting } from '../../common/ppo2';
 
@@ -75,7 +75,9 @@ export abstract class G2Rules extends ScubaproRules {
   readonly id = 'scubapro';
   readonly name = 'Scubapro G2';
   readonly algorithm = 'ZH-L16 ADT MB (≈)';
+  readonly calibration = scubaproCalibration('g2');
   readonly exact = false;
+  readonly decoCalibrated = true;
   readonly transmitter = 'Smart';
   readonly gasTimeName = 'RBT';
   readonly notes = {
@@ -150,7 +152,7 @@ export abstract class G2Rules extends ScubaproRules {
   }
 
   baseParams(): DecoParams {
-    return levelParams(0);
+    return levelParams(0, this.baseDeco);
   }
 
   /** §3.4.2: "The G2 enables you to use up to 8 gas mixtures" once PMG is enabled (§2.2.15). */
@@ -211,7 +213,7 @@ export abstract class G2Rules extends ScubaproRules {
   levelInfo(v: ComputerView, s: DiveSession): LevelInfo {
     const info: LevelInfo = { ndl: v.ndl, stop: null, tat: v.tts };
     if (v.inDive && this.activeLevel > 0 && !v.inDeco) {
-      const lp = { ...levelParams(this.activeLevel), gases: this.planGases(s) };
+      const lp = { ...levelParams(this.activeLevel, this.stageDeco), gases: this.planGases(s) };
       info.ndl = ndl(s.tissues, v.depth, s.gas, lp.gfHigh);
       if (info.ndl === 0) {
         const lplan = planAscent(s.tissues, v.depth, s.gas, lp, this.levelAnchor);

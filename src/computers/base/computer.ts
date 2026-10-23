@@ -1,4 +1,4 @@
-import { DecoParams, Gas, PlanGas, SURFACE_PRESSURE, ceilingDepth, stopDepthFor, gasLabel, ndl, planAscent, pressureToDepth, timeToTolerate, updateAnchor } from '../../engine/buhlmann';
+import { DecoParams, Gas, PlanGas, SURFACE_PRESSURE, Tissues, type TissueVariant, ceilingDepth, depthToPressure, stopDepthFor, gasLabel, ndl, planAscent, pressureToDepth, timeToTolerate, updateAnchor } from '../../engine/buhlmann';
 import { sacBarPerMin } from '../../engine/gas';
 import { DiveSession } from '../../engine/session';
 import type { Lang } from '../../i18n';
@@ -14,7 +14,8 @@ const SEEING = ['tick', 'compute', 'render', 'press', 'hold', 'onDiveStart', 'on
 
 /**
  * A dive computer model. All models share the diver's tissue state (Bühlmann ZHL-16C), then apply
- * their own parameters, limits, extras and display.
+ * their own parameters, limits, extras and display; an approximated model may compute with its own
+ * variant of the tissues instead (see tissueVariant).
  */
 export abstract class DiveComputer {
   constructor() {
@@ -32,12 +33,53 @@ export abstract class DiveComputer {
    * The session as this computer sees it. The diver tells the computer which gas is breathed; a gas
    * it does not hold (a single-gas model, or beyond its number of gases) cannot be selected on it, so
    * the computer keeps the last gas it knew: its gas, ppO2, MOD, NDL and plan use that gas. The
-   * tissues stay those of the diver (shared by every model), a limit of the simulator.
+   * tissues are those of the diver (shared by every model), unless the model declares a variant of
+   * the tissue model (tissueVariant): it then computes with its own copy, following the same dive.
    */
   sees(s: DiveSession): DiveSession {
     const real = ((s as unknown as Record<symbol, DiveSession>)[REAL] ?? s);
     if (real.breathing < this.knownGases(real).length) this.believed = real.breathing;
-    return this.breathingGas(real, this.believed);
+    const view = this.breathingGas(real, this.believed);
+    const variant = this.tissueVariant();
+    if (!variant) {
+      this.own = null;
+      return view;
+    }
+    const tissues = this.ownTissues(real, variant);
+    const v = Object.create(view) as DiveSession;
+    Object.defineProperties(v, { [REAL]: { value: real }, tissues: { value: tissues } });
+    return v;
+  }
+
+  /**
+   * Variant of the tissue model this computer computes with (approximation of an unpublished
+   * algorithm: slower off-gassing, penalties on some compartments), or null for the diver's
+   * ZH-L16C tissues. Must not depend on the session (it is asked while building the computer's view).
+   */
+  tissueVariant(): TissueVariant | null {
+    return null;
+  }
+
+  /** The computer's own tissues (with a variant) and the session state they were last brought to. */
+  private own: { t: Tissues; src: Tissues; clock: number; depth: number } | null = null;
+
+  /**
+   * Own tissues, brought up to the session's time: the same exposure as the diver's (linear depth
+   * change, gas breathed) since the last call. Started again from the diver's tissues when those are
+   * replaced (reset, another session such as a replay) or when the clock goes back.
+   */
+  private ownTissues(real: DiveSession, variant: TissueVariant): Tissues {
+    let o = this.own;
+    if (!o || o.src !== real.tissues || real.clock < o.clock) {
+      o = this.own = { t: real.tissues.clone(), src: real.tissues, clock: real.clock, depth: real.depth };
+    } else if (real.clock > o.clock) {
+      o.t.variant = variant;
+      o.t.exposeLinear(depthToPressure(o.depth), depthToPressure(real.depth), real.gas, (real.clock - o.clock) / 60);
+      o.clock = real.clock;
+      o.depth = real.depth;
+    }
+    o.t.variant = variant;
+    return o.t;
   }
 
   /** The session as if gas `i` (index in allGases) were breathed: gas, ppO2 and MOD of that gas. */
@@ -61,8 +103,20 @@ export abstract class DiveComputer {
    * Not exact although the manual names a public algorithm: the real device departs from it in a way
    * the manufacturer does not document (shown as "undocumented variant" rather than "proprietary").
    */
-  readonly undocumentedVariant: boolean = false;
+  get undocumentedVariant(): boolean {
+    return false;
+  }
+  /**
+   * An approximated (≈) model whose stops and TTS, not only its no-stop time, are fitted to
+   * measurements on real computers (see calibration): the Compare tab shows them.
+   */
+  readonly decoCalibrated: boolean = false;
   abstract readonly notes: { fr: string; en: string };
+  /**
+   * Where the algorithm's parameters come from, or what they were checked against (measurements on
+   * real computers, published tables), one item per source: shown in the details dialog.
+   */
+  readonly calibration: { fr: string[]; en: string[] } | null = null;
   abstract readonly settingDefs: SettingDef[];
   /** Name of the optional wireless tank transmitter, or null when the model has none. */
   readonly transmitter: string | null = null;
