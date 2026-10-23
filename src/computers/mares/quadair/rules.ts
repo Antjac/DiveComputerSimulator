@@ -1,10 +1,10 @@
-import { ceilingDepth, depthToPressure, pressureToDepth, type DecoParams } from '../../../engine/buhlmann';
+import { ceilingDepth, depthToPressure, pressureToDepth, type DecoParams, type TissueVariant } from '../../../engine/buhlmann';
 import { type DiveSession } from '../../../engine/session';
 import { type AlertCue, ComputerView, DiveComputer, SettingDef, type AlertExplain } from '../../base';
 import { imperial } from '../../../units';
 import { standardNoFly } from '../../common/dives';
 import { ttsAfter } from '../../common/predict';
-import { DeepStop, FastAscentRgbm, GasSequence, MissedStop, maresCues, maresRgbmParams } from '../common';
+import { DeepStop, FastAscentRgbm, GasSequence, MissedStop, maresCues, maresRgbmParams, rgbmCalibration, rgbmVariant } from '../common';
 import { CNS100, RGBM_ASCENT, gasSwitch } from '../alerts';
 import { GasPrompt } from '../../common/gasSwitch';
 import { ppo2Setting } from '../../common/ppo2';
@@ -25,11 +25,13 @@ export abstract class QuadAirRules extends DiveComputer {
   readonly name = 'Mares Quad Air';
   readonly algorithm = 'Mares RGBM (≈)';
   readonly exact = false;
+  readonly decoCalibrated = true;
+  readonly calibration = rgbmCalibration(false);
   readonly transmitter = 'Tank module';
   readonly gasTimeName = 'TTR';
   readonly notes = {
-    fr: 'Le RGBM Mares-Wienke (10 tissus) est propriétaire : approximation identique à celle du Puck Pro (Bühlmann + P0/P1/P2, pénalité en successives). Conforme au manuel : SLOW dès 10 m/min ; remontée incontrôlée (> 12 m/min au-delà de 12 m, sur les 2/3 de la profondeur) ou palier manqué (> 1 m pendant > 3 min) = profondimètre seul pendant 24 h ; ▼ et clignotement à plus de 0,3 m au-dessus du palier, désaturation arrêtée ; RUNAWAY DECO ; TTR, réserve (au moins 50 bar) et demi-bloc (100 bar) avec le module de bloc. Boutons du haut : champ en haut à droite ; du bas : champ en bas à droite ; appui long en haut : rétroéclairage. Après la plongée : deux pages alternées (4 s). Multigaz (§3.5) : jusqu’à 3 gaz G1 à G3 (bloc principal puis gaz de déco de la page) ; au MOD d’un gaz plus riche pendant la remontée, bip et O2 % de G1 clignotant avec SWITCH pendant 20 s ; bouton du bas : gaz suivant (O2 % et MOD clignotants), appui long : confirmation ; le temps de remontée ne compte que le gaz respiré (mis à jour 20 s après le changement, §3.5.2 : « within 20 seconds ») ; ppO2max des gaz de déco 1,6 bar supposé. Palier de sécurité, comportement incertain (le manuel n’en dit rien) : redescendu sous 6 m, l’écran revient à NO DECO (constaté sur un Quad) ; le décompte reprend là où il s’était arrêté entre 6 et 3 m (témoignage sur un Mares Matrix) et repart de zéro au-delà de 10 m (supposé). Deep stop facultatif (§3.3, réglage DEEp, activé par défaut supposé) : proposé à l’approche de la limite sans palier, affiché en haut à droite (DEEP et sa profondeur), puis à ±1 m de sa profondeur DEEP clignotant et décompte de 2 min ; non compté dans l’ASC ; sa profondeur n’est pas donnée par le manuel : règle du Quad 2 et du Quad Ci supposée (profondeur où le 5e compartiment, 27 min, cesse de se charger) ; une seule fois 2 min (la variante « deux paliers de 1 min » n’est pas décrite). Non simulés : altitude, menus de surface, planificateur, carnet.',
-    en: 'Mares RGBM-Wienke (10 tissues) is proprietary: same approximation as the Puck Pro (Bühlmann + P0/P1/P2, repetitive-dive penalty). As per the manual: SLOW from 10 m/min; uncontrolled ascent (> 12 m/min deeper than 12 m, over 2/3 of the depth) or missed stop (> 1 m for > 3 min) = bottom timer only for 24 h; ▼ and blinking more than 0.3 m above the stop, desaturation halted; RUNAWAY DECO; TTR, reserve (at least 50 bar) and half tank (100 bar) with the tank module. Upper buttons: top-right field; lower buttons: bottom-right field; upper hold: backlight. After the dive: two alternating pages (4 s). Multigas (§3.5): up to 3 gases G1 to G3 (the main tank, then the deco gases set on the page); at the MOD of a richer gas during the ascent, a beep and the O2 % of G1 blinking with SWITCH for 20 s; lower button: next gas (O2 % and MOD blinking), hold: confirm; the ascent time only counts the gas breathed (updated 20 s after the switch, §3.5.2: "within 20 seconds"); ppO2max of the deco gases 1.6 bar assumed. Safety stop, uncertain behaviour (the manual is silent): back deeper than 6 m, the display returns to NO DECO (reported on a Quad); the countdown resumes where it stopped between 6 and 3 m (reported on a Mares Matrix) and restarts deeper than 10 m (assumed). Optional deep stop (§3.3, DEEp setting, on by default assumed): suggested as the no deco limit approaches, shown top right (DEEP and its depth), then within ±1 m of its depth DEEP blinking and a 2-minute countdown; not counted in the ASC; its depth is not given by the manual: the Quad 2 and Quad Ci rule is assumed (depth where the 5th compartment, 27 min, stops loading); a single 2-minute stop (the "two 1-minute stops" variant is not described). Not simulated: altitude, surface menus, planner, logbook.',
+    fr: 'Le RGBM Mares-Wienke (10 tissus) est propriétaire : approximation (Bühlmann ZHL-16C + P0/P1/P2, tissus qui dégazent plus lentement qu’ils ne se chargent), calée sur des essais en caisson du Quad Air (voir Calibrage). Conforme au manuel : SLOW dès 10 m/min ; remontée incontrôlée (> 12 m/min au-delà de 12 m, sur les 2/3 de la profondeur) ou palier manqué (> 1 m pendant > 3 min) = profondimètre seul pendant 24 h ; ▼ et clignotement à plus de 0,3 m au-dessus du palier, désaturation arrêtée ; RUNAWAY DECO ; TTR, réserve (au moins 50 bar) et demi-bloc (100 bar) avec le module de bloc. Boutons du haut : champ en haut à droite ; du bas : champ en bas à droite ; appui long en haut : rétroéclairage. Après la plongée : deux pages alternées (4 s). Multigaz (§3.5) : jusqu’à 3 gaz G1 à G3 (bloc principal puis gaz de déco de la page) ; au MOD d’un gaz plus riche pendant la remontée, bip et O2 % de G1 clignotant avec SWITCH pendant 20 s ; bouton du bas : gaz suivant (O2 % et MOD clignotants), appui long : confirmation ; le temps de remontée ne compte que le gaz respiré (mis à jour 20 s après le changement, §3.5.2 : « within 20 seconds ») ; ppO2max des gaz de déco 1,6 bar supposé. Palier de sécurité, comportement incertain (le manuel n’en dit rien) : redescendu sous 6 m, l’écran revient à NO DECO (constaté sur un Quad) ; le décompte reprend là où il s’était arrêté entre 6 et 3 m (témoignage sur un Mares Matrix) et repart de zéro au-delà de 10 m (supposé). Deep stop facultatif (§3.3, réglage DEEp, activé par défaut supposé) : proposé à l’approche de la limite sans palier, affiché en haut à droite (DEEP et sa profondeur), puis à ±1 m de sa profondeur DEEP clignotant et décompte de 2 min ; non compté dans l’ASC ; sa profondeur n’est pas donnée par le manuel : règle du Quad 2 et du Quad Ci supposée (profondeur où le 5e compartiment, 27 min, cesse de se charger) ; une seule fois 2 min (la variante « deux paliers de 1 min » n’est pas décrite). Non simulés : altitude, menus de surface, planificateur, carnet.',
+    en: 'Mares RGBM-Wienke (10 tissues) is proprietary: approximation (Bühlmann ZHL-16C + P0/P1/P2, tissues off-gassing more slowly than they load), fitted to chamber tests of the Quad Air (see Calibration). As per the manual: SLOW from 10 m/min; uncontrolled ascent (> 12 m/min deeper than 12 m, over 2/3 of the depth) or missed stop (> 1 m for > 3 min) = bottom timer only for 24 h; ▼ and blinking more than 0.3 m above the stop, desaturation halted; RUNAWAY DECO; TTR, reserve (at least 50 bar) and half tank (100 bar) with the tank module. Upper buttons: top-right field; lower buttons: bottom-right field; upper hold: backlight. After the dive: two alternating pages (4 s). Multigas (§3.5): up to 3 gases G1 to G3 (the main tank, then the deco gases set on the page); at the MOD of a richer gas during the ascent, a beep and the O2 % of G1 blinking with SWITCH for 20 s; lower button: next gas (O2 % and MOD blinking), hold: confirm; the ascent time only counts the gas breathed (updated 20 s after the switch, §3.5.2: "within 20 seconds"); ppO2max of the deco gases 1.6 bar assumed. Safety stop, uncertain behaviour (the manual is silent): back deeper than 6 m, the display returns to NO DECO (reported on a Quad); the countdown resumes where it stopped between 6 and 3 m (reported on a Mares Matrix) and restarts deeper than 10 m (assumed). Optional deep stop (§3.3, DEEp setting, on by default assumed): suggested as the no deco limit approaches, shown top right (DEEP and its depth), then within ±1 m of its depth DEEP blinking and a 2-minute countdown; not counted in the ASC; its depth is not given by the manual: the Quad 2 and Quad Ci rule is assumed (depth where the 5th compartment, 27 min, stops loading); a single 2-minute stop (the "two 1-minute stops" variant is not described). Not simulated: altitude, surface menus, planner, logbook.',
   };
   readonly settingDefs: SettingDef[] = [
     {
@@ -164,12 +166,16 @@ export abstract class QuadAirRules extends DiveComputer {
   }
 
   baseParams(): DecoParams {
-    return maresRgbmParams(this.settings.personal, null);
+    return maresRgbmParams(this.settings.personal);
   }
 
-  algoParams(s: DiveSession): DecoParams {
-    return maresRgbmParams(this.settings.personal, s);
+  /** Mares RGBM approximation: own tissues, off-gassing more slowly, above all in the water (see maresRgbmParams). */
+  tissueVariant(): TissueVariant {
+    return rgbmVariant(this.rgbmInWater);
   }
+
+  /** In a dive (tissue model in the water) at the last step. */
+  private rgbmInWater = false;
 
   /** §3.2.1: SLOW from 10 m/min ("10 m/min or higher"). No pre-warning. */
   ascentLevel(rate: number): 0 | 1 | 2 {
@@ -225,6 +231,7 @@ export abstract class QuadAirRules extends DiveComputer {
   }
 
   tick(s: DiveSession, dt: number): void {
+    this.rgbmInWater = s.inDive;
     if (this.lastBreathing !== s.breathing) this.switched = s.inDive ? { from: this.lastBreathing, to: s.breathing, at: s.clock } : null;
     this.lastBreathing = s.breathing;
     super.tick(s, dt);

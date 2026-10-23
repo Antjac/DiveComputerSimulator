@@ -1,7 +1,7 @@
-import { ceilingDepth, pressureToDepth, type DecoParams } from '../../../engine/buhlmann';
+import { ceilingDepth, pressureToDepth, type DecoParams, type TissueVariant } from '../../../engine/buhlmann';
 import { type DiveSession } from '../../../engine/session';
 import { type AlertCue, type ComputerView, DiveComputer, SettingDef, type AlertExplain } from '../../base';
-import { DeepStop, FastAscentRgbm, GasSequence, MissedStop, maresCues, maresRgbmParams } from '../common';
+import { DeepStop, FastAscentRgbm, GasSequence, MissedStop, maresCues, maresRgbmParams, rgbmCalibration, rgbmVariant } from '../common';
 import { CNS100, RGBM_ASCENT, gasSwitch } from '../alerts';
 import { GasPrompt } from '../../common/gasSwitch';
 import { ppo2Setting } from '../../common/ppo2';
@@ -16,9 +16,11 @@ export abstract class PuckRules extends DiveComputer {
   readonly name = 'Mares Puck Pro';
   readonly algorithm = 'Mares RGBM (≈)';
   readonly exact = false;
+  readonly decoCalibrated = true;
+  readonly calibration = rgbmCalibration(true);
   readonly notes = {
-    fr: 'Le RGBM Mares est propriétaire : approximation (Bühlmann + P0/P1/P2, pénalité en successives). Affichage et règles conformes au manuel : alarme à 10 m/min, remontée incontrôlée (> 12 m/min) ou palier manqué > 3 min = mode profondimètre pour les plongées suivantes. Bouton : informations alternatives (profondeur moyenne, O2 % et CNS en nitrox, heure) ; appui long : rétroéclairage. Deux gaz G1 et G2 (§3.5 ; bloc principal et premier gaz de déco de la page) : au MOD de G2 pendant la remontée, bip et O2 % de G1 clignotant 20 s ; appui : G2 proposé (O2 % clignotant, MOD en haut à droite) ; appui long : confirmation, appui : annulation ; appui long avec l’O2 % affiché : changement manuel. Remontée calculée avec le gaz respiré seulement (non vérifié : la note du §3.5 « la MOD de G2 […] est ce que le Puck Pro utilise pour son calcul » est ambiguë ; le manuel du Quad Air, qui porte la même note, précise que le temps de remontée est mis à jour après le changement) ; retour à G1 (§3.5.3.1) : même séquence, appui long avec l’O2 % affiché ; sous la MOD du gaz respiré : alarme MOD (§3.5.3.2) ; ppO2max de G2 1,6 bar supposé. Deep stop facultatif (§3.3), désactivable (réglage DEEp, absent du manuel de 02/2012 mais ajouté par le firmware V4.0 : « Option to disable display of deep stops (Set/Set dive/Deep) » ; activé par défaut supposé) : proposé à l’approche de la limite sans palier, sa profondeur à gauche de la durée sans palier ou comme premier palier en décompression (compté dans l’ASC), puis à ±1 m « deep deco » et décompte de 2 min ; sa profondeur n’est pas donnée par le manuel : règle du Quad 2 et du Quad Ci supposée (profondeur où le 5e compartiment, 27 min, cesse de se charger) ; une seule fois 2 min (la variante « deux paliers de 1 min » n’est pas décrite). Palier de sécurité, comportement incertain (le manuel n’en dit rien) : redescendu sous 6 m, l’écran revient à NO DECO (constaté sur un Quad) ; le décompte reprend là où il s’était arrêté entre 6 et 3 m (témoignage sur un Mares Matrix) et repart de zéro au-delà de 10 m (supposé).',
-    en: 'Mares RGBM is proprietary: approximation (Bühlmann + P0/P1/P2, repetitive-dive penalty). Display and rules as per the manual: alarm at 10 m/min, uncontrolled ascent (> 12 m/min) or missed stop > 3 min = bottom timer mode for the following dives. Button: alternate information (average depth, O2 % and CNS on nitrox, time of day); hold: backlight. Two gases G1 and G2 (§3.5; the main tank and the first deco gas set on the page): at the MOD of G2 during the ascent, a beep and the O2 % of G1 blinking for 20 s; press: G2 proposed (O2 % blinking, MOD top right); hold: confirm, press: cancel; hold with the O2 % shown: manual switch. Ascent computed with the gas breathed only (not verified: the §3.5 note "the MOD for G2 […] is what Puck Pro uses for its calculation" is ambiguous; the Quad Air manual, with the same note, states that the ascent time is updated after the switch); back to G1 (§3.5.3.1): same sequence, hold with the O2 % shown; below the MOD of the gas breathed: MOD alarm (§3.5.3.2); ppO2max of G2 1.6 bar assumed. Optional deep stop (§3.3), can be turned off (DEEp setting, missing from the 02/2012 manual but added by firmware V4.0: "Option to disable display of deep stops (Set/Set dive/Deep)"; on by default assumed): suggested as the no deco limit approaches, its depth left of the no deco time or as the first stop in decompression (counted in the ASC), then within ±1 m "deep deco" and a 2-minute countdown; its depth is not given by the manual: the Quad 2 and Quad Ci rule is assumed (depth where the 5th compartment, 27 min, stops loading); a single 2-minute stop (the "two 1-minute stops" variant is not described). Safety stop, uncertain behaviour (the manual is silent): back deeper than 6 m, the display returns to NO DECO (reported on a Quad); the countdown resumes where it stopped between 6 and 3 m (reported on a Mares Matrix) and restarts deeper than 10 m (assumed).',
+    fr: 'Le RGBM Mares est propriétaire : approximation (Bühlmann ZHL-16C + P0/P1/P2, tissus qui dégazent plus lentement qu’ils ne se chargent), celle du Quad Air, calée sur ses essais en caisson (voir Calibrage). Affichage et règles conformes au manuel : alarme à 10 m/min, remontée incontrôlée (> 12 m/min) ou palier manqué > 3 min = mode profondimètre pour les plongées suivantes. Bouton : informations alternatives (profondeur moyenne, O2 % et CNS en nitrox, heure) ; appui long : rétroéclairage. Deux gaz G1 et G2 (§3.5 ; bloc principal et premier gaz de déco de la page) : au MOD de G2 pendant la remontée, bip et O2 % de G1 clignotant 20 s ; appui : G2 proposé (O2 % clignotant, MOD en haut à droite) ; appui long : confirmation, appui : annulation ; appui long avec l’O2 % affiché : changement manuel. Remontée calculée avec le gaz respiré seulement (non vérifié : la note du §3.5 « la MOD de G2 […] est ce que le Puck Pro utilise pour son calcul » est ambiguë ; le manuel du Quad Air, qui porte la même note, précise que le temps de remontée est mis à jour après le changement) ; retour à G1 (§3.5.3.1) : même séquence, appui long avec l’O2 % affiché ; sous la MOD du gaz respiré : alarme MOD (§3.5.3.2) ; ppO2max de G2 1,6 bar supposé. Deep stop facultatif (§3.3), désactivable (réglage DEEp, absent du manuel de 02/2012 mais ajouté par le firmware V4.0 : « Option to disable display of deep stops (Set/Set dive/Deep) » ; activé par défaut supposé) : proposé à l’approche de la limite sans palier, sa profondeur à gauche de la durée sans palier ou comme premier palier en décompression (compté dans l’ASC), puis à ±1 m « deep deco » et décompte de 2 min ; sa profondeur n’est pas donnée par le manuel : règle du Quad 2 et du Quad Ci supposée (profondeur où le 5e compartiment, 27 min, cesse de se charger) ; une seule fois 2 min (la variante « deux paliers de 1 min » n’est pas décrite). Palier de sécurité, comportement incertain (le manuel n’en dit rien) : redescendu sous 6 m, l’écran revient à NO DECO (constaté sur un Quad) ; le décompte reprend là où il s’était arrêté entre 6 et 3 m (témoignage sur un Mares Matrix) et repart de zéro au-delà de 10 m (supposé).',
+    en: 'Mares RGBM is proprietary: approximation (Bühlmann ZHL-16C + P0/P1/P2, tissues off-gassing more slowly than they load), that of the Quad Air, fitted to its chamber tests (see Calibration). Display and rules as per the manual: alarm at 10 m/min, uncontrolled ascent (> 12 m/min) or missed stop > 3 min = bottom timer mode for the following dives. Button: alternate information (average depth, O2 % and CNS on nitrox, time of day); hold: backlight. Two gases G1 and G2 (§3.5; the main tank and the first deco gas set on the page): at the MOD of G2 during the ascent, a beep and the O2 % of G1 blinking for 20 s; press: G2 proposed (O2 % blinking, MOD top right); hold: confirm, press: cancel; hold with the O2 % shown: manual switch. Ascent computed with the gas breathed only (not verified: the §3.5 note "the MOD for G2 […] is what Puck Pro uses for its calculation" is ambiguous; the Quad Air manual, with the same note, states that the ascent time is updated after the switch); back to G1 (§3.5.3.1): same sequence, hold with the O2 % shown; below the MOD of the gas breathed: MOD alarm (§3.5.3.2); ppO2max of G2 1.6 bar assumed. Optional deep stop (§3.3), can be turned off (DEEp setting, missing from the 02/2012 manual but added by firmware V4.0: "Option to disable display of deep stops (Set/Set dive/Deep)"; on by default assumed): suggested as the no deco limit approaches, its depth left of the no deco time or as the first stop in decompression (counted in the ASC), then within ±1 m "deep deco" and a 2-minute countdown; its depth is not given by the manual: the Quad 2 and Quad Ci rule is assumed (depth where the 5th compartment, 27 min, stops loading); a single 2-minute stop (the "two 1-minute stops" variant is not described). Safety stop, uncertain behaviour (the manual is silent): back deeper than 6 m, the display returns to NO DECO (reported on a Quad); the countdown resumes where it stopped between 6 and 3 m (reported on a Mares Matrix) and restarts deeper than 10 m (assumed).',
   };
   readonly settingDefs: SettingDef[] = [
     {
@@ -114,12 +116,16 @@ export abstract class PuckRules extends DiveComputer {
   }
 
   baseParams(): DecoParams {
-    return maresRgbmParams(this.settings.personal, null);
+    return maresRgbmParams(this.settings.personal);
   }
 
-  algoParams(s: DiveSession): DecoParams {
-    return maresRgbmParams(this.settings.personal, s);
+  /** Mares RGBM approximation: own tissues, off-gassing more slowly, above all in the water (see maresRgbmParams). */
+  tissueVariant(): TissueVariant {
+    return rgbmVariant(this.rgbmInWater);
   }
+
+  /** In a dive (tissue model in the water) at the last step. */
+  private rgbmInWater = false;
 
   /** Fast-ascent alarm from 10 m/min. */
   ascentLevel(rate: number): 0 | 1 | 2 {
@@ -148,6 +154,7 @@ export abstract class PuckRules extends DiveComputer {
   }
 
   tick(s: DiveSession, dt: number): void {
+    this.rgbmInWater = s.inDive;
     super.tick(s, dt);
     if (!s.inDive) return;
     // §3.5.2: "The automatic blinking of the oxygen concentration of G1 lasts only for 20 seconds."

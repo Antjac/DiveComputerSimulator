@@ -46,15 +46,16 @@ select:disabled { opacity: 0.55; }
 .advanced[open] .adv-chevron { transform: rotate(180deg); }
 .advanced[open] .adv-sum { display: none; }
 .adv-sum { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); }
-/* Advanced settings by theme; the alert settings have long names: one per row, name beside its value. */
+/* Advanced settings by theme. Every setting has its name above its list; the alert settings, whose names
+   are long, take a whole row each and their names may wrap. */
 .adv-group + .adv-group, .adv-group + #computer-settings-adv > .adv-group { margin-top: 12px; }
 #computer-settings-adv > .adv-group { margin-top: 12px; }
 .adv-group h4 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--ink-2); text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--line); padding-bottom: 3px; }
 .adv-group .grid-hint { margin: 0 0 6px; }
-.adv-group.alerts .settings-grid { grid-template-columns: 1fr; gap: 4px; }
-.adv-group.alerts .field { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+.adv-group.alerts .settings-grid { grid-template-columns: 1fr; gap: 8px; }
 .adv-group.alerts .field > span:first-child { white-space: normal; overflow: visible; }
-.adv-group.alerts .field select { flex: 0 0 auto; max-width: 45%; }
+/* Same list width as in the two-column groups. */
+.adv-group.alerts .field select { align-self: flex-start; width: calc(50% - 4px); }
 .help summary { cursor: pointer; color: var(--ink-2); font-size: 13px; }
 .help p { font-size: 12px; color: var(--ink-2); }
 .help a { color: var(--accent); overflow-wrap: anywhere; }

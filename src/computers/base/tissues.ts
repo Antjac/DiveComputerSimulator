@@ -1,4 +1,4 @@
-import { AIR, COMPARTMENTS, SURFACE_PRESSURE, Tissues, WATER_VAPOUR } from '../../engine/buhlmann';
+import { AIR, COMPARTMENTS, N2_A, N2_B, SURFACE_PRESSURE, Tissues, WATER_VAPOUR } from '../../engine/buhlmann';
 import { DiveSession } from '../../engine/session';
 
 
@@ -25,4 +25,20 @@ export function desaturationTime(tissues: Tissues): number {
     m += 10;
   }
   return m;
+}
+
+/** Load of compartment i: 0 at surface equilibrium, 1 at its surface M-value. */
+export function compartmentLoad(t: Tissues, i: number): number {
+  const eq = (SURFACE_PRESSURE - WATER_VAPOUR) * 0.7902;
+  return (t.n2[i] + t.he[i] - eq) / (N2_A[i] + SURFACE_PRESSURE / N2_B[i] - eq);
+}
+
+/**
+ * Residual inert gas of the tissues, as a share of the room up to the surface M-value of the most
+ * loaded compartment (0: back to surface equilibrium).
+ */
+export function residualGas(t: Tissues): number {
+  let r = 0;
+  for (let i = 0; i < COMPARTMENTS; i++) r = Math.max(r, compartmentLoad(t, i));
+  return r;
 }

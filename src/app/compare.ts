@@ -19,8 +19,9 @@ export function renderCompare(views: (readonly [DiveComputer, ComputerView])[]):
     .map(([c, cv]) => {
       const s = c.summary(cv);
       // ≈ models: the NDL is fitted to the published tables, but their deco stops and TTS would only be
-      // extrapolated — shown on hover, flagged as unverified, never as a figure in the table.
-      const guess = !c.exact && cv.inDeco && !cv.locked;
+      // extrapolated — shown on hover, flagged as unverified, never as a figure in the table. Except for
+      // the models whose stops are also fitted to measurements on real computers (decoCalibrated).
+      const guess = !c.exact && !c.decoCalibrated && cv.inDeco && !cv.locked;
       const tip = guess ? ` title="${t('extrapolated')} — ${s.stop} · ${t('tts')} ${s.tts}"` : '';
       const stop = guess ? `<span class="extrapolated">${t('stopRequired')}</span>` : s.stop;
       const tts = guess ? '<span class="muted">—</span>' : s.tts;

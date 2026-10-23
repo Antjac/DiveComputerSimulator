@@ -1,5 +1,5 @@
 // Rules shared by the Mares computers (from their manuals; each model cites its own sections).
-import { equilibriumDepth, ndl, type DecoParams } from '../../engine/buhlmann';
+import { equilibriumDepth, ndl, type DecoParams, type TissueVariant } from '../../engine/buhlmann';
 import type { DiveSession } from '../../engine/session';
 import type { AlertCue, ComputerView, SettingDef } from '../base';
 
@@ -30,19 +30,47 @@ export function safetyShown(v: ComputerView, bottom: number): boolean {
   return st === 'active' || (st === 'paused' && v.depth <= bottom);
 }
 
-const PERSONAL: Record<string, number> = { P0: 0.9, P1: 0.83, P2: 0.76 };
-
 /**
- * Approximation of Mares RGBM (Wienke), shared by the models that use it (Puck Pro, Quad Air):
- * Bühlmann with a GF per P factor, and a repetitive-dive penalty fading over the surface interval.
+ * Approximation of Mares RGBM (Wienke, unpublished), shared by the models that use it (Puck Pro, Quad
+ * Air). Calibrated on the Deeply Safe Labs chamber tests of the Quad Air at P0 (fr.deeplysafelabs.com,
+ * scripts/dslData.ts, `npm run dsl`): 30 m / 30 min twice, 90 min apart: no-stop time 17 min both times,
+ * a single 3 m stop of 14 then 33 min; 30 m / 16 min six times, 75 min apart: never a stop.
+ * Reproduced by ZH-L16C at 100 % of the M-values (P0), with tissues off-gassing more slowly than they
+ * load: 2.25 times in the water, 1.4 times at the surface (RGBM_WATER, RGBM_SURFACE): 17 min, 15 then
+ * 33 min of stops at 3 m, no stop on the six dives. P1 and P2 take 7 and 14 % off the gradient factors
+ * (spacing not measured, kept from the earlier approximation).
  */
-export function maresRgbmParams(pFactor: string, s: DiveSession | null): DecoParams {
+const PERSONAL: Record<string, number> = { P0: 1.0, P1: 0.93, P2: 0.86 };
+
+/** Calibration items of the details dialog (sources and fit, see above). */
+export function rgbmCalibration(puck: boolean): { fr: string[]; en: string[] } {
+  const fr = [
+    'Mesures sur appareil réel : essais en caisson de Deeply Safe Labs (fr.deeplysafelabs.com) du Quad Air en P0, deep stops désactivés : 30 m / 30 min deux fois à 90 min d’intervalle (17 min sans palier les deux fois ; un seul palier, à 3 m, de 14 puis 33 min) ; 30 m / 16 min six fois à 75 min d’intervalle (jamais de palier).',
+    'Modèle : Bühlmann ZHL-16C à 100 % des valeurs M en P0, tissus qui dégazent 2,25 fois plus lentement qu’ils ne se chargent dans l’eau et 1,4 fois en surface : 17 min sans palier, puis 15 et 32 min à 3 m, aucun palier sur les six plongées.',
+    'Non vérifié : P1 et P2 (7 et 14 % retirés aux GF, écart non mesuré), autres profondeurs, nitrox.',
+  ];
+  const en = [
+    'Measurements on a real computer: Deeply Safe Labs chamber tests (fr.deeplysafelabs.com) of the Quad Air at P0, deep stops off: 30 m / 30 min twice 90 minutes apart (17 min no-stop time both times; a single stop, at 3 m, of 14 then 33 min); 30 m / 16 min six times 75 minutes apart (never a stop).',
+    'Model: Bühlmann ZHL-16C at 100 % of the M-values at P0, tissues off-gassing 2.25 times more slowly than they load in the water and 1.4 times at the surface: 17 min no-stop time, then 15 and 32 min at 3 m, no stop on the six dives.',
+    'Not checked: P1 and P2 (7 and 14 % off the GF, spacing not measured), other depths, nitrox.',
+  ];
+  if (puck) {
+    fr.push('Puck Pro : même algorithme que le Quad Air, non mesuré lui-même.');
+    en.push('Puck Pro: same algorithm as the Quad Air, not measured itself.');
+  }
+  return { fr, en };
+}
+
+export function maresRgbmParams(pFactor: string): DecoParams {
   const g = PERSONAL[pFactor] ?? PERSONAL.P0;
-  const p: DecoParams = { gfLow: g - 0.1, gfHigh: g, lastStop: 3, stopStep: 3, ascentRate: 10 };
-  if (!s || s.lastDiveEnd === null) return p;
-  const si = ((s.inDive ? s.diveStart : s.clock) - s.lastDiveEnd) / 60;
-  const drop = 0.1 * Math.exp(-si / 150);
-  return { ...p, gfLow: p.gfLow - drop, gfHigh: p.gfHigh - drop };
+  return { gfLow: g, gfHigh: g, lastStop: 3, stopStep: 3, ascentRate: 10 };
+}
+
+/** Tissue model of the Mares RGBM approximation, in the water and at the surface (see maresRgbmParams). */
+const RGBM_WATER: TissueVariant = { offgas: 2.25 };
+const RGBM_SURFACE: TissueVariant = { offgas: 1.4 };
+export function rgbmVariant(inDive: boolean): TissueVariant {
+  return inDive ? RGBM_WATER : RGBM_SURFACE;
 }
 
 /**

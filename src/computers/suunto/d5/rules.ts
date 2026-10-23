@@ -28,6 +28,10 @@ export abstract class D5Rules extends DiveComputer {
   readonly id = 'suunto';
   readonly name = 'Suunto D5';
   readonly algorithm = 'Suunto Fused RGBM 2 (≈)';
+  readonly calibration = {
+    fr: ['Équivalents GF des réglages personnels calés sur des temps sans palier publiés ; aucune mesure sur appareil réel (Suunto D5 absent des essais en caisson de Deeply Safe Labs).'],
+    en: ['GF equivalents of the personal settings fitted to published no-stop times; no measurement on a real computer (the Suunto D5 is not among the Deeply Safe Labs chamber tests).'],
+  };
   readonly exact = false;
   readonly transmitter = 'Tank POD';
   readonly gasTimeName = 'gas time';
