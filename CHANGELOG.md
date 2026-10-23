@@ -11,6 +11,10 @@ To report an error: a GitHub issue or antoalex@free.fr. Details are in the Git h
 
 Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or change (EN).
 
+## 2026-10-23
+
+- Outils / Tools · Nouveau script `npm run dsl` : rejoue les essais en caisson publiés par Deeply Safe Labs (2 × 30 m / 30 min et 6 × 30 m / 16 min) sur les modèles correspondants (Perdix 2, Descent, G2, Luna, Quad Air) et compare les paliers mesurés sur les vrais appareils à ceux du simulateur ; échoue si un modèle exact (Bühlmann + GF) s'en écarte trop / New `npm run dsl` script: replays the chamber tests published by Deeply Safe Labs (2 × 30 m / 30 min and 6 × 30 m / 16 min) on the matching models (Perdix 2, Descent, G2, Luna, Quad Air) and compares the stops measured on the real computers with the simulator's; fails if an exact model (Bühlmann + GF) strays too far.
+
 ## 2026-10-16
 
 - Tous / All · Nouveau : volets redimensionnables sur grand écran (largeur de la colonne d'eau et des onglets, hauteur de la courbe de profil) en faisant glisser leurs bords ; double-clic pour revenir à la taille par défaut ; tailles mémorisées / New: resizable panes on wide screens (width of the water column and of the side panel, height of the profile chart) by dragging their edges; double-click for the default size; sizes remembered.

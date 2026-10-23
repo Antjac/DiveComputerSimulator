@@ -17,6 +17,8 @@ npm run snapshot   # non-régression : vues et HTML de tous les ordinateurs × �
                    # -- <id> pour un seul ordinateur). Un changement voulu d'affichage la rend obsolète.
 npm run replay     # replay d'une plongée (journal des commandes + état de départ) : doit redonner la même plongée
 npm run exercises  # joue chaque exercice de l'onglet Exercices sur chaque ordinateur : tous doivent être réussis
+npm run dsl        # rejoue les essais en caisson de Deeply Safe Labs (scripts/dslData.ts) et compare les paliers
+                   # (-- <id> pour un seul ordinateur) ; échoue si un modèle exact (Bühlmann + GF) sort de la tolérance
 ```
 
 ## Architecture en bref
