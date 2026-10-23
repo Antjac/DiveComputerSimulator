@@ -30,7 +30,9 @@ npm run dsl        # rejoue les essais en caisson de Deeply Safe Labs (scripts/d
 - `src/engine/session.ts` : état **physique** du plongeur (profondeur, tissus, gaz, blocs). Les
   ordinateurs le lisent, ne le modifient jamais, à une exception près : le changement de gaz fait
   avec les boutons de l'ordinateur affiché (`s.switchGas`), qui vaut pour tous les ordinateurs
-  comparés. Les tissus sont **partagés** par tous les modèles.
+  comparés. Les tissus sont **partagés** par tous les modèles, sauf pour un modèle approché qui déclare
+  une variante (`tissueVariant()` : dégazage ralenti, décalage de GF par compartiment) : il calcule
+  alors avec sa propre copie, tenue à jour sur la même plongée dans `DiveComputer.sees()`.
 - Multigaz : gaz du bloc principal + gaz de déco en blocs relais (`decoGases`, `breathing`) ;
   chaque modèle déclare `maxGases`, `decoPpo2`/`decoMod`, `planGases` (gaz comptés dans le plan) ;
   invites de changement communes dans `common/gasSwitch.ts` (et `mares/common.ts`).
@@ -51,6 +53,26 @@ npm run dsl        # rejoue les essais en caisson de Deeply Safe Labs (scripts/d
   font que déclarer ; `src/main.ts` les branche dans l'ordre.
 - `src/ui/` : scène 2D, graphiques, visite guidée ; `src/ui/scene3d/` : vue 3D (three.js, chargée à
   la demande). `src/styles/` : feuilles de la page.
+
+## Calibrage des algorithmes approchés (≈)
+
+Un algorithme non publié est approché par Bühlmann ZHL-16C + GF, éventuellement avec une variante de
+tissus (`TissueVariant` dans `src/engine/buhlmann.ts` : `offgas`, dégazage plus lent que la saturation,
+et `gfShift`, GF retiré par compartiment, ex. pénalité de plongée successive) et des paliers de mètre en
+mètre (`fineStopsBelow`). Les valeurs viennent, par ordre de préférence :
+
+1. **de mesures sur l'appareil réel** : essais en caisson de Deeply Safe Labs (fr.deeplysafelabs.com,
+   relevés dans `scripts/dslData.ts`, rejoués par `npm run dsl`) ; comparaisons de planificateurs publiées
+   (divetable.info pour le G2) ;
+2. **des tables du manuel** (temps sans palier, `npm run calib`) ;
+3. à défaut, d'une hypothèse, signalée comme telle.
+
+Pour chaque modèle approché, le champ `calibration` (`{ fr: string[]; en: string[] }`, affiché dans
+« Détails de la simulation ») donne les sources, le modèle retenu, les écarts restants et ce qui n'est pas
+vérifié ; le commentaire à côté des constantes donne le détail (valeurs mesurées et simulées). Une mesure
+faite sur un autre modèle (même algorithme) est dite telle. `decoCalibrated = true` quand les paliers
+aussi sont calés sur des mesures : l'onglet Comparer les affiche alors. Garder `npm run dsl` à jour en
+ajoutant chaque nouvelle source de mesures.
 
 ## Changelog
 
@@ -95,8 +117,9 @@ Passer **chaque** point en revue dans le manuel, l'implémenter ou noter qu'il n
 
 ### 1. Identité et algorithme
 - Nom exact, mode simulé, algorithme. `exact = true` seulement si l'algorithme est public et
-  reproduit (Bühlmann + GF) ; sinon approximation (≈) calibrée sur les tables de NDL publiées
-  (`npm run calib`).
+  reproduit (Bühlmann + GF) ; sinon approximation (≈) calibrée sur des mesures de l'appareil réel quand il
+  y en a (Deeply Safe Labs : `npm run dsl`), sinon sur les tables de NDL publiées (`npm run calib`) ;
+  sources dans le champ `calibration` (voir « Calibrage des algorithmes approchés »).
 - Paramètres de déco : GF (ou équivalent) pour chaque niveau de conservatisme, profondeur du dernier
   palier (3/6 m), pas entre paliers, **vitesse de remontée supposée par le calcul** (ex. 10 m/min
   Perdix 2 et D5), eau douce/salée, altitude.
@@ -194,9 +217,11 @@ Toute nouvelle alerte d'un modèle doit avoir son explication.
 
 1. `npm run build`.
 2. `npm run exercises` : « ✓ every exercise passed on every computer ».
-3. `npm run stops -- <id>` : « ✓ stops OK », plus les réactions au-dessus du palier de 6 m
+3. `npm run dsl` (ou `-- <id>`) si l'algorithme ou le moteur a changé : « ✓ exact models within
+   tolerance », et les écarts des modèles approchés ne se dégradent pas.
+4. `npm run stops -- <id>` : « ✓ stops OK », plus les réactions au-dessus du palier de 6 m
    conformes au manuel (niveau d'alarme, verrouillage ou non après 3 min).
-4. **Mise en page** (`npm run dev`, puis dans la console de la page, après avoir mis la simulation en
+5. **Mise en page** (`npm run dev`, puis dans la console de la page, après avoir mis la simulation en
    pause) : `__divesim.layout.sweep(['decoDeep', 'safetyActive'], '<id>')` passe l'ordinateur dans
    chaque mise en page, métrique et impérial, et chaque écran accessible par ses boutons, et signale
    tout texte qui déborde de sa case ou de l'écran, en chevauche un autre ou est recouvert.
@@ -205,8 +230,8 @@ Toute nouvelle alerte d'un modèle doit avoir son explication.
    { layout, units, presses })` reproduit un cas pour le regarder. **Confirmer chaque signalement à
    l'écran** : certains sont voulus (alerte en surimpression sur le Garmin, libellé « N2 » sous la
    barre du Quad Ci, jambages des lettres).
-5. Dans le navigateur, afficher chaque écran dans les états de la section 4 (ex. 40 m / 25 min puis
+6. Dans le navigateur, afficher chaque écran dans les états de la section 4 (ex. 40 m / 25 min puis
    remontée) et **comparer aux figures du manuel**. Fermer les onglets et arrêter le serveur ensuite.
-6. Mettre à jour le tableau des modèles (et le texte) dans les deux README : `README.md` (anglais) et `README.fr.md` (français).
-7. Compte rendu : ce qui a été vérifié (avec les sections du manuel), ce qui ne l'est pas, les écarts
+7. Mettre à jour le tableau des modèles (et le texte) dans les deux README : `README.md` (anglais) et `README.fr.md` (français).
+8. Compte rendu : ce qui a été vérifié (avec les sections du manuel), ce qui ne l'est pas, les écarts
    restants.

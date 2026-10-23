@@ -8,7 +8,7 @@
 // stop during the 16 min, "> 16 min" on the site), `stops` = [depth (m), time spent there (s)] in the
 // order they were made. Garmin times are to the second, the others as displayed (whole minutes).
 // Values taken from the site's data (computerData); only the computers and settings that match a model
-// of the simulator are kept.
+// of the simulator, or its algorithm (i100 and i300C: Pelagic Z+, as the i770R), are kept.
 
 export interface DslDive { nst: number | null; stops: [number, number][] }
 export interface DslTest { computer: string; algo: string; gf?: string; test: '2x30' | '6x30'; dives: DslDive[] }
@@ -205,5 +205,29 @@ export const DSL_TESTS: DslTest[] = [
     { nst: null, stops: [] },
     { nst: null, stops: [] },
     { nst: null, stops: [] },
+  ] },
+  { computer: 'i100', algo: 'Pelagic Z+', test: '2x30', dives: [
+    { nst: 960, stops: [[6, 60], [3, 1140]] },
+    { nst: 900, stops: [[6, 180], [3, 2100]] },
+  ] },
+  { computer: 'i100', algo: 'Pelagic Z+', test: '6x30', dives: [
+    { nst: null, stops: [] },
+    { nst: 720, stops: [[3, 180]] },
+    { nst: 720, stops: [[3, 240]] },
+    { nst: 720, stops: [[3, 240]] },
+    { nst: 720, stops: [[3, 240]] },
+    { nst: 720, stops: [[3, 240]] },
+  ] },
+  { computer: 'i300C', algo: 'Pelagic Z+', test: '2x30', dives: [
+    { nst: 900, stops: [[6, 120], [3, 1320]] },
+    { nst: 840, stops: [[6, 240], [3, 2220]] },
+  ] },
+  { computer: 'i300C', algo: 'Pelagic Z+', test: '6x30', dives: [
+    { nst: null, stops: [] },
+    { nst: 720, stops: [[3, 180]] },
+    { nst: 720, stops: [[3, 300]] },
+    { nst: 720, stops: [[3, 300]] },
+    { nst: 720, stops: [[3, 300]] },
+    { nst: 720, stops: [[3, 300]] },
   ] },
 ];

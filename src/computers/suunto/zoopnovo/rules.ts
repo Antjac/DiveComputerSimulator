@@ -46,6 +46,10 @@ export abstract class ZoopNovoRules extends DiveComputer {
   readonly id = 'zoopnovo';
   readonly name = 'Suunto Zoop Novo';
   readonly algorithm = 'Suunto RGBM (≈)';
+  readonly calibration = {
+    fr: ['Équivalents GF des réglages personnels repris du D5, non calibrés pour la Zoop Novo ; aucune mesure sur appareil réel.'],
+    en: ['GF equivalents of the personal settings taken from the D5, not calibrated for the Zoop Novo; no measurement on a real computer.'],
+  };
   readonly exact = false;
   readonly notes = {
     fr: "Modes Air et Nitrox (Gauge et Free non simulés). Le Suunto RGBM est propriétaire : approximation (Bühlmann + réglage personnel P0/P1/P2, pénalités en successives, après un palier obligatoire ou un deepstop non faits), non calibrée sur des tables publiées. Conforme au guide : décompression continue (plafond CEILING à une décimale, plancher, zone du plafond, flèches), ASC TIME, vitesse max 10 m/min (SLOW, barre à droite), palier de sécurité recommandé 3 min entre 6 et 3 m, palier obligatoire après plus de 5 s au-dessus de 10 m/min, deepstop au-delà de 20 m, Er et verrouillage 48 h après 3 min au-dessus du plafond, alarme de profondeur (30 m par défaut), OLF %, interdiction de vol d'au moins 12 h (48 h après Er). Boutons : UP / DOWN = vues de la ligne du bas ; SELECT = repère (et chronomètre) ; MODE = rétroéclairage, appui long = chronomètre ; en surface, MODE passe de TIME à DIVE et PLAN. Non précisé par le guide du Zoop Novo, repris du guide du Vyper Air (même RGBM, texte en partie identique) : deepstops successifs à mi-chemin entre la profondeur max et le plafond (2 min supposées), palier obligatoire sous un plafond de 3 m (1 min par dépassement supposée), un cycle par case de la ligne du bas (DOWN à gauche, UP à droite ; MAX et DIVE TIME par défaut, vu sur une photo d'un Zoop Novo), temps sans palier non affiché au-delà de 99 min. Toujours supposé : graduations de la barre de vitesse. Altitude, carnet et réglages sur l'appareil non simulés.",

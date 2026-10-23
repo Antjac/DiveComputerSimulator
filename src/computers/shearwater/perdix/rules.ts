@@ -33,6 +33,10 @@ export abstract class PerdixRules extends DiveComputer {
   readonly id = 'shearwater';
   readonly name = 'Shearwater Perdix 2';
   readonly algorithm = 'Bühlmann ZHL-16C + GF';
+  readonly calibration = {
+    fr: ['Algorithme public reproduit, vérifié contre les essais en caisson de Deeply Safe Labs (fr.deeplysafelabs.com) du Perdix 2 en Bühlmann GF 30/70 à 90/90 (2 × 30 m / 30 min, 6 × 30 m / 16 min) : paliers à quelques minutes près, l’appareil arrondissant chaque palier à la minute. Le Perdix 2 a aussi été mesuré en algorithme DCIEM, non simulé.'],
+    en: ['Public algorithm reproduced, checked against the Deeply Safe Labs chamber tests (fr.deeplysafelabs.com) of the Perdix 2 in Bühlmann GF 30/70 to 90/90 (2 × 30 m / 30 min, 6 × 30 m / 16 min): stops within a few minutes, the computer rounding each stop to the minute. The Perdix 2 was also measured with the DCIEM algorithm, not simulated.'],
+  };
   readonly exact = true;
   readonly transmitter = 'Swift';
   readonly gasTimeName = 'GTR';

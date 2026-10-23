@@ -32,6 +32,7 @@
 .mi-sec.assumed { border-left-color: var(--warn); } .mi-sec.assumed .mi-ico { background: var(--warn); }
 .mi-sec.missing { border-left-color: var(--muted); } .mi-sec.missing .mi-ico { background: var(--muted); }
 .mi-sec.alerts { border-left-color: var(--accent); } .mi-sec.alerts .mi-ico { background: var(--accent); }
+.mi-sec.calibration { border-left-color: var(--ink-2); } .mi-sec.calibration .mi-ico { background: var(--ink-2); }
 .mi-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .mi-table td { padding: 3px 0; border-bottom: 1px solid var(--line); color: var(--ink-2); }
 .mi-table td:last-child { text-align: right; color: var(--ink); font-weight: 600; white-space: nowrap; padding-left: 10px; }

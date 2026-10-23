@@ -443,7 +443,7 @@ export class ScubaproG2 extends G2Rules {
   /** Deco summary table: the active MB level (when above L0) and L0. */
   private decoSummary(v: ComputerView, s: DiveSession): string {
     const levels = this.activeLevel > 0 ? [this.activeLevel, 0] : [0];
-    return decoSummary(this, v, s, levels.map((lv) => ({ label: `L${lv}`, params: levelParams(lv), anchor: lv > 0 ? this.levelAnchor : this.anchor })));
+    return decoSummary(this, v, s, levels.map((lv) => ({ label: `L${lv}`, params: levelParams(lv, lv > 0 ? this.stageDeco : this.baseDeco), anchor: lv > 0 ? this.levelAnchor : this.anchor })));
   }
 
   /**

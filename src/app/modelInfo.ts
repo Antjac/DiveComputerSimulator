@@ -32,6 +32,7 @@ function render(c: DiveComputer): string {
     ${list('simulated', t('miSimulated'), '✓')}
     ${list('assumed', t('miAssumed'), '?')}
     ${list('missing', t('miMissing'), '✕')}
+    ${c.calibration ? `<section class="mi-sec calibration"><h3><span class="mi-ico" aria-hidden="true">≈</span>${t('miCalibration')}</h3><ul>${c.calibration[lang()].map((i) => `<li>${esc(i)}</li>`).join('')}</ul></section>` : ''}
     ${alerts.length ? `<section class="mi-sec alerts"><h3><span class="mi-ico" aria-hidden="true">!</span>${t('miAlerts')}</h3>
       <table class="mi-table">${alertRows}</table><p class="muted small">${t('miAlertsHint')}</p></section>` : ''}
     <form method="dialog"><button class="btn primary">${t('close')}</button></form>`;

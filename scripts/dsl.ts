@@ -10,7 +10,7 @@
 import { DiveSession } from '../src/engine/session';
 import { createComputers } from '../src/computers';
 import type { DiveComputer } from '../src/computers';
-import { ceilingDepth, stopDepthFor, type DecoParams } from '../src/engine/buhlmann';
+import { ceilingDepth, planAscent, type DecoParams } from '../src/engine/buhlmann';
 import { DSL_TESTS, type DslTest } from './dslData';
 
 const only = (globalThis as { process?: { argv: string[] } }).process?.argv[2];
@@ -46,6 +46,10 @@ const CASES: Case[] = [
   },
   { computer: 'Quad Air', algo: 'Mares RGBM', id: 'quadair', exact: false,
     settings: () => ({ personal: 'P0', deepstop: 'off', runaway: 'off', fast: 'off' }) },
+  { computer: 'i100', algo: 'Pelagic Z+', id: 'i770r', exact: false, settings: () => ({ cf: 'off', deepStop: 'off' }),
+    note: 'i100 measured, i770R simulated: same algorithm (Pelagic Z+).' },
+  { computer: 'i300C', algo: 'Pelagic Z+', id: 'i770r', exact: false, settings: () => ({ cf: 'off', deepStop: 'off' }),
+    note: 'i300C measured, i770R simulated: same algorithm (Pelagic Z+).' },
 ];
 
 const DEPTH = 30;
@@ -59,11 +63,17 @@ const total = (stops: [number, number][]) => stops.reduce((a, [, t]) => a + t, 0
  */
 const tolerance = (realTotal: number, nStops: number) => Math.max(180, 0.15 * realTotal, 45 * nStops);
 
-/** Stop of the stricter stage chosen on a Scubapro (MB level, GF on the Luna): not mandatory, but shown and followed. */
+/**
+ * First stop of the stricter stage chosen on a Scubapro (MB level, GF on the Luna): not mandatory, but
+ * shown and followed. Computed on the computer's own view of the session (its own tissues).
+ */
 function stageStop(c: DiveComputer, s: DiveSession): number {
   const sc = c as unknown as { stageParams?: () => DecoParams | null; levelAnchor?: number };
   const lp = sc.stageParams?.();
-  return lp ? stopDepthFor(ceilingDepth(s.tissues, sc.levelAnchor ?? 0, lp), lp) : 0;
+  if (!lp) return 0;
+  const v = c.sees(s);
+  if (ceilingDepth(v.tissues, sc.levelAnchor ?? 0, lp) <= 0) return 0;
+  return planAscent(v.tissues, v.depth, v.gas, lp, sc.levelAnchor ?? 0, 1 / 6).stops[0]?.depth ?? 0;
 }
 
 function replay(cs: Case, t: DslTest, settings: Record<string, string>): { nst: number | null; stops: [number, number][] }[] {
