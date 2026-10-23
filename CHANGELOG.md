@@ -11,6 +11,10 @@ To report an error: a GitHub issue or antoalex@free.fr. Details are in the Git h
 
 Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or change (EN).
 
+## 2026-10-23
+
+- Suunto Zoop Novo et D5 · Le plafond continu ne remontait plus au-dessus de 3 m : on pouvait suivre le plafond jusqu'à la surface et finir sa décompression à 1 m. Le dernier plafond est maintenant toujours à 3,0 m (D5 : §4.11.1 « The last ceiling depth is always 3 m » ; Zoop Novo : plage « Ceiling depths: 3.0 to 150 m » et figures du §3.8, déduit), comme sur l'EON Core et le Nautic ; l'alarme de plafond s'y rapporte / The continuous ceiling could rise to the surface, so decompression could be finished at 1 m. The last ceiling is now always 3.0 m (D5: §4.11.1 “The last ceiling depth is always 3 m”; Zoop Novo: “Ceiling depths: 3.0 to 150 m” and the §3.8 figures, deduced), as on the EON Core and Nautic; the ceiling alarm refers to it.
+
 ## 2026-10-16
 
 - Tous / All · Nouveau : volets redimensionnables sur grand écran (largeur de la colonne d'eau et des onglets, hauteur de la courbe de profil) en faisant glisser leurs bords ; double-clic pour revenir à la taille par défaut ; tailles mémorisées / New: resizable panes on wide screens (width of the water column and of the side panel, height of the profile chart) by dragging their edges; double-click for the default size; sizes remembered.
