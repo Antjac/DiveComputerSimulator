@@ -125,7 +125,7 @@ body.resizing-v { cursor: row-resize; user-select: none; }
 }
 .tabs button.on { color: var(--ink); border-bottom-color: var(--accent); }
 .sheet { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
-.sheet-close { display: none; }
+.sheet-close, .sheet-title { display: none; }
 .tab-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .tab-body[hidden] { display: none; }
 #about-open .icon { display: none; }
@@ -180,15 +180,15 @@ body.resizing-v { cursor: row-resize; user-select: none; }
     height: var(--sheet-h, 50dvh); z-index: 10;
     background: var(--panel); border: 1px solid var(--line); border-bottom-color: var(--accent);
     border-radius: var(--radius) var(--radius) 0 0; box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.5);
+    /* A band of its own for the close button: the tab content scrolls below it, never under it. */
+    padding-top: 44px;
   }
+  .sheet.open > .tab-body { border-top: 1px solid var(--line); }
+  .sheet.open > .sheet-title { display: block; position: absolute; top: 0; left: 14px; right: 48px; margin: 0; line-height: 44px; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sheet-close {
-    display: block; position: absolute; top: 6px; right: 6px; z-index: 1; width: 34px; height: 34px;
+    display: block; position: absolute; top: 5px; right: 6px; z-index: 1; width: 34px; height: 34px;
     border: 1px solid var(--line); border-radius: 50%; background: var(--panel-2); color: var(--ink); font-size: 14px; cursor: pointer;
   }
-  .tab-body { padding-top: 14px; }
-  .tab-body[data-pane="settings"] .algo-info { padding-right: 40px; }
-  .tab-body:not([data-pane="settings"]) { padding-top: 46px; }
-  #compare-table th { top: -46px; }
   #compare-table :is(th, td):nth-child(2) { display: none; }
 
   /* One line; a tap unfolds it (tabs.ts). The model's notes fold on every screen (settings.ts). */

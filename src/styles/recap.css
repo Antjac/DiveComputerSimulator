@@ -9,6 +9,8 @@
 .log-msg.bad { color: var(--crit); }
 #logbook > .muted.small { margin: 0 0 8px; }
 .log-recap { padding: 1px 6px; line-height: 1.2; }
+.log-acts { white-space: nowrap; }
+.log-acts .log-recap + .log-recap { margin-left: 4px; }
 
 .modal.recap {
   width: min(860px, calc(100vw - 24px)); height: calc(100vh - 32px); height: calc(100dvh - 32px); padding: 10px 12px 8px;

@@ -1,7 +1,7 @@
 import { AIR, COMPARTMENTS, SURFACE_PRESSURE, Tissues, WATER_VAPOUR, depthToPressure, n2Fraction, planAscent } from '../../../engine/buhlmann';
 import type { DiveSession } from '../../../engine/session';
 import type { Lang } from '../../../i18n';
-import { depthInt, depthText, depthUnit, imperial, pressText, tempUnit, tempVal } from '../../../units';
+import { depthInt, depthText, depthUnit, depthVal, imperial, pressText, tempUnit, tempVal } from '../../../units';
 import { ButtonHelp, ComputerView, clockOfDay } from '../../base';
 import { type OdysseyNotice, OdysseyRules } from './rules';
 
@@ -238,11 +238,11 @@ export class AzothOdyssey extends OdysseyRules {
     const depth = imperial() ? depthText(v.depth) : fr(depthText(v.depth));
     const mode = TOP_LABEL[this.settings.top] ? this.settings.top : 'gfsurf';
     const ceilMode = mode === 'ceil';
-    // Plafond au dixième (figures du §8) ; P moy. au format de la profondeur (non vérifié) ; GF entier
-    // comme GFsurf (non vérifié).
+    // Plafond au dixième (figures du §8) ; P moy. et GF entiers, sans décimale (photos de l'appareil,
+    // ticket GitHub n° 17 : « P moy. 11 », « GF 0 » ; arrondi supposé au plus proche, non vérifié).
     const topVal = ceilMode ? (imperial() ? String(depthInt(v.ceiling)) : fr(v.ceiling.toFixed(1)))
       : mode === 'tissues' ? tissueBars(s.tissues, s.pressure, s.gas.o2, s.gas.he)
-      : mode === 'avg' ? (imperial() ? depthText(v.avgDepth) : fr(depthText(v.avgDepth)))
+      : mode === 'avg' ? String(Math.round(depthVal(v.avgDepth)))
       : String(Math.round(mode === 'gf' ? v.gf99 : v.surfGf));
     const topHtml = mode === 'tissues' ? topVal : `<div class="od-val">${topVal}</div>`;
     const top = `
