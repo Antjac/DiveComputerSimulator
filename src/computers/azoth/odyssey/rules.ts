@@ -19,7 +19,9 @@ const RHO = { o2: 1.331, n2: 1.165, he: 0.166 };
 
 /**
  * Azoth Systems Odyssey (firmware 2.0.x), circuit ouvert (CO).
- * Règles d'après le manuel utilisateur version 2.0 du 02/02/2026 (sections citées en commentaire).
+ * Règles d'après le manuel utilisateur version 2.0 du 26/10/2026, en français et en anglais (sections
+ * citées en commentaire ; numérotation identique dans les deux langues). L'écran suit la langue de
+ * l'appareil (menu Personnel, « Langue », figure du §10) : ici celle du simulateur.
  */
 export abstract class OdysseyRules extends DiveComputer {
   readonly id = 'odyssey';
@@ -38,8 +40,8 @@ export abstract class OdysseyRules extends DiveComputer {
   };
   readonly transmitter = 'ODC SENSOR';
   readonly notes = {
-    fr: 'Mode circuit ouvert (CO). Plusieurs gaz (§6, menu Gaz : gaz un à huit ; ici le bloc principal puis les gaz de déco de la page) : changement par la surbrillance du champ gaz puis OK, écran « Changement de gaz » (G / D : gaz, OK : validation ; déduit des figures du §8) ; la DTR compte les gaz de déco disponibles, DTR/BG le gaz fond seul (§8) ; MOD des gaz de déco à l’alerte PO2 déco (1,50 b, figure du §10). Bühlmann ZHL-16C avec les facteurs de gradient du plongeur (GF bas 20 à 100 %, GF haut 40 à 100 % ; 80/80 par défaut supposé, d’après les figures). La majoration brevetée des plongées successives (§11, niveau Standard par défaut) n’est pas publiée et n’est pas simulée : les plongées successives sont celles d’un Bühlmann pur. Boutons G et D : déplacent la surbrillance entre les champs modulables (§8) ; OK : change le contenu du champ en surbrillance (DTR → DTR/+5’ → DTR/HS → DTR/DTP → DTR/BG ; bloc, pile, CNS, température, profondeur max., graphique des tissus ; en haut à droite : Plafond → Tissus → P moy. → GFsurf → GF). Tissus d’après les photos du §12 et de la plaquette (barres par compartiment ; échelle supposée : part de la saturation à la profondeur actuelle) ; P moy. (profondeur moyenne, en nombre entier) et GF (entier, supposé GF99 : sursaturation du tissu directeur en % de la M-value à la profondeur actuelle) absents du manuel, ajoutés d’après un utilisateur de l’appareil et ses photos (firmware 2.0.14.0), comme l’ordre de défilement. En surface, OK passe de l’écran d’accueil à la page plongée. Paliers (§8) : surbrillance marron à plus de 10 cm au-dessus du palier, rouge à plus de 10 cm au-dessus du plafond ; aucun verrouillage. NDL : « +240’ » au-delà de 240 min, surbrillance grise et deux séries de vibrations sous 3 min. Vitesse de remontée (§10.3) : consigne VR réglable (12 m/min), flèches rouges au-delà, sans vibration. Alarmes (§10) : ppO2 du gaz fond (champ rouge), PN2 et densité du gaz (boîte « Alertes » acquittée par un bouton), bloc sous 50 bar (rouge, vibrations). DTR calculée à 12 m/min, 6 m/min entre les paliers (§8). Le « Palier O’Dive » du menu Déco n’est pas décrit par le manuel : simulé comme un palier supplémentaire à la profondeur du dernier palier, désactivé (0’00) par défaut ; l’Odyssey n’a pas de palier de sécurité documenté. Non simulés : circuit fermé, trimix, boussole, planificateur, carnet, menus, taille de police agrandie, eau douce, perte de liaison ODC SENSOR.',
-    en: 'Open circuit (CO) mode. Several gases (§6, Gaz menu: gases one to eight; here the main tank, then the deco gases set on the page): switched by highlighting the gas field then OK, “Changement de gaz” screen (L / R: gas, OK: confirm; deduced from the §8 figures); the DTR counts the deco gases available, DTR/BG the bottom gas only (§8); MOD of the deco gases at the deco PO2 alert (1.50 b, §10 figure). Bühlmann ZHL-16C with the diver’s gradient factors (GF low 20 to 100 %, GF high 40 to 100 %; 80/80 by default assumed, from the figures). The patented repetitive dive penalty (§11, Standard level by default) is not published and is not simulated: repetitive dives are those of plain Bühlmann. L and R buttons: move the highlight between the selectable fields (§8); OK: changes the content of the highlighted field (DTR → DTR/+5’ → DTR/HS → DTR/DTP → DTR/BG; tank, battery, CNS, temperature, max. depth, tissue graph; top right: Plafond → Tissus → P moy. → GFsurf → GF). Tissus from the photos of §12 and of the maker’s brochure (one bar per compartment; scale assumed: share of saturation at the current depth); P moy. (average depth, a whole number) and GF (a whole number, assumed GF99: supersaturation of the leading tissue as a % of the M-value at the current depth) are not in the manual, added from a user of the device and their photos (firmware 2.0.14.0), as is the scrolling order. At the surface, OK switches between the home screen and the dive page. Stops (§8): brown highlight more than 10 cm above the stop, red more than 10 cm above the ceiling; no lock-out. NDL: “+240’” beyond 240 min, grey highlight and two series of vibrations below 3 min. Ascent rate (§10.3): settable VR (12 m/min), red arrows beyond it, no vibration. Alarms (§10): bottom gas ppO2 (red field), PN2 and gas density (“Alertes” box acknowledged with a button), tank below 50 bar (red, vibration). DTR computed at 12 m/min, 6 m/min between stops (§8). The Deco menu’s “Palier O’Dive” is not described by the manual: simulated as an extra stop at the last stop depth, off (0’00) by default; the Odyssey has no documented safety stop. Not simulated: closed circuit, trimix, compass, planner, logbook, menus, large font size, fresh water, ODC SENSOR link loss.',
+    fr: 'Mode circuit ouvert (CO). L’écran suit la langue du simulateur, comme celle de l’appareil (menu Personnel, figure du §10) : libellés des figures du manuel français ou anglais (Durée / Run, Profondeur / Depth, Palier / Stop, DTR / Ascent…). Plusieurs gaz (§6, menu Gaz : gaz un à huit ; ici le bloc principal puis les gaz de déco de la page) : changement par la surbrillance du champ gaz puis OK, écran « Changement de gaz » (G / D : gaz, OK : validation ; déduit des figures du §8) ; seuls les gaz activés sont proposés. Bühlmann ZHL-16C avec les facteurs de gradient du plongeur (GF bas 20 à 100 %, GF haut 40 à 100 % ; 80/80 par défaut supposé, d’après les figures). La majoration brevetée des plongées successives (§11, niveau Standard par défaut) n’est pas publiée et n’est pas simulée : les plongées successives sont celles d’un Bühlmann pur. Boutons G et D : déplacent la surbrillance entre les champs modulables (§8) ; OK : change le contenu du champ en surbrillance (DTR → DTR/+5’ → DTR/HS → DTR/DTP → DTR/BG ; bloc, pile, CNS, température, profondeur max., graphique des tissus ; en haut à droite : Plafond → Tissus → P moy. → GFsurf → GF). DTR (§8) : vitesse réglée (menu Personnel, 8 à 15 m/min) jusqu’au premier palier, ou jusqu’au dernier palier sans palier, puis 6 m/min ; palier O’Dive compris ; arrondie aux 5 s supérieures, puis à la minute supérieure au-delà de 60 s ; la DTR compte les gaz de déco disponibles, DTR/BG le gaz fond seul. GF et GFsurf (§8) : GF maximal des 16 compartiments à la profondeur actuelle, ou en surface pour un retour instantané ; 0 sans sursaturation. Tissus (§8) : une barre par compartiment, hauteur = charge en gaz inerte rapportée à ce que tolère le compartiment à la profondeur actuelle avec le GF qui s’y applique (bas de l’échelle : ppN₂ de l’air en surface ; trait à 80 % de la hauteur : la limite), couleur selon la valeur, recalculé toutes les 2 s. P moy. (profondeur moyenne, en nombre entier) absent du manuel, ajouté d’après un utilisateur de l’appareil (firmware 2.0.14.0), comme l’ordre de défilement ; son libellé anglais (« Avg ») est supposé. En surface, OK passe de l’écran d’accueil à la page plongée. Paliers (§8) : surbrillance marron à plus de 10 cm au-dessus du palier, rouge à plus de 10 cm au-dessus du plafond ; aucun verrouillage. NDL : « +240’ » au-delà de 240 min, surbrillance grise et deux séries de vibrations sous 3 min. Vitesse de remontée (§10.4) : flèches rouges au-delà de la consigne VR, sans vibration. Alarmes (§10) : ppO2 du gaz fond (champ rouge), PN2 et densité du gaz (boîte « Alertes » acquittée par un bouton), pression de réserve (35 bar si la plongée n’a pas dépassé 10 m, 50 bar sinon : vibrations ; champ du bloc rouge sous 50 bar). Le « Palier O’Dive » est le palier de sécurité (§8), sans autre précision : simulé à la profondeur du dernier palier, désactivé (0’00) par défaut. Non simulés : circuit fermé, mode OC Rec, trimix, boussole, planificateur, carnet, menus, TGR (temps de gaz restant), taille de police agrandie, eau douce, perte de liaison ODC SENSOR.',
+    en: 'Open circuit (CO) mode. The screen follows the simulator’s language, like the device’s own (Personal menu, §10 figure): labels from the figures of the French or English manual (Durée / Run, Profondeur / Depth, Palier / Stop, DTR / Ascent…). Several gases (§6, Gases menu: gases one to eight; here the main tank, then the deco gases set on the page): switched by highlighting the gas field then OK, “Change gas” screen (L / R: gas, OK: confirm; deduced from the §8 figures); only the activated gases are offered. Bühlmann ZHL-16C with the diver’s gradient factors (GF low 20 to 100 %, GF high 40 to 100 %; 80/80 by default assumed, from the figures). The patented repetitive dive penalty (§11, Standard level by default) is not published and is not simulated: repetitive dives are those of plain Bühlmann. L and R buttons: move the highlight between the selectable fields (§8); OK: changes the content of the highlighted field (Ascent → Asc/+5’ → Asc/Time → Asc/Run → Asc/BG; tank, battery, CNS, temperature, max. depth, tissue graph; top right: Ceiling → Tissues → Avg → GFsurf → GF). Ascent time (§8): set rate (Personal menu, 8 to 15 m/min) to the first stop, or to the last stop depth without stops, then 6 m/min; O’Dive stop included; rounded up to 5 s, then up to the minute beyond 60 s; it counts the deco gases available, Asc/BG the bottom gas only. GF and GFsurf (§8): highest GF of the 16 compartments at the current depth, or at the surface for an instantaneous return; 0 without supersaturation. Tissues (§8): one bar per compartment, height = inert gas loading relative to what the compartment tolerates at the current depth with the GF that applies there (bottom of the scale: ppN₂ of air at the surface; line at 80 % of the height: the limit), colour by value, recomputed every 2 s. Avg (average depth, a whole number) is not in the manual, added from a user of the device (firmware 2.0.14.0), as is the scrolling order; its English label (“Avg”) is assumed. At the surface, OK switches between the home screen and the dive page. Stops (§8): brown highlight more than 10 cm above the stop, red more than 10 cm above the ceiling; no lock-out. NDL: “+240’” beyond 240 min, grey highlight and two series of vibrations below 3 min. Ascent rate (§10.4): red arrows beyond the set VR, no vibration. Alarms (§10): bottom gas ppO2 (red field), PN2 (“Narcotic”) and gas density (“Alerts” box acknowledged with a button), reserve pressure (35 bar if the dive stayed within 10 m, 50 bar otherwise: vibration; tank field red below 50 bar). The “O’Dive stop” is the safety stop (§8), with no further detail: simulated at the last stop depth, off (0’00) by default. Not simulated: closed circuit, OC Rec mode, trimix, compass, planner, logbook, menus, TGR (gas time remaining), large font size, fresh water, ODC SENSOR link loss.',
   };
 
   readonly settingDefs: SettingDef[] = [
@@ -68,8 +70,9 @@ export abstract class OdysseyRules extends DiveComputer {
       default: '3',
     },
     {
-      // §6, menu Déco (figures) : « Palier O'Dive 0'00 » ou « 4' ». Fonction non décrite par le
-      // manuel : simulée comme un palier supplémentaire au dernier palier ; 0'00 (désactivé) supposé.
+      // §6, menu Déco (figures) : « Palier O'Dive 0'00 » ou « 4' ». §8 : « Le palier de sécurité
+      // (« Palier O'Dive ») est inclus dans la DTR lorsqu'il est programmé ». Profondeur, seuils de
+      // déclenchement et durées possibles non donnés : simulé au dernier palier ; 0'00 (désactivé) supposé.
       key: 'odive',
       label: { fr: 'Palier O’Dive', en: 'O’Dive stop' },
       options: range(0, 10, 1).map((v) => ({ value: String(v), label: v ? `${v}'` : "0'00" })),
@@ -77,11 +80,12 @@ export abstract class OdysseyRules extends DiveComputer {
       group: 'deco',
     },
     {
-      // §10 (figure « Personnel ») : « Vitesse de remontée 12m/min » ; l'exemple du §10.3 et le calcul
-      // de la DTR (§8) utilisent 12 m/min. Autres valeurs et valeur par défaut non données.
+      // §8 : « Personnel / Vitesse de remontée » : 8, 10, 11, 12 ou 15 m/min, utilisée pour la DTR,
+      // l'indicateur VR (§10.4) et l'alarme de vitesse (§10.1). Valeur par défaut non donnée : 12 m/min
+      // supposé (figure « Personnel » du §10, exemples du §10.4).
       key: 'vr',
       label: { fr: 'Vitesse de remontée (VR)', en: 'Ascent rate (VR)' },
-      options: [9, 10, 12, 15, 18].map((v) => ({ value: String(v), label: `${v} m/min` })),
+      options: [8, 10, 11, 12, 15].map((v) => ({ value: String(v), label: `${v} m/min` })),
       default: '12',
       group: 'alerts',
     },
@@ -97,9 +101,10 @@ export abstract class OdysseyRules extends DiveComputer {
       group: 'alerts',
     },
     {
-      // §10 (figure « Alertes ») : « Alerte PEN₂ 50m » ; plage et valeur par défaut non données.
+      // §10 (figure « Alertes ») : « Alerte PEN₂ 50m » (en anglais « EN₂D limit ») ; plage et valeur
+      // par défaut non données.
       key: 'pen2',
-      label: { fr: 'Alerte PEN₂ (profondeur équivalente)', en: 'PEN₂ alert (equivalent depth)' },
+      label: { fr: 'Alerte PEN₂ (profondeur équivalente)', en: 'EN₂D limit (equivalent narcotic depth)' },
       options: range(30, 70, 5).map((v) => ({ value: String(v), label: `${v} m` })),
       default: '50',
       group: 'alerts',
@@ -121,20 +126,18 @@ export abstract class OdysseyRules extends DiveComputer {
       default: 'on',
     },
     {
-      // Champ en haut à droite, changé en plongée (surbrillance + OK, §8). Le manuel n'en donne pas la
-      // liste : « GFsurf » et « Plafond » figurent sur les figures du §8 et du §10, « Tissus » (petit
-      // graphique) sur les photos du §12 et de la plaquette du fabricant. « P moy. » et « GF » ne
-      // figurent dans aucun document : ajoutés d'après le témoignage d'un utilisateur de l'appareil
-      // (ticket GitHub n° 17, firmware 2.0.14.0), comme l'ordre de défilement (confirmé dans le ticket) ;
-      // ses photos montrent P moy. et GF en nombres entiers. Que GF soit un GF99 reste non vérifié.
-      // Choix par défaut non donné.
+      // Champ en haut à droite, changé en plongée (surbrillance + OK, §8). §8 (texte et figures) :
+      // Plafond, GFsurf, GF et Tissus. « P moy. » n'est dans aucun document : ajouté d'après le
+      // témoignage d'un utilisateur de l'appareil (ticket GitHub n° 17, firmware 2.0.14.0, photo :
+      // nombre entier), comme l'ordre de défilement (confirmé dans le ticket) ; son libellé anglais
+      // (« Avg ») est supposé. Choix par défaut non donné.
       key: 'top',
       essential: true,
       label: { fr: 'Champ en haut à droite', en: 'Top right field' },
       options: [
-        { value: 'ceil', label: 'Plafond' },
-        { value: 'tissues', label: 'Tissus' },
-        { value: 'avg', label: 'P moy.' },
+        { value: 'ceil', label: { fr: 'Plafond', en: 'Ceiling' } },
+        { value: 'tissues', label: { fr: 'Tissus', en: 'Tissues' } },
+        { value: 'avg', label: { fr: 'P moy.', en: 'Avg' } },
         { value: 'gfsurf', label: 'GFsurf' },
         { value: 'gf', label: 'GF' },
       ],
@@ -162,8 +165,8 @@ export abstract class OdysseyRules extends DiveComputer {
   baseParams(): DecoParams {
     const hi = Number(this.settings.gfHigh) || 80;
     const lo = Math.min(Number(this.settings.gfLow) || 80, hi); // contrôle de l'appareil non décrit
-    // §8 : remontée à 12 m/min (la DTR ajoute 6 m/min entre les paliers, voir dtr()).
-    return { gfLow: lo / 100, gfHigh: hi / 100, lastStop: Number(this.settings.lastStop) || 3, stopStep: 3, ascentRate: 12 };
+    // §8 : remontée à la vitesse réglée (VR) jusqu'au premier palier (la DTR compte 6 m/min ensuite, voir dtrSec()).
+    return { gfLow: lo / 100, gfHigh: hi / 100, lastStop: Number(this.settings.lastStop) || 3, stopStep: 3, ascentRate: this.vr };
   }
 
   /** §6 (figure, menu Gaz) : « Gaz un » à « Gaz huit ». */
@@ -181,20 +184,25 @@ export abstract class OdysseyRules extends DiveComputer {
     return s.breathing > 0 ? this.decoPpo2() : this.modPpo2;
   }
 
-  /** Consigne VR (§10.3). */
+  /** Consigne VR (§8, §10.4). */
   get vr(): number {
     return Number(this.settings.vr) || 12;
   }
 
+  /** §10.1 : pression de réserve : 35 bar si la profondeur maximale atteinte est d'au plus 10 m, 50 bar au-delà. */
+  reserveBar(maxDepth: number): number {
+    return maxDepth <= 10 ? 35 : 50;
+  }
+
   /**
-   * §10.1 : alarme « Instantanée si Vm/min > à la consigne enregistrée ». §10.3 (figures, VR = 12) :
+   * §10.1 : alarme « Instantanée si Vm/min > à la consigne enregistrée ». §10.4 (figures, VR = 12) :
    * 10 lente (blanc), 12 normale (vert), 14 et plus rapide (rouge).
    */
   ascentLevel(rate: number): 0 | 1 | 2 {
     return rate > this.vr ? 2 : 0;
   }
 
-  /** Le « Palier O'Dive » est actif (sinon pas de palier supplémentaire, ni de palier de sécurité). */
+  /** Le « Palier O'Dive », palier de sécurité (§8), est programmé. */
   get hasSafetyStop(): boolean {
     return this.settings.odive !== '0';
   }
@@ -225,8 +233,8 @@ export abstract class OdysseyRules extends DiveComputer {
   }
 
   tick(s: DiveSession, dt: number): void {
-    // Palier O'Dive (non décrit) : au dernier palier, compté entre 1 m au-dessus et 1,5 m en dessous,
-    // après une plongée plus profonde que 10 m (seuils supposés).
+    // Palier O'Dive (§8 : palier de sécurité, sans autre détail) : au dernier palier, compté entre 1 m
+    // au-dessus et 1,5 m en dessous, après une plongée plus profonde que 10 m (seuils supposés).
     const last = Number(this.settings.lastStop) || 3;
     this.safetyStop = { trigger: 10, start: last + 1.5, top: last - 1, bottom: last + 1.5, reset: 10 };
     super.tick(s, dt);
@@ -293,22 +301,22 @@ export abstract class OdysseyRules extends DiveComputer {
 
   /**
    * Bulle d'explication (app/alertHelp.ts) : §8 (NDL, paliers, pas de verrouillage), §10 alertes
-   * (PO₂ fond, PN2, densité, bloc sous 50 bar), §10.3 vitesse de remontée.
+   * et §10.1 (PO₂ fond, PN2, densité, pression de réserve), §10.4 vitesse de remontée.
    */
   alertExplain(key: string): AlertExplain | null {
     switch (key) {
       case 'ndl3':
         return { code: 'NDL_LOW', what: { fr: 'Sous 3 min, la NDL passe en m’ss sur fond gris et l’Odyssey vibre (deux séries d’avertissement).', en: 'Below 3 minutes, the NDL switches to m’ss on a grey background and the Odyssey vibrates (two warning series).' } };
       case 'low-gas':
-        return { code: 'LOW_GAS', what: { fr: 'Avec l’émetteur : la pression passe sous 50 bar, le champ du bloc devient rouge et l’Odyssey vibre.', en: 'With the transmitter: the pressure drops below 50 bar, the tank field turns red and the Odyssey vibrates.' } };
+        return { code: 'LOW_GAS', what: { fr: 'Avec l’émetteur : la pression passe sous la réserve (35 bar si la plongée n’a pas dépassé 10 m, 50 bar sinon, §10.1) et l’Odyssey vibre ; le champ du bloc est rouge sous 50 bar, orange de 100 à 50 bar (§8).', en: 'With the transmitter: the pressure drops below the reserve (35 bar if the dive stayed within 10 m, 50 bar otherwise, §10.1) and the Odyssey vibrates; the tank field is red below 50 bar, orange from 100 to 50 bar (§8).' } };
       case 'pn2':
-        return { screen: 'PN2', what: { fr: 'Boîte « Alertes » : la pression partielle d’azote du gaz respiré dépasse celle de la profondeur d’alerte réglée (« Alerte PEN₂ », 50 m sur la figure) : risque de narcose. Elle reste affichée jusqu’à l’appui sur un bouton (vibration supposée).', en: '“Alertes” box: the nitrogen partial pressure of the gas breathed exceeds that of the set alert depth (“Alerte PEN₂”, 50 m on the figure): narcosis risk. It stays until a button is pressed (vibration assumed).' }, todo: { fr: 'Remontez de quelques mètres.', en: 'Ascend a few metres.' } };
+        return { screen: 'PN2 / Narcotic', what: { fr: 'Boîte « Alertes » (« Narcotic » en anglais) : la pression partielle d’azote du gaz respiré dépasse celle de la profondeur d’alerte réglée (« Alerte PEN₂ », 50 m sur la figure) : risque de narcose. Elle reste affichée jusqu’à l’appui sur un bouton (vibration supposée).', en: '“Alerts” box (“PN2” in French): the nitrogen partial pressure of the gas breathed exceeds that of the set alert depth (“EN₂D limit”, 50 m on the figure): narcosis risk. It stays until a button is pressed (vibration assumed).' }, todo: { fr: 'Remontez de quelques mètres.', en: 'Ascend a few metres.' } };
       case 'density':
-        return { screen: 'Densité', what: { fr: 'Boîte « Alertes » : la densité du gaz respiré dépasse l’alerte réglée (5,20 g/l sur la figure) ; un gaz trop dense augmente l’effort respiratoire et le CO₂. Elle reste affichée jusqu’à l’appui sur un bouton (vibration supposée).', en: '“Alertes” box: the density of the gas breathed exceeds the set alert (5.20 g/l on the figure); too dense a gas raises the breathing effort and CO₂. It stays until a button is pressed (vibration assumed).' }, todo: { fr: 'Remontez et réduisez l’effort.', en: 'Ascend and reduce the effort.' } };
+        return { screen: 'Densité / Density', what: { fr: 'Boîte « Alertes » : la densité du gaz respiré dépasse l’alerte réglée (5,20 g/l sur la figure) ; un gaz trop dense augmente l’effort respiratoire et le CO₂. Elle reste affichée jusqu’à l’appui sur un bouton (vibration supposée).', en: '“Alerts” box: the density of the gas breathed exceeds the set alert (5.20 g/l on the figure); too dense a gas raises the breathing effort and CO₂. It stays until a button is pressed (vibration assumed).' }, todo: { fr: 'Remontez et réduisez l’effort.', en: 'Ascend and reduce the effort.' } };
       case 'CEILING':
         return { what: { fr: 'Surbrillance marron à plus de 10 cm au-dessus du palier, rouge à plus de 10 cm au-dessus du plafond. L’Odyssey ne se verrouille pas.', en: 'Brown highlight more than 10 cm above the stop, red more than 10 cm above the ceiling. The Odyssey does not lock.' } };
       case 'ASCENT':
-        return { what: { fr: 'Flèches rouges au-delà de la consigne de vitesse VR (12 m/min sur la figure), sans vibration.', en: 'Red arrows beyond the set ascent rate VR (12 m/min on the figure), with no vibration.' } };
+        return { what: { fr: 'Flèches rouges au-delà de la consigne de vitesse VR (menu Personnel : 8 à 15 m/min), sans vibration.', en: 'Red arrows beyond the set ascent rate VR (Personal menu: 8 to 15 m/min), with no vibration.' } };
       default:
         return null;
     }
@@ -321,13 +329,14 @@ export abstract class OdysseyRules extends DiveComputer {
   /**
    * Vibrations (§10) : NDL sous 3 min, « deux séries d'avertissement par vibration » (§8) ; pression
    * bouteille faible « avec vibrations », vitesse de remontée « sans vibration » (légende des figures
-   * du §10). Boîtes « Alertes » PN2 et densité : vibration supposée (non précisé), jusqu'à l'acquittement.
+   * du §10), sous la pression de réserve du §10.1. Boîtes « Alertes » PN2 et densité : vibration
+   * supposée (non précisé), jusqu'à l'acquittement.
    */
   alertCues(v: ComputerView, all = false): AlertCue[] {
     if ((!all && this.settings.vibration === 'off') || !v.inDive) return [];
     const cues: AlertCue[] = [];
     if (!v.inDeco && v.ndl < 3 && v.depth > 1) cues.push({ key: 'ndl3', kind: 'buzz', level: 'warning', until: 'once', first: 2 });
-    if (v.tank.ai && v.tank.pressure < 50) cues.push({ key: 'low-gas', kind: 'buzz', level: 'warning', until: 'once' });
+    if (v.tank.ai && v.tank.pressure < this.reserveBar(v.maxDepth)) cues.push({ key: 'low-gas', kind: 'buzz', level: 'warning', until: 'once' });
     for (const key of this.notices.all) cues.push({ key, kind: 'buzz', level: 'alarm', until: 'ack', every: 10 });
     return cues;
   }

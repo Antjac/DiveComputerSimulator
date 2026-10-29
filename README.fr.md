@@ -18,7 +18,7 @@ Interface disponible en français et en anglais, unités métriques ou impérial
 | --- | --- | --- |
 | Aqualung i330R (mode Dive) | Bühlmann ZHL-16C + GF | Approximation (≈) : l'appareil réel ajoute une marge non documentée (paliers plus longs de 2 à 3 min qu'en GF 90/90 lors de comparaisons réelles), non simulée |
 | Aqualung i770R (mode Dive) | Pelagic Z+ | Approximation (≈) : temps sans palier calés sur la table du manuel, paliers et plongées successives sur les essais en caisson de l'i100 et de l'i300C (même algorithme) |
-| Azoth Systems Odyssey (circuit ouvert) | Bühlmann ZHL-16C + GF | Approximation (≈) : première plongée avec les paramètres publiés ; la majoration brevetée des plongées successives (Standard par défaut) n'est pas publiée, non simulée |
+| Azoth Systems Odyssey (circuit ouvert) | Bühlmann ZHL-16C + GF | Approximation (≈) : première plongée avec les paramètres publiés ; la majoration brevetée des plongées successives (Standard par défaut) n'est pas publiée, non simulée. Écran en français ou en anglais, selon la langue de l'interface, comme le réglage de langue de l'appareil |
 | SEAC Screen (mode SCUBA) | Bühlmann ZHL-16C + GF | Approximation (≈) : algorithme public, mais les GF des 6 niveaux de protection ne sont pas publiés (valeurs du SEAC Guru supposées, non vérifiées) |
 | SEAC Tablet (mode SCUBA) | Bühlmann ZHL-16C + GF | Approximation (≈) : mêmes règles que le Screen, GF des niveaux supposés (SEAC Guru) |
 | Shearwater Perdix 2 (modes Nitrox, 3 GasNx et OC Tec) | Bühlmann ZHL-16C + GF | Algorithme public, paramètres publiés |

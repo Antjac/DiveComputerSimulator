@@ -1,42 +1,66 @@
-import { AIR, COMPARTMENTS, SURFACE_PRESSURE, Tissues, WATER_VAPOUR, depthToPressure, n2Fraction, planAscent } from '../../../engine/buhlmann';
+import { AIR, COMPARTMENTS, SURFACE_PRESSURE, Tissues, WATER_VAPOUR, depthToPressure, gfAt, n2Fraction, planAscent } from '../../../engine/buhlmann';
 import type { DiveSession } from '../../../engine/session';
 import type { Lang } from '../../../i18n';
 import { depthInt, depthText, depthUnit, depthVal, imperial, pressText, tempUnit, tempVal } from '../../../units';
 import { ButtonHelp, ComputerView, clockOfDay } from '../../base';
 import { type OdysseyNotice, OdysseyRules } from './rules';
 
-/** §10 (figures) : texte des boîtes « Alertes ». */
-const NOTICE_TEXT: Record<OdysseyNotice, string> = { pn2: 'PN2', density: 'Densité' };
-
 /** Champs modulables de la page plongée (§8), dans l'ordre de la surbrillance (ordre non donné : lecture de l'écran). */
 type Field = 'top' | 'dtr' | 'gas' | 'mid';
 const FIELDS: Field[] = ['top', 'dtr', 'gas', 'mid'];
-/** §8 (figure) : DTR → DTR/+5' → DTR/HS → DTR/DTP → DTR/BG. */
-const DTR_MODES = ['DTR', "DTR/+5'", 'DTR/HS', 'DTR/DTP', 'DTR/BG'];
 /** §8 (figures) : contenu du champ central du bas : bloc (avec sonde), pile, CNS, température, profondeur max., tissus. */
 type Mid = 'tank' | 'battery' | 'cns' | 'temp' | 'max' | 'tissues';
 const MIDS: Mid[] = ['tank', 'battery', 'cns', 'temp', 'max', 'tissues'];
-/**
- * Champ en haut à droite, dans l'ordre de défilement (voir le réglage `top` dans rules.ts : GFsurf et
- * Plafond d'après les figures, Tissus d'après les photos, P moy. et GF d'après un utilisateur).
- */
+/** Champ en haut à droite, dans l'ordre de défilement (voir le réglage `top` dans rules.ts). */
 const TOPS = ['ceil', 'tissues', 'avg', 'gfsurf', 'gf'];
-const TOP_LABEL: Record<string, string> = { ceil: 'Plafond', tissues: 'Tissus', avg: 'P moy.', gfsurf: 'GFsurf', gf: 'GF' };
-/** §4.2 (figure) : tuiles de l'écran d'accueil. */
-const TILES = ['Système', 'Réglages', 'Transfert', 'Plongée'];
+
+/**
+ * Textes de l'écran dans la langue de l'appareil, lus sur les figures des manuels français et anglais
+ * v2.0 : §4.2 (tuiles de l'accueil), §5.1 (vol), §8 (page plongée, DTR, changement de gaz), §10 (alertes).
+ * Supposés : « Avg » (P moy. n'apparaît dans aucun manuel) et « hours » (intervalle de surface).
+ */
+const TXT = {
+  fr: {
+    run: 'Durée', depth: 'Profondeur', time: 'Durée', stop: 'Palier', mode: 'CO', hours: 'heures',
+    noFly: 'Vol possible dans', gasHead: 'Changement de gaz', alerts: 'Alertes',
+    tiles: ['Système', 'Réglages', 'Transfert', 'Plongée'],
+    // §8 (figure) : DTR → DTR/+5' → DTR/HS → DTR/DTP → DTR/BG.
+    dtr: ['DTR', "DTR/+5'", 'DTR/HS', 'DTR/DTP', 'DTR/BG'],
+    top: { ceil: 'Plafond', tissues: 'Tissus', avg: 'P moy.', gfsurf: 'GFsurf', gf: 'GF' } as Record<string, string>,
+    notice: { pn2: 'PN2', density: 'Densité' } as Record<OdysseyNotice, string>,
+  },
+  en: {
+    run: 'Run', depth: 'Depth', time: 'Time', stop: 'Stop', mode: 'OC', hours: 'hours',
+    noFly: 'Flight possible in', gasHead: 'Change gas', alerts: 'Alerts',
+    tiles: ['System', 'Settings', 'Transfer', 'Dive'],
+    // §8 (figure) : Ascent → Asc/+5' → Asc/Time → Asc/Run → Asc/BG.
+    dtr: ['Ascent', "Asc/+5'", 'Asc/Time', 'Asc/Run', 'Asc/BG'],
+    top: { ceil: 'Ceiling', tissues: 'Tissues', avg: 'Avg', gfsurf: 'GFsurf', gf: 'GF' } as Record<string, string>,
+    notice: { pn2: 'Narcotic', density: 'Density' } as Record<OdysseyNotice, string>,
+  },
+};
 
 const SCREWS = [[16, 14], [120, 10], [244, 10], [348, 14], [10, 150], [354, 150], [16, 286], [120, 290], [244, 290], [348, 286]]
   .map(([x, y]) => `<i class="od-screw" style="left:${x - 5}px;top:${y - 5}px"></i>`)
   .join('');
-
-/** Nombre au format de l'Odyssey : virgule décimale. */
-const fr = (t: string) => t.replace('.', ',');
 
 /** Durée en minutes « N' », ou en « m'ss » sous `below` minutes (figures du §8). */
 function dur(sec: number, below: number, roundUp = false): string {
   const s = Math.max(0, Math.round(sec));
   if (s < below * 60) return `${Math.floor(s / 60)}'${String(s % 60).padStart(2, '0')}`;
   return `${roundUp ? Math.ceil(s / 60) : Math.floor(s / 60)}'`;
+}
+
+/** §8 : durée de remontée arrondie au multiple de 5 s supérieur, puis à la minute supérieure au-delà de 60 s (secondes). */
+function ascRound(sec: number): number {
+  const s = Math.ceil(Math.max(0, sec) / 5 - 1e-9) * 5;
+  return s > 60 ? Math.ceil(s / 60) * 60 : s;
+}
+
+/** Durée de remontée arrondie (§8) : « 0'30 » sous la minute (figure « Fin des paliers »), sinon « 2' ». */
+function ascDur(sec: number): string {
+  const s = ascRound(sec);
+  return s < 60 ? `0'${String(s).padStart(2, '0')}` : `${s / 60}'`;
 }
 
 /** Azoth Systems Odyssey : boutons et affichage, d'après le manuel (règles dans rules.ts). */
@@ -50,6 +74,19 @@ export class AzothOdyssey extends OdysseyRules {
   private gasPick: number | null = null;
   private dtrMode = 0;
   private mid: Mid = 'tank';
+  /** Langue de l'écran : celle du simulateur (menu Personnel, « Langue », sur l'appareil). */
+  private lang: Lang = 'fr';
+  /** §8 : graphique « Tissus » recalculé toutes les 2 s ; en surface, état des tissus en fin de plongée. */
+  private bars = { at: 0, html: '' };
+
+  private get t() {
+    return TXT[this.lang];
+  }
+
+  /** Nombre au format de l'appareil : virgule décimale en français, point en anglais (figures). */
+  private num(t: string): string {
+    return this.lang === 'fr' ? t.replace('.', ',') : t;
+  }
 
   onDiveStart(s: DiveSession): void {
     super.onDiveStart(s);
@@ -95,7 +132,7 @@ export class AzothOdyssey extends OdysseyRules {
     }
     this.selAt = performance.now();
     if (this.sel === 'top') this.settings.top = TOPS[(TOPS.indexOf(this.settings.top) + 1) % TOPS.length];
-    else if (this.sel === 'dtr') this.dtrMode = (this.dtrMode + 1) % DTR_MODES.length;
+    else if (this.sel === 'dtr') this.dtrMode = (this.dtrMode + 1) % TXT.fr.dtr.length;
     else if (this.sel === 'gas' && s.inDive && this.knownGases(s).length > 1) {
       // §8 (figures) : « Sélection du 2ème Gaz disponible » puis « Changement de gaz » : le gaz suivant est proposé.
       this.gasPick = (s.breathing + 1) % this.knownGases(s).length;
@@ -126,7 +163,7 @@ export class AzothOdyssey extends OdysseyRules {
         press: {
           real: { fr: 'Valider / entrer : change l’affichage du champ en surbrillance (§8)', en: 'Confirm / enter: changes the highlighted field (§8)' },
           simulated: true,
-          note: { fr: 'en surface : passe de l’écran d’accueil à la page plongée et inversement ; champ gaz : écran « Changement de gaz »', en: 'at the surface: switches between the home screen and the dive page; gas field: “Changement de gaz” screen' },
+          note: { fr: 'en surface : passe de l’écran d’accueil à la page plongée et inversement ; champ gaz : écran « Changement de gaz »', en: 'at the surface: switches between the home screen and the dive page; gas field: “Change gas” screen' },
         },
       },
       right: {
@@ -141,31 +178,33 @@ export class AzothOdyssey extends OdysseyRules {
   }
 
   /**
-   * §8 : durée totale de remontée, à 12 m/min jusqu'au premier palier puis 6 m/min entre les paliers,
-   * plus les paliers (et le palier O'Dive restant, s'il est actif), en secondes.
+   * §8, règles de calcul de la DTR : à la vitesse réglée (menu Personnel) jusqu'au premier palier ou,
+   * sans palier, jusqu'à la profondeur du « Dernier palier », puis 6 m/min jusqu'à la surface ; plus
+   * les paliers et le palier O'Dive restant (palier de sécurité, compté quand il est programmé). En
+   * secondes, non arrondie (voir ascRound()).
    */
   private dtrSec(t: Tissues, depth: number, s: DiveSession, v: ComputerView, backGas = false): number {
     const p = this.decoParams(s);
     // §8 : « DTR - avec prise en compte du gaz de décompression disponible ; BG (Back Gas) - en
     // considérant uniquement le gaz fond pour le calcul de la décompression ».
     const plan = planAscent(t, depth, s.gas, backGas ? { ...p, gases: [] } : p, this.anchor, 1 / 6);
-    const first = plan.stops.length ? plan.stops[0].depth : 0;
+    const d = Math.max(0, depth);
+    const knee = Math.min(d, plan.stops.length ? plan.stops[0].depth : p.lastStop);
     const stops = plan.stops.reduce((a, st) => a + st.minutes, 0);
     const odive = !v.inDeco && (v.safety.state === 'pending' || v.safety.state === 'active' || v.safety.state === 'paused') ? v.safety.remaining / 60 : 0;
-    return (Math.max(0, depth - first) / 12 + first / 6 + stops + odive) * 60;
+    return ((d - knee) / this.vr + knee / 6 + stops + odive) * 60;
   }
 
-  /** Champ DTR (§8) : la DTR et, sous elle, la valeur du mode choisi. */
+  /** Champ DTR (§8) : la DTR et, sous elle, la valeur du mode choisi ; arrondis du §8 pour chacune. */
   private dtrField(v: ComputerView, s: DiveSession): { label: string; main: string; sub: string | null } {
-    const sec = this.dtrSec(s.tissues, v.depth, s, v);
-    // Figures : « 2' », « 5' », « 0'40 » : m'ss sous 1 min.
-    const main = dur(sec, 1, true);
-    const label = DTR_MODES[this.dtrMode];
+    const sec = ascRound(this.dtrSec(s.tissues, v.depth, s, v));
+    const main = ascDur(sec);
+    const label = this.t.dtr[this.dtrMode];
     switch (this.dtrMode) {
       case 1: {
         const t = s.tissues.clone();
         t.expose(depthToPressure(v.depth), s.gas, 5);
-        return { label, main, sub: dur(this.dtrSec(t, v.depth, s, v), 1, true) };
+        return { label, main, sub: ascDur(this.dtrSec(t, v.depth, s, v)) };
       }
       case 2: {
         const end = (s.clock + 9 * 3600 + sec) % 86400;
@@ -174,13 +213,14 @@ export class AzothOdyssey extends OdysseyRules {
       case 3:
         return { label, main, sub: `${Math.ceil((v.diveTime + sec) / 60)}'` };
       case 4:
-        return { label, main, sub: dur(this.dtrSec(s.tissues, v.depth, s, v, true), 1, true) };
+        return { label, main, sub: ascDur(this.dtrSec(s.tissues, v.depth, s, v, true)) };
       default:
         return { label, main, sub: null };
     }
   }
 
-  render(el: HTMLElement, v: ComputerView, s: DiveSession, _lang: Lang): void {
+  render(el: HTMLElement, v: ComputerView, s: DiveSession, lang: Lang): void {
+    this.lang = lang;
     if (this.sel && performance.now() - this.selAt > 10_000) this.sel = null; // délai non donné : 10 s supposées
     if (!this.mids(s).includes(this.mid)) this.mid = this.airIntegrated(s) ? 'tank' : 'tissues';
     if (this.gasPick !== null && (!v.inDive || performance.now() - this.selAt > 10_000)) this.gasPick = null; // délai supposé, comme la surbrillance
@@ -200,12 +240,12 @@ export class AzothOdyssey extends OdysseyRules {
   /** §4.2 / §4.4 (figures) : écran d'accueil. */
   private home(v: ComputerView, s: DiveSession): string {
     const si = v.surfaceInterval;
-    const siTxt = si === null ? '--' : si < 3600 ? `${Math.floor(si / 60)}'` : `${Math.floor(si / 3600)} heures`;
+    const siTxt = si === null ? '--' : si < 3600 ? `${Math.floor(si / 60)}'` : `${Math.floor(si / 3600)} ${this.t.hours}`;
     const { h, m } = clockOfDay(s);
     const day = Math.floor((s.clock + 9 * 3600) / 86400) + 2; // date fictive
-    const gas = `CO ${Math.round(s.gas.o2 * 100)}%`;
+    const gas = `${this.t.mode} ${Math.round(s.gas.o2 * 100)}%`;
     const icons = ['⚙', '☰', '◓', '⤵'];
-    const tile = (i: number) => `<div class="od-tile ${this.homeSel === i ? 'sel' : ''}"><b>${icons[i]}</b><span>${TILES[i]}</span>${i === 3 && v.noFly > 0 ? '<i class="od-nofly">✈</i>' : ''}</div>`;
+    const tile = (i: number) => `<div class="od-tile ${this.homeSel === i ? 'sel' : ''}"><b>${icons[i]}</b><span>${this.t.tiles[i]}</span>${i === 3 && v.noFly > 0 ? '<i class="od-nofly">✈</i>' : ''}</div>`;
     return `<div class="od-home">
       ${tile(0)}
       <div class="od-hc top"><div>${siTxt}</div><div>${gas}</div><div>${v.gfLow}/${v.gfHigh}</div></div>
@@ -216,14 +256,17 @@ export class AzothOdyssey extends OdysseyRules {
     </div>`;
   }
 
-  /** §8 (figure « Changement de gaz ») : en-tête vert, gaz respiré sur fond vert, gaz proposé sur fond olive. */
+  /**
+   * §8 (figure « Changement de gaz », « Change gas ») : en-tête vert, gaz respiré sur fond vert, gaz
+   * proposé sur fond olive ; seuls les gaz activés (menu Gaz) sont proposés.
+   */
   private gasScreen(s: DiveSession): string {
     const boxes = this.knownGases(s).map((g, i) => {
       const o2 = Math.round(g.o2 * 100);
       const txt = o2 === 100 ? 'OXY' : `${o2}/${String(Math.round(g.he * 100)).padStart(2, '0')}`;
       return `<span class="od-gbox${i === s.breathing ? ' cur' : ''}${i === this.gasPick ? ' pick' : ''}">${txt}</span>`;
     }).join('');
-    return `<div class="od-ghead"><span>Changement de gaz</span><b>⮥</b></div><div class="od-gboxes">${boxes}</div>`;
+    return `<div class="od-ghead"><span>${this.t.gasHead}</span><b>⮥</b></div><div class="od-gboxes">${boxes}</div>`;
   }
 
   /** §8 (figures) : page plongée. */
@@ -235,20 +278,21 @@ export class AzothOdyssey extends OdysseyRules {
 
     // Ligne du haut : Durée, Profondeur, champ modulable (Plafond, Tissus, P moy., GFsurf ou GF).
     const timeTxt = dur(v.diveTime, 5); // m'ss au début de la plongée (figures : « 3'20 », puis « 8' ») ; seuil supposé
-    const depth = imperial() ? depthText(v.depth) : fr(depthText(v.depth));
-    const mode = TOP_LABEL[this.settings.top] ? this.settings.top : 'gfsurf';
+    const depth = imperial() ? depthText(v.depth) : this.num(depthText(v.depth));
+    const mode = TOPS.includes(this.settings.top) ? this.settings.top : 'gfsurf';
     const ceilMode = mode === 'ceil';
-    // Plafond au dixième (figures du §8) ; P moy. et GF entiers, sans décimale (photos de l'appareil,
-    // ticket GitHub n° 17 : « P moy. 11 », « GF 0 » ; arrondi supposé au plus proche, non vérifié).
-    const topVal = ceilMode ? (imperial() ? String(depthInt(v.ceiling)) : fr(v.ceiling.toFixed(1)))
-      : mode === 'tissues' ? tissueBars(s.tissues, s.pressure, s.gas.o2, s.gas.he)
+    // Plafond au dixième (figures du §8) ; P moy. entière (photo de l'appareil, ticket GitHub n° 17 :
+    // « P moy. 11 » ; arrondi supposé au plus proche). GF et GFsurf entiers (figures du §8) : GF
+    // maximal des 16 compartiments à la profondeur actuelle ou en surface, 0 sans sursaturation.
+    const topVal = ceilMode ? (imperial() ? String(depthInt(v.ceiling)) : this.num(v.ceiling.toFixed(1)))
+      : mode === 'tissues' ? this.tissueBarsHtml(v, s)
       : mode === 'avg' ? String(Math.round(depthVal(v.avgDepth)))
       : String(Math.round(mode === 'gf' ? v.gf99 : v.surfGf));
     const topHtml = mode === 'tissues' ? topVal : `<div class="od-val">${topVal}</div>`;
     const top = `
-      <div class="od-cell l"><div class="od-lbl">Durée</div><div class="od-val">${timeTxt}</div></div>
-      <div class="od-cell c"><div class="od-lbl">Profondeur</div><div class="od-val">${depth}</div></div>
-      <div class="od-cell r${hl('top')}${ceilMode ? stopCls : ''}"><div class="od-lbl">${TOP_LABEL[mode]}</div>${topHtml}</div>`;
+      <div class="od-cell l"><div class="od-lbl">${this.t.run}</div><div class="od-val">${timeTxt}</div></div>
+      <div class="od-cell c"><div class="od-lbl">${this.t.depth}</div><div class="od-val">${depth}</div></div>
+      <div class="od-cell r${hl('top')}${ceilMode ? stopCls : ''}"><div class="od-lbl">${this.t.top[mode]}</div>${topHtml}</div>`;
 
     // Ligne du milieu : NDL ou palier, DTR.
     const dtr = this.dtrField(v, s);
@@ -258,15 +302,15 @@ export class AzothOdyssey extends OdysseyRules {
     const odive = v.inDive && !deco && (v.safety.state === 'pending' || v.safety.state === 'active' || v.safety.state === 'paused');
     let middle: string;
     if (!v.inDive) {
-      // §5.1 (figures) : « Vol possible dans hh:mm » en rouge sur la page plongée.
-      const nf = v.noFly > 0 ? `<div class="od-nf">Vol possible dans ${Math.floor(v.noFly / 60)}:${String(Math.floor(v.noFly % 60)).padStart(2, '0')}</div>` : '';
+      // §5.1 (figures) : « Vol possible dans hh:mm » (« Flight possible in ») en rouge sur la page plongée.
+      const nf = v.noFly > 0 ? `<div class="od-nf">${this.t.noFly} ${Math.floor(v.noFly / 60)}:${String(Math.floor(v.noFly % 60)).padStart(2, '0')}</div>` : '';
       middle = `<div class="od-cell l wide"><div class="od-lbl">NDL</div>${nf}</div>`;
     } else if (deco || odive) {
       const sec = deco ? v.stopTimeSec : v.safety.remaining;
       const depthStop = deco ? v.stopDepth : Number(this.settings.lastStop) || 3;
       // Figures : « 1'45 », « 0'55 », puis « 3' » : m'ss sous 3 min.
-      middle = `<div class="od-cell l${stopCls}"><div class="od-lbl">Durée</div><div class="od-val">${dur(sec, 3, true)}</div></div>
-        <div class="od-cell c${stopCls}"><div class="od-lbl">Palier</div><div class="od-val">${depthInt(depthStop)}</div></div>${dtrHtml}`;
+      middle = `<div class="od-cell l${stopCls}"><div class="od-lbl">${this.t.time}</div><div class="od-val">${dur(sec, 3, true)}</div></div>
+        <div class="od-cell c${stopCls}"><div class="od-lbl">${this.t.stop}</div><div class="od-val">${depthInt(depthStop)}</div></div>${dtrHtml}`;
     } else {
       // §8 : « +240' » au-delà de 240 min, m'ss sous 3 min (figure « 1'05 »), surbrillance grise sous
       // 3 min ; grisée une fois les paliers terminés (figure « Fin des paliers »).
@@ -287,13 +331,13 @@ export class AzothOdyssey extends OdysseyRules {
     const lim = this.po2Limit(s);
     const poCls = v.ppO2 > lim ? ' od-al' : v.ppO2 > lim - 0.05 ? ' od-wa' : '';
     const bottom = `
-      <div class="od-b mode">CO</div>
+      <div class="od-b mode">${this.t.mode}</div>
       <div class="od-b gas${hl('gas')}">${gas}</div>
       <div class="od-b mid${hl('mid')}${this.mid === 'tank' && v.tank.pressure < 50 ? ' od-al' : ''}">${this.midField(v, s)}</div>
-      <div class="od-b po2${poCls}">${fr(v.ppO2.toFixed(2))}</div>`;
+      <div class="od-b po2${poCls}">${this.num(v.ppO2.toFixed(2))}</div>`;
 
     const notice = v.inDive ? this.notices.top : undefined;
-    const dialog = notice ? `<div class="od-dlg"><div class="od-dlg-h">Alertes</div><div class="od-dlg-b"><i>!</i><span>${NOTICE_TEXT[notice]}</span></div><div class="od-dlg-ok">Ok</div></div>` : '';
+    const dialog = notice ? `<div class="od-dlg"><div class="od-dlg-h">${this.t.alerts}</div><div class="od-dlg-b"><i>!</i><span>${this.t.notice[notice]}</span></div><div class="od-dlg-ok">Ok</div></div>` : '';
     return `
       ${this.vrColumn(v)}
       <div class="od-main">
@@ -304,7 +348,7 @@ export class AzothOdyssey extends OdysseyRules {
   }
 
   /**
-   * §10.3 (figures, VR = 12 m/min) : vitesse en haut ; dessous un tiret, trois ▼, trois ▲ et un tiret.
+   * §10.4 (figures, VR = 12 m/min) : vitesse en haut ; dessous un tiret, trois ▼, trois ▲ et un tiret.
    * Lente (10) : ▲ et tiret du bas blancs ; normale (12) : tout en vert ; rapide (14, 16, 18) : rouge,
    * un, deux puis trois ▼ allumés ; excessive (30) : le tiret du haut aussi. Seuils intermédiaires
    * déduits des figures (+2, +4, +6 m/min ; tiret au double de la VR).
@@ -351,10 +395,23 @@ export class AzothOdyssey extends OdysseyRules {
       case 'temp':
         return `${Math.round(tempVal(v.temperature))}${tempUnit()}`;
       case 'max':
-        return `${imperial() ? depthText(v.maxDepth) : fr(depthText(v.maxDepth))}${depthUnit()}`;
+        return `${imperial() ? depthText(v.maxDepth) : this.num(depthText(v.maxDepth))}${depthUnit()}`;
       default:
         return tissueGraph(s.tissues, s.pressure, s.gas.o2, s.gas.he);
     }
+  }
+
+  /**
+   * Graphique « Tissus » du champ en haut à droite (§8) : recalculé toutes les 2 s de plongée ; « en
+   * surface, il présente l'état des tissus en fin de plongée » (gardé tel quel une fois calculé).
+   */
+  private tissueBarsHtml(v: ComputerView, s: DiveSession): string {
+    const stale = s.inDive ? Math.abs(s.clock - this.bars.at) >= 2 : s.clock < this.bars.at;
+    if (!this.bars.html || stale) {
+      const gf = gfAt(v.depth, this.anchor, this.decoParams(s));
+      this.bars = { at: s.clock, html: tissueBars(s.tissues, s.pressure, gf) };
+    }
+    return this.bars.html;
   }
 }
 
@@ -363,21 +420,40 @@ function battery(): string {
 }
 
 /**
- * Petit graphique « Tissus » du champ en haut à droite (photos du §12 et de la plaquette) : une barre
- * verticale grise par compartiment (rapides à gauche), remplie en bleu clair. Le manuel ne le décrit
- * pas : hauteur supposée = part de la saturation atteinte à la profondeur actuelle (0 = saturé en
- * surface, plein = saturé à cette profondeur ou sursaturé), ce qui redonne l'allure des photos.
+ * Petit graphique « Tissus » du champ en haut à droite (§8, « Lecture du graphique des tissus ») : une
+ * barre par compartiment, du 1 à gauche au 16 à droite. Sa valeur est la charge en gaz inerte (azote et
+ * hélium) rapportée à ce que tolère le compartiment à la profondeur actuelle, avec le GF qui s'y applique
+ * (`gf`) : 0 % à la ppN₂ de l'air en surface, 100 % à la limite, tracée par le trait à 80 % de la hauteur.
  */
-function tissueBars(t: Tissues, pAmb: number, o2: number, he: number): string {
+function tissueBars(t: Tissues, pAmb: number, gf: number): string {
   const surface = (SURFACE_PRESSURE - WATER_VAPOUR) * n2Fraction(AIR);
-  const inspired = (pAmb - WATER_VAPOUR) * (n2Fraction({ o2, he }) + he);
   const bars = Array.from({ length: COMPARTMENTS }, (_, i) => {
-    const p = t.n2[i] + t.he[i];
-    const span = inspired - surface;
-    const f = span > 0.05 ? (p - surface) / span : p > inspired + 0.01 ? 1 : 0;
-    return `<i><b style="height:${(Math.max(0, Math.min(1, f)) * 100).toFixed(0)}%"></b></i>`;
+    const [a, b] = t.coefficients(i);
+    const limit = pAmb + gf * (pAmb / b + a - pAmb);
+    const pct = ((t.n2[i] + t.he[i] - surface) / (limit - surface)) * 100;
+    const h = Math.max(0, Math.min(100, pct * 0.8));
+    return `<i><b style="height:${h.toFixed(0)}%;background:${barColour(pct)}"></b></i>`;
   });
-  return `<span class="od-tbars">${bars.join('')}</span>`;
+  return `<span class="od-tbars">${bars.join('')}<u></u></span>`;
+}
+
+/**
+ * §8 : couleur d'une barre selon sa valeur : « cyan, puis bleu de plus en plus foncé en dessous de 40 % ;
+ * violet de 40 à 60 % ; rose très pâle, puis vert-jaune de 66 à 80 % ; jaune, puis orange de 80 à 90 % ;
+ * orange foncé à partir de 100 %, puis rouge à 114 % ». Plages non données, déduites : rose très pâle de
+ * 60 à 66 %, orange de 90 à 100 %. Teintes lues sur les figures (§5.1, §8).
+ */
+function barColour(pct: number): string {
+  const mix = (c0: number[], c1: number[], f: number) =>
+    `rgb(${c0.map((c, k) => Math.round(c + (c1[k] - c) * Math.max(0, Math.min(1, f)))).join(',')})`;
+  if (pct < 40) return mix([32, 224, 240], [16, 48, 208], pct / 40);
+  if (pct < 60) return '#8a32e0';
+  if (pct < 66) return '#f6dbe8';
+  if (pct < 80) return '#7ee03a';
+  if (pct < 90) return mix([240, 224, 32], [240, 140, 30], (pct - 80) / 10);
+  if (pct < 100) return '#f08c1e';
+  if (pct < 114) return '#d0601a';
+  return '#e02424';
 }
 
 /**

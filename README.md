@@ -18,7 +18,7 @@ User interface in English and French, metric or imperial units.
 | --- | --- | --- |
 | Aqualung i330R (Dive mode) | Bühlmann ZHL-16C + GF | Approximation (≈): the real device adds an undocumented margin (stops 2–3 min longer than GF 90/90 in field comparisons), not simulated |
 | Aqualung i770R (Dive mode) | Pelagic Z+ | Approximation (≈): no-stop times fitted to the manual's table, stops and repetitive dives to the chamber tests of the i100 and the i300C (same algorithm) |
-| Azoth Systems Odyssey (open circuit) | Bühlmann ZHL-16C + GF | Approximation (≈): first dive with the published parameters; the patented repetitive dive penalty (Standard by default) is unpublished, not simulated |
+| Azoth Systems Odyssey (open circuit) | Bühlmann ZHL-16C + GF | Approximation (≈): first dive with the published parameters; the patented repetitive dive penalty (Standard by default) is unpublished, not simulated. Screen in French or English, following the interface language, like the device's language setting |
 | SEAC Screen (SCUBA mode) | Bühlmann ZHL-16C + GF | Approximation (≈): public algorithm, but the GF of the 6 protection levels are not published (values of the SEAC Guru assumed, not verified) |
 | SEAC Tablet (SCUBA mode) | Bühlmann ZHL-16C + GF | Approximation (≈): same rules as the Screen, GF of the levels assumed (SEAC Guru) |
 | Shearwater Perdix 2 (Nitrox, 3 GasNx and OC Tec modes) | Bühlmann ZHL-16C + GF | Public algorithm, published parameters |
