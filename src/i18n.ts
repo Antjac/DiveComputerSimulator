@@ -578,8 +578,8 @@ const dict = {
   aboutSource: { fr: 'Code source :', en: 'Source code:' },
   helpSource: { fr: 'Code source, suggestions et signalements sur GitHub :', en: 'Source code, suggestions and issues on GitHub:' },
   aboutDiverModel: {
-    fr: 'Plongeur de la vue 3D : « Diver » par ucdavisterc, sous licence CC BY 4.0 (animation des bras retirée) :',
-    en: '3D view diver: “Diver” by ucdavisterc, under the CC BY 4.0 licence (arm animation removed):',
+    fr: 'Plongeur de la vue 3D : « Diver » par ucdavisterc, sous licence CC BY 4.0 (bras immobiles, mains croisées devant serrant les avant-bras) :',
+    en: '3D view diver: “Diver” by ucdavisterc, under the CC BY 4.0 licence (arms still, hands crossed in front gripping the forearms):',
   },
   aboutLicenceTitle: { fr: 'Licence et responsabilité', en: 'Licence and liability' },
   aboutLicence: {

@@ -76,6 +76,24 @@ export function buildDiver(diver: THREE.Group, pitch: THREE.Group, fins: THREE.G
     return body;
   }
 
+/**
+ * Arms of the textured diver: hands crossed in front, under the chin, each gripping the other forearm,
+ * as divers hold them in trim. Model space (x across, y towards the back, z forwards), for the left
+ * arm, x mirrored for the right one. Directions of the upper arms (the right one lower, so that its
+ * forearm lies under the left one), of the forearms, and of the hand, which goes round the other
+ * forearm (y and z mirrored too: the left hand reaches down and back over the right forearm, the
+ * right hand up and forwards behind the left one); `palmTo`: where the palm faces (mirrored the same
+ * way). Bend of each finger joint towards the palm (rad); `palm`: which side the palm is on (±1).
+ */
+export const ARM_POSE = {
+  upperArm: [0.1, -0.45, 0.75],
+  upperArmR: [0.1, -0.85, 0.55],
+  forearm: [-1, 0, 0.15],
+  hand: [-0.2, -1, -0.7],
+  palmTo: [0, 0, -1],
+  curl: { index: 1.5, middle: 1.55, ring: 1.6, pinky: 1.65, thumb: 0.8 } as Record<string, number>,
+  palm: -1,
+};
 /** Clip duration of the model's kick cycle (s). */
 export const KICK_CYCLE = 1.958;
 
@@ -128,7 +146,66 @@ export async function loadDiverModel(): Promise<{ model: THREE.Object3D; action:
   const mixer = new THREE.AnimationMixer(gltf.scene);
   const action = mixer.clipAction(clip);
   action.play();
+  mixer.update(0);
+  poseArms(gltf.scene);
   return { model: gltf.scene, action, mixer };
+}
+
+/**
+ * Poses the arms and hands (ARM_POSE), from the model's own pose, kept on the first call. Worked out
+ * in each parent's frame: the right arm's joints are mirrored (negative scale), which world
+ * quaternions do not represent.
+ */
+export function poseArms(root: THREE.Object3D, pose = ARM_POSE): void {
+  const arm = /^[lr]_(shoulder|elbow|wrist|thumb|index|middle|ring|pinky)\d*_\d/;
+  root.traverse((o) => {
+    if (!arm.test(o.name)) return;
+    o.userData.rest ??= o.quaternion.clone();
+    o.quaternion.copy(o.userData.rest);
+  });
+  const at = (o: THREE.Object3D) => {
+    root.updateMatrixWorld(true);
+    return new THREE.Vector3().setFromMatrixPosition(o.matrixWorld);
+  };
+  /** Turns `bone` so that the direction `from` (model space) becomes `to`. */
+  const turn = (bone: THREE.Object3D, from: THREE.Vector3, to: THREE.Vector3) => {
+    const toParent = bone.parent!.matrixWorld.clone().invert();
+    const a = from.clone().transformDirection(toParent);
+    const b = to.clone().transformDirection(toParent);
+    bone.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(a, b));
+  };
+  const aim = (bone: THREE.Object3D, child: THREE.Object3D, dir: THREE.Vector3) => turn(bone, at(child).sub(at(bone)), dir);
+  for (const [side, x] of [['l', 1], ['r', -1]] as const) {
+    const bone = (n: string) => {
+      let found: THREE.Object3D | undefined;
+      root.traverse((o) => (found ??= new RegExp(`^${side}_${n}_\\d`).test(o.name) ? o : undefined));
+      return found;
+    };
+    const [shoulder, elbow, wrist] = [bone('shoulder'), bone('elbow'), bone('wrist')];
+    const [index, middle, pinky] = [bone('index1'), bone('middle'), bone('pinky1')]; // knuckles, and the middle finger's base
+    if (!shoulder?.parent || !elbow || !wrist || !index || !middle || !pinky) continue;
+    const [u, f, h] = [x > 0 ? pose.upperArm : pose.upperArmR, pose.forearm, pose.hand];
+    aim(shoulder, elbow, new THREE.Vector3(u[0] * x, u[1], u[2]));
+    aim(elbow, wrist, new THREE.Vector3(f[0] * x, f[1], f[2]));
+    // The hand bent onto the other forearm, palm turned onto it, fingers wrapped round it.
+    const palmOf = () => {
+      const w = at(wrist);
+      return at(index).sub(w).cross(at(pinky).sub(w)).normalize().multiplyScalar(x * pose.palm);
+    };
+    aim(wrist, middle, new THREE.Vector3(h[0] * x, h[1] * x, h[2] * x));
+    const axis = at(middle).sub(at(wrist)).normalize();
+    turn(wrist, palmOf().projectOnPlane(axis).normalize(), new THREE.Vector3(pose.palmTo[0] * x, pose.palmTo[1] * x, pose.palmTo[2] * x).projectOnPlane(axis).normalize());
+    const palm = palmOf();
+    for (const [finger, curl] of Object.entries(pose.curl)) {
+      for (const j of [1, 2]) {
+        const b = bone(`${finger}${j}`);
+        const c = bone(`${finger}${j + 1}`);
+        if (!b || !c) continue;
+        const seg = at(c).sub(at(b)).normalize();
+        aim(b, c, seg.clone().applyAxisAngle(seg.clone().cross(palm).normalize(), curl));
+      }
+    }
+  }
 }
 
 /** Water all around, the surface seen from below, sun rays, marine snow and the exhaled bubbles. */
