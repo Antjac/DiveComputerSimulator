@@ -2,8 +2,13 @@
 import * as THREE from 'three';
 import { mulberry32 } from './math';
 
-/** Diver in their suit, BCD and tank, with fins (kicked by the animation) and a dive torch. */
-export function buildDiver(diver: THREE.Group, pitch: THREE.Group, fins: THREE.Group[], torch: THREE.SpotLight): void {
+/**
+ * Diver in their suit, BCD and tank, with fins (kicked by the animation) and a dive torch. Returns the
+ * body, hidden once the textured model (loadDiverModel) is in.
+ */
+export function buildDiver(diver: THREE.Group, pitch: THREE.Group, fins: THREE.Group[], torch: THREE.SpotLight): THREE.Group {
+    const body = new THREE.Group();
+    pitch.add(body);
     const suit = new THREE.MeshStandardMaterial({ color: 0x1b2733, roughness: 0.7 });
     const bcd = new THREE.MeshStandardMaterial({ color: 0x2b3440, roughness: 0.8 });
     const tankMat = new THREE.MeshStandardMaterial({ color: 0xf2c230, roughness: 0.35, metalness: 0.5 });
@@ -40,7 +45,7 @@ export function buildDiver(diver: THREE.Group, pitch: THREE.Group, fins: THREE.G
       ),
       hoseMat,
     );
-    pitch.add(torso, vest, tank, valve, head, mask, reg, hose);
+    body.add(torso, vest, tank, valve, head, mask, reg, hose);
 
     for (const side of [-1, 1]) {
       const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.5, 4, 8), suit);
@@ -56,11 +61,11 @@ export function buildDiver(diver: THREE.Group, pitch: THREE.Group, fins: THREE.G
       const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.055, 0.45, 4, 8), suit);
       arm.rotation.set(Math.PI / 2.4, 0, side * 0.25);
       arm.position.set(side * 0.2, -0.12, 0.35);
-      pitch.add(leg, hip, arm);
+      body.add(leg, hip, arm);
     }
     const comp = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.03, 0.07), compMat);
     comp.position.set(-0.24, -0.2, 0.52);
-    pitch.add(comp);
+    body.add(comp);
 
     // Dive torch: only noticeable once the surface light fades.
     torch.position.set(0, 0.1, 0.7);
@@ -68,7 +73,63 @@ export function buildDiver(diver: THREE.Group, pitch: THREE.Group, fins: THREE.G
     pitch.add(torch, torch.target);
 
     diver.add(pitch);
+    return body;
   }
+
+/** Clip duration of the model's kick cycle (s). */
+export const KICK_CYCLE = 1.958;
+
+/**
+ * Textured diver: "Diver" by ucdavisterc, CC BY 4.0 (sketchfab.com/3d-models/diver-9a415258dec4449c9faf28f11a5b6831),
+ * in public/models/diver.glb. Swims with the legs only: the clip's tracks on the arms, hands and neck
+ * are dropped, the arms stay still. Resolves to null if the file is missing (procedural diver kept).
+ */
+export async function loadDiverModel(): Promise<{ model: THREE.Object3D; action: THREE.AnimationAction; mixer: THREE.AnimationMixer } | null> {
+  const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
+  let gltf;
+  try {
+    gltf = await new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}models/diver.glb`);
+  } catch {
+    return null;
+  }
+  // Its materials are in KHR_materials_pbrSpecularGlossiness, which three.js no longer reads: apply
+  // the diffuse texture and colour, and the glossiness as roughness.
+  const parser = gltf.parser;
+  const pending: Promise<void>[] = [];
+  gltf.scene.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    if (o.name.startsWith('pPlane1')) o.visible = false; // stray plane of the original scene
+    mesh.frustumCulled = false; // skinned: the bind-pose bounds do not follow the kicks
+    const mat = mesh.material as THREE.MeshStandardMaterial;
+    const idx = parser.associations.get(mat)?.materials;
+    const sg = idx === undefined ? undefined : parser.json.materials[idx].extensions?.KHR_materials_pbrSpecularGlossiness;
+    if (!sg) return;
+    const [r, g, b, a] = sg.diffuseFactor ?? [1, 1, 1, 1];
+    mat.color.setRGB(r, g, b, THREE.SRGBColorSpace);
+    mat.opacity = a;
+    mat.metalness = 0;
+    mat.roughness = 1 - (sg.glossinessFactor ?? 1) * 0.6;
+    if (sg.diffuseTexture) {
+      pending.push(
+        parser.getDependency('texture', sg.diffuseTexture.index).then((tex: THREE.Texture) => {
+          tex.colorSpace = THREE.SRGBColorSpace;
+          mat.map = tex;
+          mat.needsUpdate = true;
+        }),
+      );
+    }
+  });
+  await Promise.all(pending);
+
+  const legs = /^(Root|l_leg|r_leg|l_knee|r_knee|l_ankle|r_ankle|l_ball|r_ball|l_toe|r_toe|l_fin|r_fin)/;
+  const clip = gltf.animations[0];
+  clip.tracks = clip.tracks.filter((t) => legs.test(t.name));
+  const mixer = new THREE.AnimationMixer(gltf.scene);
+  const action = mixer.clipAction(clip);
+  action.play();
+  return { model: gltf.scene, action, mixer };
+}
 
 /** Water all around, the surface seen from below, sun rays, marine snow and the exhaled bubbles. */
 export function buildAmbience() {

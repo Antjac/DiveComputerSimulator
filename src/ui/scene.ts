@@ -385,52 +385,110 @@ export class Scene {
     ctx.translate(x, y);
     ctx.rotate(tilt * (1 - upright) - (Math.PI / 2) * upright);
     ctx.scale(scale, scale);
-    // Fins
-    const fin = Math.sin(this.finPhase) * 6;
-    ctx.fillStyle = '#ffcc33';
+    // Legs, after the 3D model: hip, knee and ankle, kicking from the hips, the fin flexing behind
+    // the stroke; the far leg (darker) half a cycle behind. The arms do not swim.
+    ctx.lineCap = 'round';
+    for (const i of [0, 1]) {
+      const swing = Math.sin(this.finPhase + i * Math.PI);
+      const hip = { x: -14, y: 1 + i };
+      const a1 = Math.PI + swing * 0.28;
+      const knee = { x: hip.x + Math.cos(a1) * 14, y: hip.y + Math.sin(a1) * 14 };
+      const a2 = a1 - 0.12 + swing * 0.22;
+      const ankle = { x: knee.x + Math.cos(a2) * 13, y: knee.y + Math.sin(a2) * 13 };
+      const a3 = a2 + swing * 0.35;
+      const far = i === 0;
+      ctx.strokeStyle = far ? '#0c1218' : '#161d25';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(hip.x, hip.y);
+      ctx.lineTo(knee.x, knee.y);
+      ctx.stroke();
+      ctx.lineWidth = 6.5;
+      ctx.beginPath();
+      ctx.moveTo(knee.x, knee.y);
+      ctx.lineTo(ankle.x, ankle.y);
+      ctx.stroke();
+      // Yellow band below the knee.
+      ctx.strokeStyle = far ? '#a8861e' : '#f2c230';
+      ctx.lineWidth = 6.8;
+      ctx.lineCap = 'butt';
+      ctx.beginPath();
+      ctx.moveTo(knee.x + Math.cos(a2) * 2, knee.y + Math.sin(a2) * 2);
+      ctx.lineTo(knee.x + Math.cos(a2) * 5, knee.y + Math.sin(a2) * 5);
+      ctx.stroke();
+      ctx.lineCap = 'round';
+      // Fin: narrow at the foot pocket, wide at the blade's end.
+      const c = Math.cos(a3);
+      const sn = Math.sin(a3);
+      const pt = (along: number, across: number): [number, number] => [ankle.x + c * along - sn * across, ankle.y + sn * along + c * across];
+      ctx.fillStyle = far ? '#b8921c' : '#f2c230';
+      ctx.beginPath();
+      ctx.moveTo(...pt(-2, -3));
+      ctx.lineTo(...pt(20, -4.5));
+      ctx.lineTo(...pt(21, 3));
+      ctx.lineTo(...pt(-2, 3));
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = far ? '#0c1218' : '#1b2733';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(...pt(6, -0.5));
+      ctx.lineTo(...pt(18, -0.5));
+      ctx.stroke();
+    }
+    // Tank (valve and first stage at the head end) and hose to the regulator.
+    ctx.fillStyle = '#8f979f';
     ctx.beginPath();
-    ctx.moveTo(-38, -2);
-    ctx.lineTo(-58, -8 + fin);
-    ctx.lineTo(-58, 2 + fin);
-    ctx.closePath();
+    ctx.roundRect(-13, -16, 31, 9, 4.5);
     ctx.fill();
+    ctx.fillStyle = '#b9c0c7';
+    ctx.fillRect(-10, -14.5, 25, 1.6);
+    ctx.fillStyle = '#5d646b';
+    ctx.fillRect(17, -14, 4, 5);
+    ctx.strokeStyle = '#111';
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
-    ctx.moveTo(-38, 3);
-    ctx.lineTo(-58, 0 - fin);
-    ctx.lineTo(-58, 10 - fin);
-    ctx.closePath();
+    ctx.moveTo(20, -11);
+    ctx.quadraticCurveTo(30, -12, 32, 2);
+    ctx.stroke();
+    // Body (wetsuit) and BCD.
+    ctx.fillStyle = '#161d25';
+    ctx.beginPath();
+    ctx.roundRect(-17, -8, 39, 15, 7);
     ctx.fill();
-    // Legs + body (wetsuit)
-    ctx.fillStyle = '#1b2733';
+    ctx.fillStyle = '#2b3440';
     ctx.beginPath();
-    ctx.roundRect(-40, -5, 30, 9, 4);
+    ctx.roundRect(-11, -9, 29, 6, 3);
     ctx.fill();
+    ctx.strokeStyle = '#f2c230';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(-14, -8, 36, 15, 7);
-    ctx.fill();
-    // Tank
-    ctx.fillStyle = '#c8ccd2';
+    ctx.moveTo(14, -6);
+    ctx.lineTo(11, 5);
+    ctx.stroke();
+    // Head, mask and regulator.
+    ctx.fillStyle = '#161d25';
     ctx.beginPath();
-    ctx.roundRect(-12, -15, 30, 8, 4);
-    ctx.fill();
-    // Head + mask
-    ctx.fillStyle = '#1b2733';
-    ctx.beginPath();
-    ctx.arc(27, -2, 7, 0, Math.PI * 2);
+    ctx.arc(27, -2, 6.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#7fe0ff';
     ctx.beginPath();
-    ctx.roundRect(28, -6, 7, 5, 2);
+    ctx.roundRect(29, -6, 6, 5, 1.5);
     ctx.fill();
-    // Arm + computer
-    ctx.strokeStyle = '#1b2733';
-    ctx.lineWidth = 4;
+    ctx.fillStyle = '#5d646b';
     ctx.beginPath();
-    ctx.moveTo(14, 3);
-    ctx.lineTo(28, 9);
+    ctx.arc(32, 2.5, 2, 0, Math.PI * 2);
+    ctx.fill();
+    // Arm along the body (still), computer on the wrist.
+    ctx.strokeStyle = '#0f151c';
+    ctx.lineWidth = 4.5;
+    ctx.beginPath();
+    ctx.moveTo(15, 1);
+    ctx.lineTo(4, 6);
+    ctx.lineTo(-6, 6);
     ctx.stroke();
     ctx.fillStyle = '#ff6a3d';
-    ctx.fillRect(24, 6, 5, 5);
+    ctx.fillRect(-3, 3.5, 4, 5);
     ctx.restore();
   }
 }

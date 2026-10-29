@@ -577,6 +577,10 @@ const dict = {
   },
   aboutSource: { fr: 'Code source :', en: 'Source code:' },
   helpSource: { fr: 'Code source, suggestions et signalements sur GitHub :', en: 'Source code, suggestions and issues on GitHub:' },
+  aboutDiverModel: {
+    fr: 'Plongeur de la vue 3D : « Diver » par ucdavisterc, sous licence CC BY 4.0 (animation des bras retirée) :',
+    en: '3D view diver: “Diver” by ucdavisterc, under the CC BY 4.0 licence (arm animation removed):',
+  },
   aboutLicenceTitle: { fr: 'Licence et responsabilité', en: 'Licence and liability' },
   aboutLicence: {
     fr: '© 2026 Antoine ALEXANDRE (Antjac). Logiciel libre sous licence GNU AGPL v3 : utilisation libre pour tous ; toute version modifiée, même mise en ligne, doit publier son code source sous la même licence. Fourni « tel quel », sans aucune garantie. Les calculs sont des approximations. Les auteurs ne sauraient être tenus responsables de son utilisation.',
