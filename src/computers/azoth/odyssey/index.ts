@@ -195,6 +195,16 @@ export class AzothOdyssey extends OdysseyRules {
     return ((d - knee) / this.vr + knee / 6 + stops + odive) * 60;
   }
 
+  /** §8 : vitesse réglée (VR) jusqu'au premier palier (ou dernier palier sans déco), puis 6 m/min jusqu'à la surface. */
+  plannedAscentSpeed(depth: number, targetDepth: number, s: DiveSession): number | undefined {
+    if (targetDepth >= depth) return undefined;
+    const p = this.decoParams(s);
+    const anchor = s.inDive ? this.anchor : 0;
+    const plan = planAscent(s.tissues, depth, s.gas, p, anchor, 1 / 6);
+    const knee = Math.min(depth, plan.stops.length ? plan.stops[0].depth : p.lastStop);
+    return depth <= knee + 1e-6 ? 6 : this.vr;
+  }
+
   /** Champ DTR (§8) : la DTR et, sous elle, la valeur du mode choisi ; arrondis du §8 pour chacune. */
   private dtrField(v: ComputerView, s: DiveSession): { label: string; main: string; sub: string | null } {
     const sec = ascRound(this.dtrSec(s.tissues, v.depth, s, v));

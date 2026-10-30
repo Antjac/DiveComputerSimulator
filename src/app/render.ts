@@ -111,7 +111,7 @@ export function refresh(full = false): void {
       session.control === 'rate'
         ? ` · ${t('rateCmd')} ${session.commandRate < 0 ? '↑' : session.commandRate > 0 ? '↓' : ''} ${rateLabel(Math.abs(session.commandRate))}`
         : Math.abs(session.targetDepth - session.depth) > 0.3
-          ? ` · ${t('rateTarget')} ${depthLabel(session.targetDepth)} ${session.targetDepth < session.depth ? `↑ ${rateLabel(session.ascentSpeed)}` : `↓ ${rateLabel(session.descentSpeed)}`}`
+          ? ` · ${t('rateTarget')} ${depthLabel(session.targetDepth)} ${session.targetDepth < session.depth ? `↑ ${rateLabel(session.currentAscentSpeed())}` : `↓ ${rateLabel(session.descentSpeed)}`}`
           : ''}`
     : `${t('atSurface')}${session.surfaceInterval !== null ? ` · ${t('surfaceSince')} ${hmm(session.surfaceInterval / 60)}` : ''}`;
 

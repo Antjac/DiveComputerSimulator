@@ -197,6 +197,13 @@ export class DiveSession {
   /** Speeds used to reach a target depth: the last ones chosen with ▲/▼ (m/min). */
   ascentSpeed = DEFAULT_ASCENT;
   descentSpeed = DEFAULT_DESCENT;
+  /** Optional ascent speed provider (m/min) for target mode, e.g. based on the active computer's profile. */
+  ascentProfile: ((depth: number, targetDepth: number) => number | undefined) | null = null;
+
+  /** Current ascent speed (m/min) when moving towards targetDepth. */
+  currentAscentSpeed(depth = this.depth, targetDepth = this.targetDepth): number {
+    return this.ascentProfile?.(depth, targetDepth) ?? this.ascentSpeed;
+  }
   private _siteDepth = 40;
   get siteDepth(): number {
     return this._siteDepth;
@@ -427,7 +434,8 @@ export class DiveSession {
       if (this.depth > bottom) desired = Math.min(desired, -Math.min(MAX_ASCENT / 60, brake(this.depth - bottom)));
     } else {
       const diff = Math.min(this.targetDepth, bottom) - this.depth;
-      const maxV = (diff > 0 ? this.descentSpeed : this.ascentSpeed) / 60;
+      const speed = diff > 0 ? this.descentSpeed : this.currentAscentSpeed();
+      const maxV = speed / 60;
       desired = Math.sign(diff) * Math.min(maxV, brake(Math.abs(diff)));
     }
     const dv = desired - this.velocity;

@@ -243,6 +243,14 @@ export abstract class DiveComputer {
     return this.ascentLevel(rate, depth) === 2;
   }
 
+  /**
+   * Ascent speed profile (m/min) planned by this computer for a diver at `depth` moving toward `targetDepth`.
+   * Returns undefined when the computer uses no custom profile (the session's default ascentSpeed is used).
+   */
+  plannedAscentSpeed(_depth: number, _targetDepth: number, _s: DiveSession): number | undefined {
+    return undefined;
+  }
+
   /** Does this computer (with its current settings) ask for a safety stop? */
   get hasSafetyStop(): boolean {
     return true;

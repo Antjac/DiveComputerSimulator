@@ -84,10 +84,10 @@ export abstract class OdysseyRules extends DiveComputer {
       // l'indicateur VR (§10.4) et l'alarme de vitesse (§10.1). Valeur par défaut non donnée : 12 m/min
       // supposé (figure « Personnel » du §10, exemples du §10.4).
       key: 'vr',
-      label: { fr: 'Vitesse de remontée (VR)', en: 'Ascent rate (VR)' },
+      label: { fr: 'Consigne de vitesse de remontée (VR)', en: 'Ascent rate setpoint (VR)' },
       options: [8, 10, 11, 12, 15].map((v) => ({ value: String(v), label: `${v} m/min` })),
       default: '12',
-      group: 'alerts',
+      group: 'deco',
     },
     // §10 (figure « Alertes ») : « Alerte PO₂ fond 1,30b » ; plage et valeur par défaut non données.
     { ...ppo2Setting(1.2, 1.6, 1.3, 'Alerte PO₂ fond', 0.05), group: 'alerts' },
