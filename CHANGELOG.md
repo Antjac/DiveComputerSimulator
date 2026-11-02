@@ -11,6 +11,10 @@ To report an error: a GitHub issue or antoalex@free.fr. Details are in the Git h
 
 Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or change (EN).
 
+## 2026-11-02
+
+- Scubapro G2, Luna 2.0 AI et G3, Mares Quad Air et Puck Pro, Aqualung i770R · Le changement de gaz validé sur l'ordinateur était perdu : l'invite disparaissait mais le plongeur restait sur le gaz du bloc principal (T1 / G1). Ces modèles calculent sur leur propre copie des tissus et le changement ne s'appliquait qu'à cette copie, pas à la plongée. Corrigé (signalé par un utilisateur préparant une formation PN-C) / The gas switch confirmed on the computer was lost: the prompt went away but the diver stayed on the main tank's gas (T1 / G1). These models compute on their own copy of the tissues and the switch only reached that copy, not the dive. Fixed (reported by a user preparing a PN-C course).
+
 ## 2026-10-29
 
 - Interface · Plongeur plus réaliste. Vue 3D : modèle texturé et animé « Diver » de ucdavisterc (CC BY 4.0, crédité dans « À propos » et les README) ; il palme avec les jambes, au rythme de la nage, bras immobiles, mains croisées devant lui sous le menton, chacune serrant l'autre avant-bras ; l'ancien plongeur reste en secours si le fichier manque. Vue 2D : silhouette redessinée d'après ce modèle (jambes articulées qui palment en ciseaux, palmes jaunes, bloc, gilet, détendeur, bras le long du corps) / More realistic diver. 3D view: textured, rigged “Diver” model by ucdavisterc (CC BY 4.0, credited in “About” and the READMEs); it kicks with the legs, at the swimming pace, arms still, hands crossed in front under the chin, each gripping the other forearm; the former diver remains as a fallback if the file is missing. 2D view: silhouette redrawn after this model (jointed legs scissor-kicking, yellow fins, tank, BCD, regulator, arms along the body).

@@ -47,7 +47,13 @@ export abstract class DiveComputer {
     }
     const tissues = this.ownTissues(real, variant);
     const v = Object.create(view) as DiveSession;
-    Object.defineProperties(v, { [REAL]: { value: real }, tissues: { value: tissues } });
+    // switchGas must act on the diver's session: inherited, it would run with `this` = this view and
+    // only set the view's own `breathing` (the switch was lost on every model with a tissue variant).
+    Object.defineProperties(v, {
+      [REAL]: { value: real },
+      tissues: { value: tissues },
+      switchGas: { value: (g: number) => real.switchGas(g) },
+    });
     return v;
   }
 
