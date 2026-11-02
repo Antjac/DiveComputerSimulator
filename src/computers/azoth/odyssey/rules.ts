@@ -1,4 +1,4 @@
-import { type DecoParams, COMPARTMENTS, SURFACE_PRESSURE, Tissues, AIR, depthToPressure, ndl } from '../../../engine/buhlmann';
+import { type DecoParams, COMPARTMENTS, SURFACE_PRESSURE, Tissues, AIR, depthToPressure, ndl, planAscent } from '../../../engine/buhlmann';
 import type { DiveSession } from '../../../engine/session';
 import { type AlertCue, type ComputerView, DiveComputer, SettingDef, type AlertExplain } from '../../base';
 import { Notices } from '../../common/notices';
@@ -215,7 +215,14 @@ export abstract class OdysseyRules extends DiveComputer {
     super.onDiveStart(s);
     this.notices.clear();
     this.hadDeco = false;
+    this.firstStopReached = false;
   }
+
+  /**
+   * §8 : la VR ne vaut que jusqu'au premier palier ; une fois celui-ci atteint, la remontée se calcule
+   * à 6 m/min entre les paliers puis jusqu'à la surface (sans palier : 6 m/min à partir du « Dernier palier »).
+   */
+  firstStopReached = false;
 
   /** ppN₂ (bar) au-delà de laquelle l'alarme PN2 se déclenche : celle de l'air à la profondeur PEN₂. */
   pn2Limit(): number {
@@ -241,6 +248,11 @@ export abstract class OdysseyRules extends DiveComputer {
     if (!this.hasSafetyStop) this.safetyState = 'none';
     if (!s.inDive) return;
     if (!s.tissues.tolerates(SURFACE_PRESSURE, this.decoParams(s).gfHigh)) this.hadDeco = true;
+    if (!this.firstStopReached && this.hadDeco) {
+      const p = this.decoParams(s);
+      const first = planAscent(s.tissues, s.depth, s.gas, p, this.anchor, 1 / 6).stops[0];
+      if (first && s.depth <= first.depth + 1e-6) this.firstStopReached = true;
+    }
     // §10.1 : « Profondeur liée à la pression partielle Azote » et « à la densité du gaz respiré ».
     const now: OdysseyNotice[] = [];
     if (this.ppn2(s) > this.pn2Limit()) now.push('pn2');

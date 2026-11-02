@@ -198,6 +198,7 @@ export class AzothOdyssey extends OdysseyRules {
   /** §8 : vitesse réglée (VR) jusqu'au premier palier (ou dernier palier sans déco), puis 6 m/min jusqu'à la surface. */
   plannedAscentSpeed(depth: number, targetDepth: number, s: DiveSession): number | undefined {
     if (targetDepth >= depth) return undefined;
+    if (s.inDive && this.firstStopReached) return 6;
     const p = this.decoParams(s);
     const anchor = s.inDive ? this.anchor : 0;
     const plan = planAscent(s.tissues, depth, s.gas, p, anchor, 1 / 6);

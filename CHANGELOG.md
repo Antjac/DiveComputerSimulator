@@ -13,6 +13,7 @@ Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or ch
 
 ## 2026-11-02
 
+- Azoth Odyssey · Remontée automatique vers une profondeur cible : la vitesse réglée (VR) ne valait que jusqu'au premier palier, mais elle revenait entre les paliers suivants (ex. de 12 m à 9 m). Elle reste maintenant à 6 m/min entre les paliers puis jusqu'à la surface (§8) / Automatic ascent to a target depth: the set rate (VR) should only apply down to the first stop, but it came back between the following stops (e.g. 12 m to 9 m). It now stays at 6 m/min between stops and up to the surface (§8).
 - Scubapro G2, Luna 2.0 AI et G3, Mares Quad Air et Puck Pro, Aqualung i770R · Le changement de gaz validé sur l'ordinateur était perdu : l'invite disparaissait mais le plongeur restait sur le gaz du bloc principal (T1 / G1). Ces modèles calculent sur leur propre copie des tissus et le changement ne s'appliquait qu'à cette copie, pas à la plongée. Corrigé (signalé par un utilisateur préparant une formation PN-C) / The gas switch confirmed on the computer was lost: the prompt went away but the diver stayed on the main tank's gas (T1 / G1). These models compute on their own copy of the tissues and the switch only reached that copy, not the dive. Fixed (reported by a user preparing a PN-C course).
 
 ## 2026-10-29
