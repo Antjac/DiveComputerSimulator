@@ -177,7 +177,10 @@ export abstract class QuadAirRules extends DiveComputer {
   /** In a dive (tissue model in the water) at the last step. */
   private rgbmInWater = false;
 
-  /** §3.2.1: SLOW from 10 m/min ("10 m/min or higher"). No pre-warning. */
+  /**
+   * §3.2.1 (English manual, the reference): SLOW from 10 m/min ("10 m/min or higher"). The French manual
+   * says « supérieure à 10 m/min »: the English wording is kept. No pre-warning.
+   */
   ascentLevel(rate: number): 0 | 1 | 2 {
     return rate >= 10 ? 2 : 0;
   }

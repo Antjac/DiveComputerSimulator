@@ -233,8 +233,11 @@ export class ScubaproG2 extends G2Rules {
       return;
     }
 
-    // Depth window colour follows the ascent speed (yellow > 110 %, red > 140 %).
-    const depthWin = v.ascentLevel === 2 ? 'red' : v.ascentLevel === 1 ? 'yellow' : hl('depth', 'mbIgnored');
+    // §3.7: the window showing the ascent speed turns yellow above 110 % of the ideal rate, red above
+    // 140 % (figures p. 69: SPEED window in place of TEMP, the depth window keeps its colour).
+    const ascending = v.inDive && pct > 0 && v.ascentRate > 0.5;
+    const speedWin = v.ascentLevel === 2 ? 'red' : v.ascentLevel === 1 ? 'yellow' : '';
+    const depthWin = hl('depth', 'mbIgnored');
     const depthTxt = v.depth < 0.8 ? '---' : depthText(v.depth);
     const depthCls = v.depth > v.mod || v.ceilingViolation === 2 ? 'red blink' : '';
 
@@ -278,9 +281,16 @@ export class ScubaproG2 extends G2Rules {
       `<div class="g2-win ${cls} ${extra}"><div class="g2-h"><span>${lbl}</span><span>${unit}</span></div><div class="g2-v">${body}</div></div>`;
     // Long alternate values (e.g. the L0 stop "40FT 1'") get a smaller font to stay inside the window.
     const altCls = (val: string) => (val.length > 5 ? 'g2-long' : '');
-    // While ascending, the ascent speed (% of the ideal rate) replaces the unit in the depth header.
-    const speed = v.inDive && pct > 0 && v.ascentRate > 0.5 ? `▲ ${pct}%` : DU();
-    const depthWinHtml = (extra: string) => win('DEPTH', speed, `<span class="${depthCls}">${depthTxt}</span>`, depthWin, extra);
+    // §3.7 figures (Classic): while ascending, a SPEED window (% of the ideal rate) replaces the TEMP
+    // window; Full and Graphical also have a TEMP window, replaced the same way (deduced, no figure).
+    // Light has no TEMP window and the manual does not show its ascent display: the speed is put in the
+    // depth header, coloured like the SPEED window (not checked).
+    const tempHtml = (extra: string) => ascending
+      ? win('SPEED', '', `${pct}<small>%</small>`, speedWin, extra)
+      : win('TEMP', '', `${Math.round(tempVal(v.temperature))}<small>${TU()}</small>`, '', extra);
+    const lightSpeed = layout === 'light' && ascending;
+    const depthWinHtml = (extra: string) => win('DEPTH', lightSpeed ? `▲ ${pct}%` : DU(),
+      `<span class="${depthCls}">${depthTxt}</span>`, lightSpeed && speedWin ? speedWin : depthWin, extra);
     // Tank window (Smart transmitter) and RBT.
     // §3.5.1: the data window related to a warning is highlighted (yellow) while it shows.
     const tankCls = v.tank.pressure < v.tank.reserve ? 'red' : hl('tank');
@@ -302,7 +312,7 @@ export class ScubaproG2 extends G2Rules {
     if (layout === 'classic') {
       grid = `<div class="g2-grid classic">
         ${depthWinHtml('c-depth')}
-        ${win('TEMP', '', `${Math.round(tempVal(v.temperature))}<small>${TU()}</small>`, '', 'c-temp')}
+        ${tempHtml('c-temp')}
         ${diveTimeHtml('c-time', false)}
         ${win(alt.lbl, alt.unit, alt.val, altCls(alt.val), 'c-alt')}
         ${mainHtml('c-main')}
@@ -316,7 +326,7 @@ export class ScubaproG2 extends G2Rules {
       const sw = Math.floor(v.diveTime);
       const fAlt = this.fullAlt(screen, v);
       grid = `<div class="g2-grid full">
-        ${win('TEMP', '', `${Math.round(tempVal(v.temperature))}<small>${TU()}</small>`, '', 'f-temp')}
+        ${tempHtml('f-temp')}
         ${win('MB', '', `L${this.activeLevel}`, Number(this.settings.level) !== this.activeLevel ? 'yellow' : '', 'f-mb')}
         ${win('STOP WATCH', '', `${Math.floor(sw / 3600)}:${String(Math.floor(sw / 60) % 60).padStart(2, '0')}.${String(sw % 60).padStart(2, '0')}`, '', 'f-sw')}
         ${win('TIME', '', clock, '', 'f-clock')}
@@ -334,7 +344,7 @@ export class ScubaproG2 extends G2Rules {
     } else if (layout === 'graphical') {
       grid = `<div class="g2-grid graphical">
         <div class="g2-graph">${this.profileGraph(v, s)}</div>
-        ${win('TEMP', '', `${Math.round(tempVal(v.temperature))}<small>${TU()}</small>`, '', 'g-temp')}
+        ${tempHtml('g-temp')}
         ${win('MAX', DU1(), depthText(v.maxDepth), '', 'g-max')}
         ${ai ? rbtHtml('g-tat') : tatHtml('g-tat')}
         ${depthWinHtml('g-depth')}

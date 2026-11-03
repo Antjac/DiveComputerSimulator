@@ -11,6 +11,10 @@ To report an error: a GitHub issue or antoalex@free.fr. Details are in the Git h
 
 Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or change (EN).
 
+## 2026-11-03
+
+- Scubapro G2 · La vitesse de remontée s'affiche maintenant, comme sur les figures du manuel (§3.7), dans une case SPEED (en % de la vitesse idéale) qui remplace la case TEMP pendant la remontée, et c'est cette case, non plus celle de la profondeur, qui passe au jaune (> 110 %) ou au rouge (> 140 %). En Classic d'après les figures ; en Full et Graphical par analogie ; en Light (sans case TEMP) elle reste dans l'en-tête de la profondeur, non vérifié (signalé par un utilisateur) / The ascent rate is now shown, as in the manual's figures (§3.7), in a SPEED window (as a % of the ideal rate) that replaces the TEMP window while ascending, and that window, no longer the depth one, turns yellow (> 110 %) or red (> 140 %). Classic from the figures; Full and Graphical by analogy; on Light (no TEMP window) it stays in the depth header, not checked (reported by a user).
+
 ## 2026-11-02
 
 - Azoth Odyssey · Remontée automatique vers une profondeur cible : la vitesse réglée (VR) ne valait que jusqu'au premier palier, mais elle revenait entre les paliers suivants (ex. de 12 m à 9 m). Elle reste maintenant à 6 m/min entre les paliers puis jusqu'à la surface (§8) / Automatic ascent to a target depth: the set rate (VR) should only apply down to the first stop, but it came back between the following stops (e.g. 12 m to 9 m). It now stays at 6 m/min between stops and up to the surface (§8).
