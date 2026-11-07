@@ -10,8 +10,9 @@
 import { DiveSession } from '../src/engine/session';
 import { createComputers } from '../src/computers';
 import type { DiveComputer } from '../src/computers';
-import { ceilingDepth, planAscent, type DecoParams } from '../src/engine/buhlmann';
+import { Tissues, ceilingDepth, depthToPressure, ndl, planAscent, type DecoParams } from '../src/engine/buhlmann';
 import { DSL_TESTS, type DslTest } from './dslData';
+import { SEAC_SCREEN_PLANNER } from './seacPlanner';
 
 const only = (globalThis as { process?: { argv: string[] } }).process?.argv[2];
 
@@ -147,5 +148,32 @@ for (const cs of CASES) {
     });
   }
 }
+// NDL read on the planner of a real SEAC Screen (scripts/seacPlanner.ts): NDL of the simulator with the
+// GF of each protection level, after a descent at 18 m/min (§Planner), fresh tissues. Approximated
+// model: the gap is only reported.
+if (!only || only === 'seac-screen') {
+  const c = createComputers().find((x) => x.id === 'seac-screen')!;
+  console.log(`
+=== SEAC Screen planner (NDL, min) → ${c.name} [≈]  real/sim`);
+  for (const r of SEAC_SCREEN_PLANNER) {
+    const gas = { o2: r.o2, he: 0 };
+    let sum = 0, n = 0, max = 0;
+    console.log(`  ${r.o2 === 0.21 ? 'air' : `nitrox ${Math.round(r.o2 * 100)} %`}   ${r.levels.map((l) => `L${l}`.padStart(7)).join('')}`);
+    for (const [d, real] of r.rows) {
+      const cells = r.levels.map((l, i) => {
+        c.settings.level = String(l);
+        const t = new Tissues();
+        t.exposeLinear(depthToPressure(0), depthToPressure(d), gas, d / 18);
+        const sim = ndl(t, d, gas, c.baseParams().gfHigh, 200);
+        const gap = Math.abs(sim - real[i]);
+        sum += gap; n++; max = Math.max(max, gap);
+        return `${real[i]}/${sim}`.padStart(7);
+      });
+      console.log(`    ${String(d).padStart(2)} m   ${cells.join('')}`);
+    }
+    console.log(`    mean |gap| ${(sum / n).toFixed(2)} min, max ${max} min`);
+  }
+}
+
 console.log(failures ? `\n✗ ${failures} dive(s) of exact models out of tolerance` : '\n✓ exact models within tolerance');
 if (failures) (globalThis as { process?: { exitCode?: number } }).process!.exitCode = 1;

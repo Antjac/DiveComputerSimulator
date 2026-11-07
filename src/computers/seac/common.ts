@@ -12,11 +12,18 @@ import { GasPrompt } from '../common/gasSwitch';
 /**
  * Levels of Protection: "6 levels of protection (conservatism), from 0 to 5. Level 5 provides the
  * maximum protection", "based on Gradient Factor" (Application Software). The GF of each level is not
- * given by the Screen or Tablet manuals: assumed from the table of another SEAC computer, the Guru
- * (owner's manual 2.0: "0 = 93/93, 1 = 90/90 standard conservatism, 2 = 80/80, 3 = 75/75, 4 = 30/90
- * max linear conservatism, 5 = 20/89"), NOT VERIFIED for these models.
+ * given by the Screen or Tablet manuals. GF high MEASURED on a real SEAC Screen (issue #53, 2026-11):
+ * §Planner (SET > PLAN, "NDL only", "descent performed at 18 meters/minute", depths up to 45 m), NDL
+ * read at 18–45 m for every level on air and for levels 0–2 on nitrox 30 %, salt water, fresh tissues
+ * (readings in scripts/seacPlanner.ts, compared by `npm run dsl`): a plain ladder 85, 80, 75, 70, 65, 60
+ * reproduces the 60 air readings within a minute (mean gap 0.3 min), the 30 nitrox ones within 2 min
+ * (mean 0.5 min, the simulator on the conservative side). The table of the SEAC Guru (93/93,
+ * 90/90, 80/80, 75/75, 30/90, 20/89), used before, is refuted (51 min at 18 m on level 0 instead of
+ * 43; levels 1 and 4 would show the same NDL). GF low: NOT MEASURED (an NDL does not depend on it);
+ * assumed equal to the GF high, as the few deco dives of the tester's logbook show only 3 m stops
+ * (hypothesis). Tablet: not measured, same ladder assumed (same Technical Characteristics chapter).
  */
-export const SEAC_LEVELS: [number, number][] = [[93, 93], [90, 90], [80, 80], [75, 75], [30, 90], [20, 89]];
+export const SEAC_LEVELS: [number, number][] = [[85, 85], [80, 80], [75, 75], [70, 70], [65, 65], [60, 60]];
 
 const onOff = (key: string, label: { fr: string; en: string }, def: 'on' | 'off'): SettingDef => ({
   key, label, default: def,
@@ -30,7 +37,7 @@ export function seacSettings(mixes: 2 | 3): SettingDef[] {
   return [
     // DIVE SET > SFT LEVEL: 0–5, default 0.
     { key: 'level', label: { fr: 'Niveau de protection (SFT LEVEL)', en: 'Protection level (SFT LEVEL)' }, default: '0',
-      options: SEAC_LEVELS.map(([lo, hi], i) => ({ value: String(i), label: `${i} (GF ${lo}/${hi} ?)` })) },
+      options: SEAC_LEVELS.map(([lo, hi], i) => ({ value: String(i), label: `${i} (GF ${lo}/${hi})` })) },
     // MIX 1 PPO2: 1.20–1.60 by 0.05, default 1.40.
     { key: 'ppo2', label: { fr: 'PPO2 du MIX 1', en: 'MIX 1 PPO2' }, default: '1.40', options: ppo2Options },
     // MIX 2 ON/OFF, default OFF (MIX 2 O2% default 50, set by the deco gas of the page here).
@@ -58,10 +65,19 @@ interface DeepStop { depth: number; left: number; state: 'shown' | 'counting' | 
 export abstract class SeacRules extends DiveComputer {
   readonly algorithm = 'Bühlmann ZHL-16C + GF';
   readonly calibration = {
-    fr: ['GF de chaque niveau de protection non publiés pour ce modèle : repris de la table du SEAC Guru (autre modèle), non vérifiés ; aucune mesure sur appareil réel.'],
-    en: ['GF of each protection level not published for this model: taken from the SEAC Guru table (another model), not verified; no measurement on a real computer.'],
+    fr: [
+      'Sources : GF des niveaux de protection non publiés ; GF haut mesuré sur un SEAC Screen réel avec son planificateur (§Planner : NDL à 18–45 m, chaque niveau, air et nitrox 30 %, eau salée ; ticket n° 53, novembre 2026 ; relevés rejoués par npm run dsl).',
+      'Modèle retenu : Bühlmann ZHL-16C, GF 85/85, 80/80, 75/75, 70/70, 65/65, 60/60 pour les niveaux 0 à 5. Les 60 relevés à l’air sont retrouvés à 1 min près (écart moyen 0,3 min), les 30 au nitrox 30 % à 2 min près (écart moyen 0,5 min, le simulateur un peu plus prudent).',
+      'Non vérifié : le GF bas (une NDL n’en dépend pas), supposé égal au GF haut (quelques plongées avec paliers du carnet du testeur, tous à 3 m : hypothèse) ; le Tablet, non mesuré (même échelle supposée, manuel identique) ; paliers non calés sur des mesures ; firmware de l’appareil mesuré inconnu.',
+    ],
+    en: [
+      'Sources: GF of the protection levels not published; GF high measured on a real SEAC Screen with its planner (§Planner: NDL at 18–45 m, every level, air and nitrox 30 %, salt water; issue #53, November 2026; readings replayed by npm run dsl).',
+      'Model used: Bühlmann ZHL-16C, GF 85/85, 80/80, 75/75, 70/70, 65/65, 60/60 for levels 0 to 5. The 60 air readings are found again within 1 min (mean gap 0.3 min), the 30 nitrox 30 % ones within 2 min (mean gap 0.5 min, the simulator slightly more conservative).',
+      'Not verified: the GF low (an NDL does not depend on it), assumed equal to the GF high (a few deco dives in the tester’s logbook, all stops at 3 m: hypothesis); the Tablet, not measured (same ladder assumed, identical manual); stops not matched to measurements; firmware of the measured device unknown.',
+    ],
   };
-  // The algorithm is public and "unmodified", but the GF of each level is not published: approximation.
+  // The algorithm is public and "unmodified", but the GF of each level is not published (GF high
+  // measured, GF low assumed): approximation.
   readonly exact = false;
   protected abstract readonly mixes: 2 | 3;
 

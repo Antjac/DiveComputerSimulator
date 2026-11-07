@@ -19,6 +19,7 @@ npm run replay     # replay d'une plongée (journal des commandes + état de dé
 npm run exercises  # joue chaque exercice de l'onglet Exercices sur chaque ordinateur : tous doivent être réussis
 npm run dsl        # rejoue les essais en caisson de Deeply Safe Labs (scripts/dslData.ts) et compare les paliers
                    # (-- <id> pour un seul ordinateur) ; échoue si un modèle exact (Bühlmann + GF) sort de la tolérance
+                   # ; compare aussi les NDL lues sur le planificateur d'un SEAC Screen réel (scripts/seacPlanner.ts)
 ```
 
 ## Architecture en bref
@@ -63,7 +64,7 @@ mètre (`fineStopsBelow`). Les valeurs viennent, par ordre de préférence :
 
 1. **de mesures sur l'appareil réel** : essais en caisson de Deeply Safe Labs (fr.deeplysafelabs.com,
    relevés dans `scripts/dslData.ts`, rejoués par `npm run dsl`) ; comparaisons de planificateurs publiées
-   (divetable.info pour le G2) ;
+   (divetable.info pour le G2) ; NDL lues sur le planificateur de l'appareil (SEAC Screen, `scripts/seacPlanner.ts`) ;
 2. **des tables du manuel** (temps sans palier, `npm run calib`) ;
 3. à défaut, d'une hypothèse, signalée comme telle.
 
