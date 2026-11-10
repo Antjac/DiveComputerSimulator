@@ -14,7 +14,8 @@
     "stops": "tsx scripts/stops.ts",
     "snapshot": "tsx scripts/snapshot.ts",
     "exercises": "tsx scripts/exercises.ts",
-    "replay": "tsx scripts/replay.ts"
+    "replay": "tsx scripts/replay.ts",
+    "dsl": "tsx scripts/dsl.ts"
   },
   "devDependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",

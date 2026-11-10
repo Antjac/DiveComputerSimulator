@@ -6,7 +6,7 @@ import { clamp, fbm, mulberry32, noise, ramp, wrapAngle } from './math';
 import { AREA, CLEARANCE, Environment, WORLD, WRECK_H, WRECK_HEADING, WRECK_L, WRECK_ROLL, WRECK_W, floorDepth, startOf, wallEdge, wreckTop } from './sites';
 import { SeaLife } from './life';
 import { SolidGrid } from './solids';
-import { BOAT_DECK, BOAT_LADDER, LADDER_STOW, buildAmbience, buildBoat, buildDiver, buildOcean, buildOverlays } from './models';
+import { BOAT_DECK, BOAT_LADDER, KICK_CYCLE, LADDER_STOW, buildAmbience, buildBoat, buildDiver, buildOcean, buildOverlays, loadDiverModel } from './models';
 import { BOARD_BACK, BOARD_TIME } from '../scene';
 import { CORALS, CoralKind, SPECIES, School, Species } from './species';
 
@@ -57,6 +57,7 @@ export class Scene3D {
   private diver = new THREE.Group();
   private diverPitch = new THREE.Group();
   private fins: THREE.Group[] = [];
+  private kick: { action: THREE.AnimationAction; mixer: THREE.AnimationMixer } | null = null;
   private finPhase = 0;
   private px = 0;
   private pz = 0;
@@ -109,7 +110,18 @@ export class Scene3D {
     this.sun.position.set(20, 60, 10);
     this.scene.add(this.hemi, this.sun, this.world);
 
-    buildDiver(this.diver, this.diverPitch, this.fins, this.torch);
+    const body = buildDiver(this.diver, this.diverPitch, this.fins, this.torch);
+    void loadDiverModel().then((m) => {
+      if (!m) return;
+      // Lying face down, head forward (+z), feet where the procedural diver's are.
+      // (the model's hips are 0.94 m up, its head 0.69 m ahead).
+      const holder = new THREE.Group();
+      holder.position.set(0, -1.02, -0.1);
+      holder.add(m.model);
+      this.diverPitch.add(holder);
+      body.visible = false;
+      this.kick = m;
+    });
     this.scene.add(this.diver);
     const amb = buildAmbience();
     this.dome = amb.dome;
@@ -744,8 +756,13 @@ export class Scene3D {
     this.diver.rotation.y = this.heading;
     this.diverPitch.rotation.x = clamp(s.velocity * 1.2, -0.55, 0.55);
     this.diverPitch.rotation.z = -this.turnVel * 0.5;
-    this.finPhase += dt * (3 + Math.abs(s.velocity) * 8);
+    const kickRate = 3 + Math.abs(s.velocity) * 8; // rad/s
+    this.finPhase += dt * kickRate;
     this.fins.forEach((f, i) => (f.rotation.x = Math.sin(this.finPhase + i * Math.PI) * 0.35));
+    if (this.kick) {
+      this.kick.action.timeScale = (kickRate / (2 * Math.PI)) * KICK_CYCLE;
+      this.kick.mixer.update(dt);
+    }
 
     // At the surface the camera rises above the water; the diver floats on the swell.
     const wantAbove = s.depth < 0.8 ? 1 : 0;

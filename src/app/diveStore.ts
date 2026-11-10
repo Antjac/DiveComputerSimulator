@@ -271,6 +271,10 @@ function cleanMn90(v: unknown): DiveRecord['mn90'] {
       divesBefore24h: num(d.divesBefore24h),
       rapid: typeof d.rapid === 'number' ? d.rapid : null,
       frozenAt: typeof d.frozenAt === 'number' ? d.frozenAt : null,
+      slowAscent:
+        d.slowAscent && typeof d.slowAscent === 'object' && typeof d.slowAscent.bottomSeconds === 'number' && typeof d.slowAscent.speed === 'number'
+          ? { bottomSeconds: d.slowAscent.bottomSeconds, speed: d.slowAscent.speed }
+          : null,
     },
   };
 }

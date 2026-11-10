@@ -72,8 +72,8 @@ function decoRule(c: DiveComputer): Bi {
       en: `Your ${c.name} uses a continuous ceiling: the depth not to go above rises gradually during decompression.`,
     }
     : {
-      fr: `Votre ${c.name} donne des paliers tous les ${depthLabel(p.stopStep, 0)}, le dernier à ${depthLabel(p.lastStop, 0)} ; il vous considère au palier jusqu'à ${depthLabel(c.stopWindow, 1)} plus profond.`,
-      en: `Your ${c.name} gives stops every ${depthLabel(p.stopStep, 0)}, the last one at ${depthLabel(p.lastStop, 0)}; you are at the stop down to ${depthLabel(c.stopWindow, 1)} deeper.`,
+      fr: `Votre ${c.name} donne des paliers tous les ${depthLabel(p.stopStep, 0)}${p.fineStopsBelow ? `, puis de mètre en mètre à partir de ${depthLabel(p.fineStopsBelow, 0)}` : ''}, le dernier à ${depthLabel(p.lastStop, 0)} ; il vous considère au palier jusqu'à ${depthLabel(c.stopWindow, 1)} plus profond.`,
+      en: `Your ${c.name} gives stops every ${depthLabel(p.stopStep, 0)}${p.fineStopsBelow ? `, then every metre from ${depthLabel(p.fineStopsBelow, 0)}` : ''}, the last one at ${depthLabel(p.lastStop, 0)}; you are at the stop down to ${depthLabel(c.stopWindow, 1)} deeper.`,
     };
 }
 

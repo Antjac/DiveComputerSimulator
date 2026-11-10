@@ -52,3 +52,6 @@ export const app = {
   /** Alarms the user asked not to explain again. */
   alertHelpMuted: [] as string[],
 };
+
+// Active computer's ascent profile for target depth ascents (e.g. Azoth Odyssey VR then 6 m/min).
+session.ascentProfile = (depth, target) => app.active.plannedAscentSpeed(depth, target, session);

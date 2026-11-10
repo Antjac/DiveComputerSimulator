@@ -1,5 +1,5 @@
 // Logbook tab: the closed dives, saved in the browser (app/diveStore.ts), most recent first; a click on
-// a row draws its profile, its recap button opens its recap (app/recap.ts). Export / import with the configuration
+// a row draws its profile, its recap button opens its recap (app/recap.ts), its replay button replays it (app/replay.ts). Export / import with the configuration
 // (app/backup.ts), clear.
 import { hmm } from '../computers/base';
 import { gasLabel } from '../engine/buhlmann';
@@ -10,6 +10,7 @@ import { allRecords, clearRecords, persistent } from './diveStore';
 import { savePrefs } from './prefs';
 import { openRecap } from './recap';
 import { refresh } from './render';
+import { startReplay } from './replay';
 import { $, app } from './state';
 
 /** Dive type from the surface interval before it (s): under 15 min consecutive, under 12 h repetitive. */
@@ -50,7 +51,9 @@ export function renderLog(): void {
       <td class="num">${d.surfaceIntervalBefore === null ? '—' : hmm(d.surfaceIntervalBefore / 60)}</td><td>${t(diveType(d.surfaceIntervalBefore))}</td>
       <td class="num">${pressText(d.tankStart)} → ${pressText(d.tankEnd)} ${pressUnit()}</td><td class="num">${d.cnsEnd.toFixed(0)} %</td>
       <td>${d.alarms.length ? d.alarms.map((a) => esc(isI18nKey(a) ? t(a) : a)).join(', ') : t('none')}</td>
-      <td><button type="button" class="btn small log-recap" data-recap="${esc(r.id)}" title="${t('logRecap')}" aria-label="${t('logRecap')}">${icon('recap')}</button></td></tr>`;
+      <td class="log-acts"><button type="button" class="btn small log-recap" data-recap="${esc(r.id)}" title="${t('logRecap')}" aria-label="${t('logRecap')}">${icon('recap')}</button>${
+        r.replay ? `<button type="button" class="btn small log-recap" data-log-replay="${esc(r.id)}" title="${t('rcReplay')} — ${t('rcReplayHelp')}" aria-label="${t('rcReplay')}">${icon('replay')}</button>` : ''
+      }</td></tr>`;
     })
     .reverse()
     .join('');
@@ -67,6 +70,11 @@ export function setupLogbook(): void {
       renderLog();
       refresh();
       openRecap(app.selectedDive);
+      return;
+    }
+    const replay = target.closest<HTMLButtonElement>('[data-log-replay]');
+    if (replay) {
+      startReplay(replay.dataset.logReplay!, false); // does nothing during an exercise, the guided tour or another replay
       return;
     }
     const act = target.closest<HTMLElement>('[data-log-act]')?.dataset.logAct;

@@ -39,7 +39,7 @@ const ALERT_KEYS = new Set([
 const SOUND_KEYS = new Set(['sound', 'silent', 'alrm', 'alerts', 'vibration', 'audible', 'tones', 'alsp', 'buttons']);
 const DECO_KEYS = new Set([
   'gf', 'gfLow', 'gfHigh', 'level', 'personal', 'deepstop', 'deepStop', 'safety', 'ssTime', 'ssDepth', 'lastStop', 'pdis',
-  'repetitive', 'rep', 'multiday', 'physio', 'dive', 'itoday', 'cf', 'sf', 'algo', 'ppo2', 'maxdepth', 'fast', 'ascviol',
+  'repetitive', 'rep', 'multiday', 'physio', 'dive', 'itoday', 'cf', 'sf', 'algo', 'ppo2', 'maxdepth', 'fast', 'ascviol', 'vr',
 ]);
 
 /** The computer's alert settings (for the details dialog). */

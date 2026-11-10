@@ -33,6 +33,44 @@ const gfOptions = [
   { value: 'custom', label: 'Custom' },
 ];
 
+/** §3.7 Deco row right slot options (OC Rec mode). */
+export const DECO_RIGHT_OPTIONS = [
+  { value: 'tts', label: 'TTS' },
+  { value: 't1', label: { fr: 'Pression T1 (AI)', en: 'T1 pressure (AI)' } },
+  { value: 'gtr', label: { fr: 'GTR (AI)', en: 'GTR (AI)' } },
+  { value: 'gf99', label: 'GF99' },
+  { value: 'surfgf', label: 'SurfGF' },
+  { value: 'cns', label: 'CNS %' },
+  { value: 'max', label: { fr: 'Profondeur max', en: 'Max Depth' } },
+  { value: 'avg', label: { fr: 'Profondeur moyenne', en: 'Avg. Depth' } },
+  { value: 'at5', label: '@+5' },
+  { value: 'clock', label: { fr: 'Heure (TIME)', en: 'Clock (TIME)' } },
+];
+
+/** §3.7 Home Screen Customization Options for the Info row. */
+export const TERIC_HOME_OPTIONS = [
+  { value: 'none', label: { fr: 'Vide', en: 'Empty' } },
+  { value: 'gas', label: { fr: 'Gaz (O2 / O2-He)', en: 'Gas (O2 / O2-He)' } },
+  { value: 'ppo2', label: 'PPO2' },
+  { value: 't1', label: { fr: 'Pression T1 (AI)', en: 'T1 pressure (AI)' } },
+  { value: 'gtr', label: { fr: 'GTR (AI)', en: 'GTR (AI)' } },
+  { value: 'sac', label: { fr: 'SAC (Consommation AI)', en: 'SAC (AI)' } },
+  { value: 'max', label: { fr: 'Profondeur max', en: 'Max Depth' } },
+  { value: 'avg', label: { fr: 'Profondeur moyenne', en: 'Avg. Depth' } },
+  { value: 'cns', label: 'CNS %' },
+  { value: 'mod', label: 'MOD' },
+  { value: 'density', label: { fr: 'Densité du gaz', en: 'Gas Density' } },
+  { value: 'gf99', label: 'GF99' },
+  { value: 'surfgf', label: 'Surface GF' },
+  { value: 'ceil', label: { fr: 'Plafond (Ceil)', en: 'Ceiling' } },
+  { value: 'at5', label: '@+5' },
+  { value: 'd5', label: 'Δ+5' },
+  { value: 'tts', label: 'TTS' },
+  { value: 'temp', label: { fr: 'Température', en: 'Temperature' } },
+  { value: 'clock', label: { fr: 'Heure (TIME)', en: 'Clock (TIME)' } },
+  { value: 'det', label: { fr: 'Fin de plongée (EOD)', en: 'End of dive (EOD)' } },
+];
+
 /** §11.1 Alerts (per dive mode, for warnings and dive events): Visual only, Beep, Vibrate, Beep & Vibrate. */
 function alertSetting(key: string, fr: string, en: string, def: string): SettingDef {
   return {
@@ -60,8 +98,8 @@ export abstract class TericRules extends DiveComputer {
   readonly transmitter = 'Swift';
   readonly gasTimeName = 'GTR';
   readonly notes = {
-    fr: 'Modes OC Rec (par défaut, Nitrox, palier de sécurité) et OC Tec (Trimix, pas de palier de sécurité, compteur CLEAR) ; CC/BO, profondimètre et apnée non simulés (§3.2). Dispositions Big (OC Rec) et Standard (OC Tec) (§3.3) : rangées du haut (profondeur, vitesse de remontée), Info (Big : NDL / TTS, palier, palier de sécurité ; Standard : rangée Deco puis Info O2 / PPO2 ou O2/He / PPO2), du bas (durée de plongée, gaz). INFO fait défiler les écrans d’info dans la rangée Info (§3.5 : dernière plongée en surface, émetteur, MAX / AVG, CNS / MOD / PPO2, GF / GF99 / SurfGF, CEIL / @+5 / Δ+5, tissus, TEMP / BATTERY, mBar, TIME / EOD ; retour après 10 s sauf émetteur et tissus en Standard) ; MENU : menu principal (LIGHT monte, MENU descend, FUNC sélectionne, INFO revient ; Select Gas simulé, les autres entrées non), ou liste des avertissements persistants si « ! » est affiché (§3.8) ; FUNC (raccourci réglable, §2.5) : Select Gas supposé. Bühlmann ZHL-16C + GF : Med 40/85 en OC Rec, Custom 30/70 en OC Tec (§5, §11.2), dernier palier 3 ou 6 m, remontée supposée à 10 m/min. Vitesse de remontée : 1 flèche par 3 m/min, blanc jusqu’à 9 m/min, jaune jusqu’à 18, rouge clignotant au-delà (§3.4). Palier de sécurité OC Rec (§4.1) : requis au-delà de 11 m, décompte au-dessus de 6 m, de 2,4 à 8,3 m, en pause (jaune) hors de cette plage, remis à zéro sous 11 m ; 3, 4, 5 min, Adapt (5 min si plus de 30 m ou NDL < 5 min), Count Up, Off. Avertissements du §15.1 (fond jaune dans la rangée Info, « CLEAR » à droite), acquittés par un bouton : LOW / HIGH PPO2 (limites PPO2 du §11.1 franchies plus de 30 s), MISSED STOP, FAST ASCENT (plus de 10 m/min), VERY HIGH CNS (150 %), HIGH CNS (90 %), T1 CRITICAL (plus grande valeur entre 21 bar et la moitié de la réserve), T1 LOW PRESS (réserve), DECO NEEDED et LOW NDL (NDL < 5 min, OC Rec seulement). Évènements INFO (fond cyan, 4 s) : Dive Started, Safety Stop, Deco Clear. Aucun verrouillage (§4.2). Non simulés : eau EN13319 (réglage d’usine ; le simulateur calcule en eau salée), boussole, outils de plongée, Edit Gases et réglages du menu (les gaz se règlent dans les réglages ; le simulateur ne porte que 3 gaz, le gaz de fond et 2 gaz de déco, sur les 5 du §11.3), batterie (valeur fictive), perte de communication de l’émetteur, plusieurs émetteurs, densité du gaz.',
-    en: 'OC Rec (default, Nitrox, safety stop) and OC Tec (Trimix, no safety stop, CLEAR counter) modes; CC/BO, gauge and freedive not simulated (§3.2). Big (OC Rec) and Standard (OC Tec) layouts (§3.3): top row (depth, ascent rate), Info row (Big: NDL / TTS, stop, safety stop; Standard: Deco row then Info row O2 / PPO2 or O2/He / PPO2), bottom row (dive time, gas). INFO steps through the info screens in the Info row (§3.5: last dive at the surface, transmitter, MAX / AVG, CNS / MOD / PPO2, GF / GF99 / SurfGF, CEIL / @+5 / Δ+5, tissues, TEMP / BATTERY, mBar, TIME / EOD; back after 10 s except the transmitter and tissues in Standard); MENU: main menu (LIGHT up, MENU down, FUNC select, INFO back; Select Gas simulated, the other items not), or the persistent warnings list when “!” is shown (§3.8); FUNC (custom shortcut, §2.5): Select Gas assumed. Bühlmann ZHL-16C + GF: Med 40/85 in OC Rec, Custom 30/70 in OC Tec (§5, §11.2), last stop 3 or 6 m, ascent assumed at 10 m/min. Ascent rate: 1 arrow per 3 m/min, white up to 9 m/min, yellow up to 18, flashing red beyond (§3.4). OC Rec safety stop (§4.1): required beyond 11 m, countdown above 6 m, from 2.4 to 8.3 m, paused (yellow) outside that range, reset below 11 m; 3, 4, 5 min, Adapt (5 min beyond 30 m or NDL < 5 min), Count Up, Off. §15.1 warnings (yellow background in the Info row, “CLEAR” on the right), dismissed with a button: LOW / HIGH PPO2 (§11.1 PPO2 limits crossed for more than 30 s), MISSED STOP, FAST ASCENT (faster than 10 m/min), VERY HIGH CNS (150 %), HIGH CNS (90 %), T1 CRITICAL (larger of 21 bar or half the reserve), T1 LOW PRESS (reserve), DECO NEEDED and LOW NDL (NDL < 5 min, OC Rec only). INFO events (cyan background, 4 s): Dive Started, Safety Stop, Deco Clear. No lock-out (§4.2). Not simulated: EN13319 water (factory setting; the simulator computes in salt water), compass, dive tools, Edit Gases and the menu settings (gases are set in the settings; the simulator carries only 3 gases, the bottom gas and 2 deco gases, of the 5 of §11.3), battery (fictitious value), transmitter communication loss, several transmitters, gas density.',
+    fr: 'Modes OC Rec (par défaut, Nitrox, palier de sécurité) et OC Tec (Trimix, pas de palier de sécurité, compteur CLEAR) ; CC/BO, profondimètre et apnée non simulés (§3.2). Dispositions Big (OC Rec) et Standard (OC Tec) (§3.3) : rangées du haut (profondeur, vitesse de remontée), Déco (NDL / TTS, palier, palier de sécurité ; emplacement droit réglable en OC Rec, §3.7), Info (Big : rangée Déco sur la 1re page ; Standard : réglable avec 1 à 3 zones parmi les options du §3.7, ou pré-réglages Gaz/PPO2, AI ou Déco ; gaz reporté en bas si la ligne Info ne le contient pas, §3.4), du bas (durée de plongée, gaz). INFO fait défiler les écrans d’info dans la rangée Info (§3.5 : dernière plongée en surface, émetteur, MAX / AVG, CNS / MOD / PPO2, GF / GF99 / SurfGF, CEIL / @+5 / Δ+5, tissus, TEMP / BATTERY, mBar, TIME / EOD ; retour après 10 s sauf émetteur et tissus en Standard) ; MENU : menu principal (LIGHT monte, MENU descend, FUNC sélectionne, INFO revient ; Select Gas simulé, les autres entrées non), ou liste des avertissements persistants si « ! » est affiché (§3.8) ; FUNC (raccourci réglable, §2.5) : Select Gas supposé. Bühlmann ZHL-16C + GF : Med 40/85 en OC Rec, Custom 30/70 en OC Tec (§5, §11.2), dernier palier 3 ou 6 m, remontée supposée à 10 m/min. Vitesse de remontée : 1 flèche par 3 m/min, blanc jusqu’à 9 m/min, jaune jusqu’à 18, rouge clignotant au-delà (§3.4). Palier de sécurité OC Rec (§4.1) : requis au-delà de 11 m, décompte au-dessus de 6 m, de 2,4 à 8,3 m, en pause (jaune) hors de cette plage, remis à zéro sous 11 m ; 3, 4, 5 min, Adapt (5 min si plus de 30 m ou NDL < 5 min), Count Up, Off. Avertissements du §15.1 (fond jaune dans la rangée Info, « CLEAR » à droite), acquittés par un bouton : LOW / HIGH PPO2 (limites PPO2 du §11.1 franchies plus de 30 s), MISSED STOP, FAST ASCENT (plus de 10 m/min), VERY HIGH CNS (150 %), HIGH CNS (90 %), T1 CRITICAL (plus grande valeur entre 21 bar et la moitié de la réserve), T1 LOW PRESS (réserve), DECO NEEDED et LOW NDL (NDL < 5 min, OC Rec seulement). Évènements INFO (fond cyan, 4 s) : Dive Started, Safety Stop, Deco Clear. Aucun verrouillage (§4.2). Non simulés : eau EN13319 (réglage d’usine ; le simulateur calcule en eau salée), boussole, outils de plongée, Edit Gases et réglages du menu (les gaz se règlent dans les réglages ; le simulateur ne porte que 3 gaz, le gaz de fond et 2 gaz de déco, sur les 5 du §11.3), batterie (valeur fictive), perte de communication de l’émetteur, plusieurs émetteurs.',
+    en: 'OC Rec (default, Nitrox, safety stop) and OC Tec (Trimix, no safety stop, CLEAR counter) modes; CC/BO, gauge and freedive not simulated (§3.2). Big (OC Rec) and Standard (OC Tec) layouts (§3.3): top row (depth, ascent rate), Deco (NDL / TTS, stop, safety stop; settable right slot in OC Rec, §3.7), Info row (Big: Deco row on 1st page; Standard: customizable with 1 to 3 items among §3.7 options, or presets Gas/PPO2, AI or Deco; gas shown at bottom if not in Info row, §3.4), bottom row (dive time, gas). INFO steps through the info screens in the Info row (§3.5: last dive at the surface, transmitter, MAX / AVG, CNS / MOD / PPO2, GF / GF99 / SurfGF, CEIL / @+5 / Δ+5, tissues, TEMP / BATTERY, mBar, TIME / EOD; back after 10 s except the transmitter and tissues in Standard); MENU: main menu (LIGHT up, MENU down, FUNC select, INFO back; Select Gas simulated, the other items not), or the persistent warnings list when “!” is shown (§3.8); FUNC (custom shortcut, §2.5): Select Gas assumed. Bühlmann ZHL-16C + GF: Med 40/85 in OC Rec, Custom 30/70 in OC Tec (§5, §11.2), last stop 3 or 6 m, ascent assumed at 10 m/min. Ascent rate: 1 arrow per 3 m/min, white up to 9 m/min, yellow up to 18, flashing red beyond (§3.4). OC Rec safety stop (§4.1): required beyond 11 m, countdown above 6 m, from 2.4 to 8.3 m, paused (yellow) outside that range, reset below 11 m; 3, 4, 5 min, Adapt (5 min beyond 30 m or NDL < 5 min), Count Up, Off. §15.1 warnings (yellow background in the Info row, “CLEAR” on the right), dismissed with a button: LOW / HIGH PPO2 (§11.1 PPO2 limits crossed for more than 30 s), MISSED STOP, FAST ASCENT (faster than 10 m/min), VERY HIGH CNS (150 %), HIGH CNS (90 %), T1 CRITICAL (larger of 21 bar or half the reserve), T1 LOW PRESS (reserve), DECO NEEDED and LOW NDL (NDL < 5 min, OC Rec only). INFO events (cyan background, 4 s): Dive Started, Safety Stop, Deco Clear. No lock-out (§4.2). Not simulated: EN13319 water (factory setting; the simulator computes in salt water), compass, dive tools, Edit Gases and the menu settings (gases are set in the settings; the simulator carries only 3 gases, the bottom gas and 2 deco gases, of the 5 of §11.3), battery (fictitious value), transmitter communication loss, several transmitters.',
   };
 
   readonly settingDefs: SettingDef[] = [
@@ -88,6 +126,43 @@ export abstract class TericRules extends DiveComputer {
       ],
       default: 'big',
     },
+    {
+      // §3.7: In OC Rec mode (Big and Standard layouts), the right slot of the Deco row is customizable.
+      // Factory default: TTS.
+      key: 'decoRight',
+      showIf: notTec,
+      label: { fr: 'Ligne Déco / Grand écran : droite (§3.7)', en: 'Deco / Big row: right (§3.7)' },
+      options: DECO_RIGHT_OPTIONS,
+      default: 'tts',
+      group: 'display',
+    },
+    {
+      // §3.7: In Standard layout, the Home screen Info Row is customizable with 1, 2, or 3 items.
+      key: 'infoRow',
+      showIf: (s) => s.layout === 'std',
+      essential: true,
+      label: { fr: 'Ligne Info (Standard, §3.7)', en: 'Info row (Standard, §3.7)' },
+      options: [
+        { value: 'default', label: { fr: 'Défaut (Gaz & PPO2)', en: 'Default (Gas & PPO2)' } },
+        { value: 'ai', label: { fr: 'T1, SAC & GTR (AI)', en: 'T1, SAC & GTR (AI)' } },
+        { value: 'deco', label: { fr: 'GF99, SurGF & Plafond', en: 'GF99, SurGF & Ceiling' } },
+        { value: 'custom', label: { fr: 'Personnalisée (3 zones)', en: 'Custom (3 slots)' } },
+      ],
+      default: 'default',
+    },
+    ...(['infoL', 'infoC', 'infoR'] as const).map((key) => ({
+      key,
+      essential: true,
+      label: key === 'infoL'
+        ? { fr: 'Ligne Info : gauche (§3.7)', en: 'Info row: left (§3.7)' }
+        : key === 'infoC'
+          ? { fr: 'Ligne Info : centre (§3.7)', en: 'Info row: center (§3.7)' }
+          : { fr: 'Ligne Info : droite (§3.7)', en: 'Info row: right (§3.7)' },
+      options: TERIC_HOME_OPTIONS,
+      default: key === 'infoL' ? 'gas' : key === 'infoC' ? 'none' : 'ppo2',
+      showIf: (s: Record<string, string>) => s.layout === 'std' && s.infoRow === 'custom',
+      group: 'display' as const,
+    })),
     // §11.2 GF Conserv.: "Medium conservatism is the default setting for OC Rec mode"; "A custom GF
     // option is also available in every dive mode"; "OC Tec and CC/BO modes have a custom default of 30/70".
     { key: 'gf', showIf: notTec, label: { fr: 'Conservatisme (GF Conserv.)', en: 'GF Conserv.' }, options: gfOptions, default: 'med' },

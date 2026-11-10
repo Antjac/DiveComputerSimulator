@@ -3,7 +3,7 @@ import type { DiveSession } from '../../../engine/session';
 import type { Lang } from '../../../i18n';
 import { depthText, depthUnit, imperial, pressText, tempUnit, tempVal } from '../../../units';
 import { ButtonHelp, ComputerView, clockOfDay, leadingOnGas } from '../../base';
-import { bestGas, nxName, trimixName, turnGasOn } from '../multigas';
+import { bestGas, gasDensity, nxName, trimixName, turnGasOn } from '../multigas';
 import { TericRules, type TericEvent, type TericWarning } from './rules';
 
 /** §15.1 warning texts, as on the figures ("TI CRITICAL" / "TI LOW PRESS": T1 with the device font). */
@@ -219,7 +219,8 @@ export class ShearwaterTeric extends TericRules {
     const top = this.topRow(v, std);
     const time = this.bottomTime(v, persistent.length > 0);
     // §3.4 "Alternate Active Gas [...] Location": at the very bottom when the info row does not show the gas.
-    const gasLine = !std || page || warn || event || this.menuItem !== null ? `<div class="tr-gasline">${this.gasHtml(v, s, true)}</div>` : '';
+    const infoShowsGas = std && !page && !warn && !event && this.menuItem === null && this.showsGasInStdInfo();
+    const gasLine = !infoShowsGas ? `<div class="tr-gasline">${this.gasHtml(v, s, true)}</div>` : '';
     const body = std
       ? `${top}<div class="tr-rule r1"></div><div class="tr-row deco">${this.decoCells(v, s)}</div><div class="tr-rule r2"></div><div class="tr-row info std">${infoRow}</div><div class="tr-rule r3"></div>${time}${gasLine}`
       : `${top}<div class="tr-rule b1"></div><div class="tr-row info big">${infoRow}</div><div class="tr-rule b2"></div>${time}${gasLine}`;
@@ -350,16 +351,123 @@ export class ShearwaterTeric extends TericRules {
       // §3.4: "Displays in Yellow when the NDL is less than 5 minutes."
       left = this.cell('NDL', String(Math.min(99, v.ndl)), v.ndl < 5 ? 'yellow' : '');
     }
-    return left + this.cell('TTS', tts);
+    // §3.7: In OC Rec mode, right slot of the Deco row is customizable (TTS by default).
+    const rightChoice = this.mode === 'octec' ? 'tts' : (this.settings.decoRight || 'tts');
+    const right = rightChoice === 'tts' ? this.cell('TTS', tts) : this.customCell(rightChoice, v, s);
+    return left + right;
+  }
+
+  /** §3.4: True when the standard layout home info row contains the active gas. */
+  private showsGasInStdInfo(): boolean {
+    const row = this.settings.infoRow || 'default';
+    if (row === 'ai' || row === 'deco') return false;
+    if (row === 'custom') {
+      return (this.settings.infoL || 'gas') === 'gas' || this.settings.infoC === 'gas' || (this.settings.infoR || 'ppo2') === 'gas';
+    }
+    return true;
   }
 
   /**
-   * Standard layout home Info row (§3.4 figures): O2 and PPO2 in OC Rec, O2/He and PPO2 in OC Tec (the
-   * active gas yellow when a better gas is available).
+   * Standard layout home Info row (§3.4 figures, §3.7): customizable with 1, 2 or 3 items,
+   * O2 and PPO2 in OC Rec by default, O2/He and PPO2 in OC Tec by default.
    */
   private stdInfoHome(v: ComputerView, s: DiveSession): string {
+    const row = this.settings.infoRow || 'default';
+    if (row === 'ai') {
+      return this.customCell('t1', v, s) + this.customCell('sac', v, s) + this.customCell('gtr', v, s);
+    }
+    if (row === 'deco') {
+      return this.customCell('gf99', v, s) + this.customCell('surfgf', v, s) + this.customCell('ceil', v, s);
+    }
+    if (row === 'custom') {
+      const slots = [this.settings.infoL || 'gas', this.settings.infoC || 'none', this.settings.infoR || 'ppo2'];
+      const cells = slots.filter((slot) => slot !== 'none').map((slot) => this.customCell(slot, v, s));
+      return cells.join('') || this.cell('&nbsp;', '&nbsp;');
+    }
     const tec = this.mode === 'octec';
     return this.cell(tec ? 'O2/He' : 'O2', this.gasHtml(v, s, false)) + this.cell('PPO2', ppo2Text(s.ppO2), this.ppo2Class(v, s));
+  }
+
+  /**
+   * §3.7: Renders a cell for a customizable position in the Home screen (Info row or Deco/Big row).
+   */
+  private customCell(id: string, v: ComputerView, s: DiveSession): string {
+    const u = cy(depthUnit());
+    switch (id) {
+      case 'gas': {
+        const tec = this.mode === 'octec';
+        return this.cell(tec ? 'O2/He' : 'O2', this.gasHtml(v, s, false));
+      }
+      case 'ppo2':
+        return this.cell('PPO2', ppo2Text(s.ppO2), this.ppo2Class(v, s));
+      case 't1': {
+        if (!v.tank.ai) return this.cell('T1', '---');
+        const p = v.tank.pressure;
+        const pCls = p < this.criticalPressure() ? 'inv-red' : p < this.reservePressure() ? 'inv-yellow' : '';
+        const unit = `<small class="tr-cy tr-vu">${imperial() ? 'PSI' : 'BAR'}</small>`;
+        return this.cell('T1', `<span class="${pCls}">${pressText(p)}</span>${unit}`);
+      }
+      case 'sac': {
+        const sac = !v.inDive || v.diveTime < 120 ? 'wait' : imperial() ? String(Math.round(v.tank.sacBar * 14.5038)) : v.tank.sacBar.toFixed(1);
+        return this.cell('SAC', sac);
+      }
+      case 'gtr': {
+        const gtr = !v.inDive ? '---' : v.inDeco ? 'deco' : v.tank.gasTime === null || v.diveTime < 120 ? 'wait' : String(Math.min(99, v.tank.gasTime));
+        return this.cell('GTR', gtr);
+      }
+      case 'max':
+        return this.cell('MAX', `${depthText(v.maxDepth)}${u}`);
+      case 'avg':
+        return this.cell('AVG', `${depthText(v.avgDepth)}${u}`);
+      case 'cns': {
+        const cns = Math.round(v.cns);
+        return this.cell('CNS', `${cns}${cy('%')}`, v.cns > 150 ? 'red' : v.cns > 90 ? 'yellow' : '');
+      }
+      case 'mod':
+        return this.cell('MOD', `${Math.floor(imperial() ? v.mod * 3.28084 : v.mod)}${u}`, v.depth > v.mod ? 'red blink' : '');
+      case 'density': {
+        const d = gasDensity(v, s.gas);
+        return this.cell('DENSITY', `${d.toFixed(1)}${cy('g/L')}`, d >= 6.3 ? 'yellow' : '');
+      }
+      case 'gf99': {
+        const [, hi] = this.gf;
+        const cls = v.gf99 > 100 ? 'red' : v.gf99 > hi ? 'yellow' : '';
+        const gf99 = v.inDive && leadingOnGas(s) ? '<small>On Gas</small>' : `${Math.round(v.gf99)}${cy('%')}`;
+        return this.cell('GF99', gf99, cls);
+      }
+      case 'surfgf': {
+        const [, hi] = this.gf;
+        const cls = v.gf99 > 100 ? 'red' : v.gf99 > hi ? 'yellow' : '';
+        return this.cell('SurfGF', `${Math.round(v.surfGf)}${cy('%')}`, cls);
+      }
+      case 'ceil':
+        return this.cell('CEIL', String(Math.ceil(imperial() ? v.ceiling * 3.28084 : v.ceiling)));
+      case 'at5': {
+        const at5 = v.inDive ? this.at5(v, s) : 0;
+        return this.cell('@+5', v.inDive ? String(at5) : '--');
+      }
+      case 'd5': {
+        const at5 = v.inDive ? this.at5(v, s) : 0;
+        const d = at5 - v.tts;
+        return this.cell('Δ+5', v.inDive ? `${d > 0 ? '+' : ''}${d}` : '--');
+      }
+      case 'tts':
+        return this.cell('TTS', v.inDive ? String(v.tts) : '--');
+      case 'temp':
+        return this.cell('TEMP', `${Math.round(tempVal(v.temperature))}${cy(tempUnit())}`);
+      case 'clock': {
+        const { h, m } = clockOfDay(s);
+        return this.cell('TIME', `${h}:${String(m).padStart(2, '0')}`);
+      }
+      case 'det': {
+        const { h, m } = clockOfDay(s);
+        const end = new Date(0);
+        end.setUTCHours(h, m + (v.inDive ? v.tts : 0));
+        return this.cell('EOD', `${end.getUTCHours()}:${String(end.getUTCMinutes()).padStart(2, '0')}`);
+      }
+      default:
+        return '';
+    }
   }
 
   /** §3.8 alert banner in the Info row: WARNING (yellow) or INFO (cyan), "CLEAR" on its right edge (figures). */

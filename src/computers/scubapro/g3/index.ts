@@ -505,7 +505,7 @@ export class ScubaproG3 extends G3Rules {
     const levels = this.gfMode
       ? (this.hasStage ? [{ label: this.activeGf.join('/'), params: this.stageParams()!, anchor: this.levelAnchor }] : [])
         .concat([{ label: '100/100', params: this.baseParams(), anchor: this.anchor }])
-      : (this.activeLevel > 0 ? [this.activeLevel, 0] : [0]).map((lv) => ({ label: `L${lv}`, params: levelParams(lv), anchor: lv > 0 ? this.levelAnchor : this.anchor }));
+      : (this.activeLevel > 0 ? [this.activeLevel, 0] : [0]).map((lv) => ({ label: `L${lv}`, params: levelParams(lv, lv > 0 ? this.stageDeco : this.baseDeco), anchor: lv > 0 ? this.levelAnchor : this.anchor }));
     const body = page === 'gas' ? gasSummary(this, s) : page === 'deco' ? decoSummary(this, v, s, levels) : page === 'profile' ? diveProfile(this, v, s) : saturation(s);
     const [n, title] = { gas: ['3.', 'Gas summary'], deco: ['4.', 'Deco summary'], profile: ['5.', 'Dive profile'], sat: ['6.', 'Compartment saturation'] }[page];
     return `${this.tabs(this.backlit ? 'DIM' : 'LIGHT', '▲', 'SHOW', '▼')}<div class="g3-alt-title">${n}<br>${title}</div><div class="g3-alt">${body}</div>`;

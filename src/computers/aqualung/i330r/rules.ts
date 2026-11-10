@@ -12,6 +12,10 @@ export const CF_GF: Record<string, [number, number]> = { off: [90, 90], more: [3
 export abstract class I330rRules extends PelagicRules {
   readonly id = 'i330r';
   readonly name = 'Aqualung i330R';
+  readonly calibration = {
+    fr: ['GF publiés par le manuel (OFF 90/90, MORE 35/85, MOST 35/70) ; l’écart non documenté de l’appareil réel avec Bühlmann n’est pas reproduit, faute de mesure.'],
+    en: ['GF published by the manual (OFF 90/90, MORE 35/85, MOST 35/70); the real computer\'s undocumented departure from Bühlmann is not reproduced, for lack of measurements.'],
+  };
   readonly algorithm = 'Bühlmann ZHL-16C + GF';
   // "Algorithm": "utilizes the Bühlmann ZHL-16C algorithm model"; Technical Data: "Decompression in
   // agreement with Bühlmann ZHL-16C" — no claim of an exact implementation. Field comparisons (same
@@ -19,7 +23,9 @@ export abstract class I330rRules extends PelagicRules {
   // 90/90) show the i330R’s 3 m stop clearing 2–3 min later, systematically: an undocumented margin.
   // Its mechanism is unknown, so the published GFs are applied unchanged (no fitted correction).
   readonly exact = false;
-  readonly undocumentedVariant = true;
+  get undocumentedVariant(): boolean {
+    return true;
+  }
   readonly ackButton = 'down'; // "(Down) ... to acknowledge an alarm"
   readonly fastRate = 9; // "faster than the recommended 9 mpm (30 fpm)"
 

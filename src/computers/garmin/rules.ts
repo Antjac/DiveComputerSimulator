@@ -126,6 +126,10 @@ export abstract class DescentRules extends DiveComputer {
   readonly id: string = 'garmin';
   readonly name: string = 'Garmin Descent Mk3i';
   readonly algorithm = 'Bühlmann ZHL-16C + GF';
+  readonly calibration = {
+    fr: ['Algorithme public reproduit, vérifié contre les essais en caisson de Deeply Safe Labs (fr.deeplysafelabs.com) du Descent MK2 (autre modèle, même algorithme), dont les paliers sont relevés à la seconde : première plongée à moins d’une minute près (27:51 contre 27:26 en GF 30/70) ; plongée successive 4 à 12 % plus longue dans le simulateur ; sur les plongées de 16 min, palier de 6 m plus court (0:34 contre 1:18 en GF 35/75). Ces écarts ne sont pas corrigés.'],
+    en: ['Public algorithm reproduced, checked against the Deeply Safe Labs chamber tests (fr.deeplysafelabs.com) of the Descent MK2 (another model, same algorithm), whose stops are read to the second: first dive within a minute (27:51 instead of 27:26 at GF 30/70); repetitive dive 4 to 12 % longer in the simulator; on the 16-minute dives, shorter 6 m stop (0:34 instead of 1:18 at GF 35/75). These gaps are not corrected.'],
+  };
   readonly exact = true;
   readonly transmitter: string | null = 'Descent T2';
   readonly gasTimeName: string = 'ATR';

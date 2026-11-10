@@ -42,9 +42,25 @@ export function gasLabel(gas: Gas): string {
   return `EAN${Math.round(gas.o2 * 100)}`;
 }
 
+/**
+ * Variant of the tissue model used by a computer instead of plain ZH-L16C (approximation of an
+ * unpublished algorithm, see DiveComputer.tissueVariant): same compartments and M-values, but
+ * off-gassing `offgas` times slower than on-gassing, and an extra amount taken off the gradient
+ * factor of each compartment (`gfShift`, e.g. a repetitive-dive penalty on the fast compartments).
+ */
+export interface TissueVariant {
+  offgas: number;
+  gfShift?: number[];
+}
+
+/** Longest piece of a linear segment computed at once with a variant (off- or on-gassing may change on the way). */
+const VARIANT_STEP = 0.25; // min
+
 export class Tissues {
   n2: Float64Array;
   he: Float64Array;
+  /** Model variant (null: plain ZH-L16C, the diver's tissues). */
+  variant: TissueVariant | null = null;
 
   constructor(n2?: Float64Array, he?: Float64Array) {
     if (n2 && he) {
@@ -58,7 +74,14 @@ export class Tissues {
   }
 
   clone(): Tissues {
-    return new Tissues(new Float64Array(this.n2), new Float64Array(this.he));
+    const t = new Tissues(new Float64Array(this.n2), new Float64Array(this.he));
+    t.variant = this.variant;
+    return t;
+  }
+
+  /** Rate constant of a compartment: slower when it off-gasses with a variant. */
+  private k(base: number, tissue: number, inspired: number): number {
+    return this.variant && tissue > inspired ? base / this.variant.offgas : base;
   }
 
   /** Constant-depth exposure (Haldane). */
@@ -68,21 +91,28 @@ export class Tissues {
     const piN2 = inspired * n2Fraction(gas);
     const piHe = inspired * gas.he;
     for (let i = 0; i < COMPARTMENTS; i++) {
-      this.n2[i] = piN2 + (this.n2[i] - piN2) * Math.exp(-N2_K[i] * minutes);
-      this.he[i] = piHe + (this.he[i] - piHe) * Math.exp(-HE_K[i] * minutes);
+      this.n2[i] = piN2 + (this.n2[i] - piN2) * Math.exp(-this.k(N2_K[i], this.n2[i], piN2) * minutes);
+      this.he[i] = piHe + (this.he[i] - piHe) * Math.exp(-this.k(HE_K[i], this.he[i], piHe) * minutes);
     }
   }
 
   /** Linear depth change (Schreiner equation). */
   exposeLinear(p0: number, p1: number, gas: Gas, minutes: number): void {
     if (minutes <= 0) return;
+    // With a variant, a compartment may switch between on- and off-gassing on the way: short pieces.
+    if (this.variant && minutes > VARIANT_STEP && p0 !== p1) {
+      const n = Math.ceil(minutes / VARIANT_STEP);
+      for (let j = 0; j < n; j++) this.exposeLinear(p0 + ((p1 - p0) * j) / n, p0 + ((p1 - p0) * (j + 1)) / n, gas, minutes / n);
+      return;
+    }
     const fN2 = n2Fraction(gas);
     const fHe = gas.he;
     const rate = (p1 - p0) / minutes;
     const pi0 = p0 - WATER_VAPOUR;
+    const mid = (p0 + p1) / 2 - WATER_VAPOUR;
     for (let i = 0; i < COMPARTMENTS; i++) {
-      this.n2[i] = schreiner(this.n2[i], pi0 * fN2, rate * fN2, N2_K[i], minutes);
-      this.he[i] = schreiner(this.he[i], pi0 * fHe, rate * fHe, HE_K[i], minutes);
+      this.n2[i] = schreiner(this.n2[i], pi0 * fN2, rate * fN2, this.k(N2_K[i], this.n2[i], mid * fN2), minutes);
+      this.he[i] = schreiner(this.he[i], pi0 * fHe, rate * fHe, this.k(HE_K[i], this.he[i], mid * fHe), minutes);
     }
   }
 
@@ -97,6 +127,8 @@ export class Tissues {
 
   /** Lowest tolerated ambient pressure for compartment i with gradient factor gf (0..1). */
   toleratedPressure(i: number, gf: number): number {
+    const shift = this.variant?.gfShift?.[i];
+    if (shift) gf = Math.max(0.3, gf - shift);
     const [a, b] = this.coefficients(i);
     const p = this.n2[i] + this.he[i];
     return (p - a * gf) / (gf / b + 1 - gf);
@@ -154,6 +186,8 @@ export interface DecoParams {
   gfHigh: number; // 0..1
   lastStop: number; // m (3 or 6)
   stopStep: number; // m (3)
+  /** Stops every metre at and above this depth, down to the last stop (e.g. 6, 5, 4, 3 m); none by default. */
+  fineStopsBelow?: number;
   ascentRate: number; // m/min used for planning
   /**
    * Other gases the computer counts on for the ascent (multi-gas), each breathable from `mod` up: the
@@ -209,13 +243,19 @@ function roundUpToStop(depth: number, step: number): number {
   return Math.ceil(depth / step - 1e-6) * step;
 }
 
+/** Stop grid depth at or below `depth`: every `stopStep` metres, every metre in the fine zone. */
+function gridUp(depth: number, p: DecoParams): number {
+  if (p.fineStopsBelow && depth <= p.fineStopsBelow + 1e-6) return depth <= 0.001 ? 0 : Math.ceil(depth - 1e-6);
+  return roundUpToStop(depth, p.stopStep);
+}
+
 /**
  * Stop depth for a ceiling: the stop grid depth at or below it, or the last stop when the ceiling is
  * shallower (the last stop may be off the grid, e.g. 4.5 m on the Mares Quad Ci); 0 without ceiling.
  */
 export function stopDepthFor(ceil: number, p: DecoParams): number {
   if (ceil <= 0.001) return 0;
-  return ceil <= p.lastStop + 1e-6 ? p.lastStop : roundUpToStop(ceil, p.stopStep);
+  return ceil <= p.lastStop + 1e-6 ? p.lastStop : gridUp(ceil, p);
 }
 
 /**
@@ -284,8 +324,9 @@ export function planAscent(tissues: Tissues, depth: number, gas: Gas, p: DecoPar
   };
 
   const nextStopAbove = (from: number) => {
-    const grid = roundUpToStop(from, p.stopStep);
-    let next = grid >= from - 1e-6 ? grid - p.stopStep : grid;
+    const fine = !!p.fineStopsBelow && from <= p.fineStopsBelow + 1e-6;
+    const grid = gridUp(from, p);
+    let next = grid >= from - 1e-6 ? grid - (fine ? 1 : p.stopStep) : grid;
     if (next < p.lastStop - 1e-6) next = from > p.lastStop + 1e-6 ? p.lastStop : 0;
     return Math.max(0, next);
   };
@@ -311,7 +352,7 @@ export function planAscent(tissues: Tissues, depth: number, gas: Gas, p: DecoPar
     a = updateAnchor(a, t, p);
     // Report stops on the stop grid, even when the diver waits between two grid depths.
     const dd = Math.round(d * 10) / 10;
-    const stopDepth = Math.abs(dd - p.lastStop) < 0.05 ? p.lastStop : Math.max(p.lastStop, roundUpToStop(dd, p.stopStep));
+    const stopDepth = Math.abs(dd - p.lastStop) < 0.05 ? p.lastStop : Math.max(p.lastStop, gridUp(dd, p));
     const last = stops[stops.length - 1];
     if (last && last.depth === stopDepth) last.minutes += resolution;
     else stops.push({ depth: stopDepth, minutes: resolution });

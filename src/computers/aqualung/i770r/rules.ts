@@ -1,4 +1,5 @@
-import type { DecoParams } from '../../../engine/buhlmann';
+import { COMPARTMENTS, type DecoParams, type TissueVariant } from '../../../engine/buhlmann';
+import { residualGas } from '../../base/tissues';
 import type { DiveSession } from '../../../engine/session';
 import { remainingTime } from '../../../engine/gas';
 import type { ComputerView, SettingDef } from '../../base';
@@ -16,6 +17,22 @@ import { pressureSetting, pressureValue } from '../../common/tank';
 export const Z_PLUS_GF: Record<string, number> = { off: 0.95, on: 0.85 };
 
 /**
+ * Stops and repetitive dives of Z+, calibrated on the Deeply Safe Labs chamber tests of two other
+ * Aqua Lung computers running Pelagic Z+, the i100 and the i300C (fr.deeplysafelabs.com, Conservatism
+ * Factor off, deep stops off; not the i770R itself): 30 m / 30 min twice, 90 min apart: no-stop time
+ * 15-16 then 14-15 min, stops 6 m 1-2 + 3 m 19-22 min, then 6 m 3-4 + 3 m 35-37 min; 30 m / 16 min six
+ * times, 75 min apart: no stop on the first dive, then a no-stop time of 12 min and 3 to 5 min at 3 m.
+ * With the GF of the NDL table alone the stops would be 8 then 24 min, and no stop at all on the six
+ * dives. Reproduced (15/22 then 14/40 min, then 12-14 min and 2-3 min at 3 m) by tissues off-gassing
+ * 2.5 times more slowly than they load in the water and 1.25 times at the surface, and, on a repetitive
+ * dive, the two fastest compartments losing 0.2 times the residual gas left (share of the room up to
+ * the surface M-value) from their gradient factor. Not measured: other depths, nitrox, Conservative ON.
+ */
+const Z_PLUS_WATER = 2.5;
+const Z_PLUS_SURFACE = 1.25;
+const Z_PLUS_REPETITIVE = 0.2;
+
+/**
  * Aqua Lung i770R, Dive mode (Air / Nitrox). Rules follow the i770R Dive Computer Owner's Manual
  * (Doc. 12-7892-r01, 4/24/18, firmware 1A01; the later French r02 and German r05 have the same
  * firmware and page count).
@@ -25,6 +42,23 @@ export abstract class I770rRules extends PelagicRules {
   readonly name = 'Aqualung i770R';
   readonly algorithm = 'Pelagic Z+';
   readonly exact = false;
+  readonly decoCalibrated = true;
+  readonly calibration = {
+    fr: [
+      'Temps sans palier : table « Z+ algorithm NDLs » du manuel (GF équivalent de 95 % ; 85 % avec Conservative ON).',
+      'Paliers et plongées successives : essais en caisson de Deeply Safe Labs (fr.deeplysafelabs.com) de deux autres Aqua Lung en Pelagic Z+, l’i100 et l’i300C (pas l’i770R) : 30 m / 30 min deux fois à 90 min d’intervalle (paliers de 20 à 24 puis 38 à 41 min) ; 30 m / 16 min six fois à 75 min d’intervalle (12 min sans palier et 3 à 5 min à 3 m à partir de la 2e).',
+      'Modèle : tissus qui dégazent 2,5 fois plus lentement qu’ils ne se chargent dans l’eau et 1,25 fois en surface ; en plongée successive, les deux compartiments les plus rapides perdent 0,2 fois l’azote résiduel de leur GF.',
+      'Écart restant : paliers à 2,5 min près sur les deux plongées de 30 min ; sur les plongées de 16 min, 1,5 à 3,5 min à 3 m au lieu de 3 à 5.',
+      'Non vérifié : autres profondeurs, nitrox, Conservative ON.',
+    ],
+    en: [
+      'No-stop times: the manual\'s "Z+ algorithm NDLs" table (GF equivalent of 95 %; 85 % with Conservative ON).',
+      'Stops and repetitive dives: Deeply Safe Labs chamber tests (fr.deeplysafelabs.com) of two other Aqua Lung computers running Pelagic Z+, the i100 and the i300C (not the i770R): 30 m / 30 min twice 90 minutes apart (stops of 20 to 24 then 38 to 41 min); 30 m / 16 min six times 75 minutes apart (12 min no-stop time and 3 to 5 min at 3 m from the second).',
+      'Model: tissues off-gassing 2.5 times more slowly than they load in the water and 1.25 times at the surface; on a repetitive dive, the two fastest compartments lose 0.2 times the residual nitrogen from their GF.',
+      'Remaining gap: stops within 2.5 min on the two 30-minute dives; on the 16-minute dives, 1.5 to 3.5 min at 3 m instead of 3 to 5.',
+      'Not checked: other depths, nitrox, Conservative ON.',
+    ],
+  };
   readonly transmitter = 'TMT';
   readonly gasTimeName = 'GTR';
   readonly ackButton = 'select'; // "acknowledged and silenced by pressing the SELECT button"
@@ -79,6 +113,44 @@ export abstract class I770rRules extends PelagicRules {
   constructor() {
     super();
     this.init();
+  }
+
+  /** Z+ tissues (see Z_PLUS_WATER): in the water or at the surface, with the repetitive-dive penalty. */
+  tissueVariant(): TissueVariant {
+    const offgas = this.zInWater ? Z_PLUS_WATER : Z_PLUS_SURFACE;
+    if (this.zVariant?.offgas !== offgas) {
+      const pen = this.zInWater ? this.zPenalty : 0;
+      this.zVariant = { offgas, gfShift: pen > 0 ? Array.from({ length: COMPARTMENTS }, (_, i) => (i < 2 ? pen : 0)) : undefined };
+    }
+    return this.zVariant;
+  }
+
+  private zVariant: TissueVariant | null = null;
+  /** In a dive at the last step (tissue model in the water). */
+  private zInWater = false;
+  /** Repetitive-dive penalty of the dive in progress (see Z_PLUS_REPETITIVE). */
+  private zPenalty = 0;
+
+  onDiveStart(s: DiveSession): void {
+    this.zPenalty = Z_PLUS_REPETITIVE * residualGas(s.tissues);
+    this.zInWater = true;
+    this.zVariant = null;
+    super.onDiveStart(s);
+  }
+
+  onDiveEnd(s: DiveSession): void {
+    this.zInWater = false;
+    this.zPenalty = 0;
+    this.zVariant = null;
+    super.onDiveEnd(s);
+  }
+
+  tick(s: DiveSession, dt: number): void {
+    if (this.zInWater !== s.inDive) {
+      this.zInWater = s.inDive;
+      this.zVariant = null;
+    }
+    super.tick(s, dt);
   }
 
   baseParams(): DecoParams {

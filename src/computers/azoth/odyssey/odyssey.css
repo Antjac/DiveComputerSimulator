@@ -20,7 +20,7 @@
 /* At the surface the dive page shows blue labels (figures §5.1 and §8, deduced). */
 .od-screen.surf { --od-acc: #2f7fd6; --od-hl: #1e6fc0; }
 
-/* Ascent rate column (§10.3). */
+/* Ascent rate column (§10.4). */
 .od-vr { position: absolute; left: 0; top: 0; width: 22px; height: 196px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .od-rate { width: 22px; font-size: 15px; font-weight: 400; text-align: center; padding: 2px 0; color: #ddd; }
 .od-rate.od-desc { color: #777; } .od-rate.od-al { background: #6e1010; color: #fff; }
@@ -67,10 +67,11 @@
 .od-bat { display: inline-flex; gap: 2px; padding: 2px; border: 2px solid #eee; border-radius: 2px; position: relative; }
 .od-bat::after { content: ''; position: absolute; right: -6px; top: 5px; width: 3px; height: 7px; background: #eee; }
 .od-bat i { width: 5px; height: 12px; background: #eee; }
-/* Top right "Tissus" graph (photos of §12 and of the brochure): 16 grey bars, light blue filling. */
-.od-tbars { display: flex; align-items: stretch; gap: 1px; width: 78px; height: 36px; margin-top: 14px; padding: 1px; background: #2a2a2a; box-sizing: border-box; }
+/* Top right "Tissus" graph (§8 and its figures): 16 grey bars, coloured filling, limit line at 80 % of the height. */
+.od-tbars { position: relative; display: flex; align-items: stretch; gap: 1px; width: 78px; height: 36px; margin-top: 14px; padding: 1px; background: #2a2a2a; box-sizing: border-box; }
 .od-tbars i { position: relative; flex: 1; background: #6c6c6c; }
-.od-tbars b { position: absolute; left: 0; right: 0; bottom: 0; background: #5fd0e8; }
+.od-tbars b { position: absolute; left: 0; right: 0; bottom: 0; }
+.od-tbars u { position: absolute; left: 1px; right: 1px; bottom: calc(1px + 0.8 * (100% - 2px)); height: 1px; background: #000; }
 .od-tis { position: relative; display: block; width: 100%; height: 32px; background: #333; }
 .od-tis i { position: absolute; height: 2px; }
 .od-tis b { position: absolute; left: 45%; top: 0; bottom: 0; width: 1px; background: #fff; }

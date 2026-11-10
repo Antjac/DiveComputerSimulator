@@ -114,9 +114,10 @@ export function tableDepth(depth: number): number | null {
 }
 
 /** Dive time entering the table: « toute fraction de minute commencée est considérée comme une
- *  minute entière écoulée » (Généralités). */
+ *  minute entière écoulée » (Généralités). Counted on the whole seconds shown by the stopwatch so
+ *  that "10:00" on screen is 10 min, and the 11th minute starts at "10:01". */
 export function tableMinutes(seconds: number): number {
-  return Math.max(1, Math.ceil(seconds / 60 - 1e-6));
+  return Math.max(1, Math.ceil(Math.floor(seconds + 1e-6) / 60));
 }
 
 /** Line of the table for that table depth and time (min), or null beyond its last line. */
@@ -193,6 +194,18 @@ export interface Mn90Dive {
   rapid: number | null;
   /** Time counting stopped on reaching the first stop (or the surface): its depth. */
   frozenAt: number | null;
+  /** Final ascent to the first stop slower than 15 m/min (« Remontée lente »): dive time when the
+   *  diver left the bottom (s) and average speed (m/min); the time then ran until the stop. */
+  slowAscent: { bottomSeconds: number; speed: number } | null;
+}
+
+/** Final ascent in progress while the time still counts (Mn90Tracker.ascentNow). */
+export interface Mn90Ascent {
+  bottomSeconds: number; // dive time when the diver left the bottom (s)
+  fromDepth: number; // m
+  speed: number; // average speed since leaving the bottom (m/min)
+  /** Slower than 15 m/min: the time keeps running until the first stop. */
+  slow: boolean;
 }
 
 export type Mn90Kind = 'single' | 'successive' | 'consecutive';
@@ -200,6 +213,7 @@ export type Mn90Kind = 'single' | 'successive' | 'consecutive';
 /** Where a dive stands in the tables. */
 export interface Mn90Result {
   depth: number | null; // table depth (null: over 65 m)
+  seconds: number; // dive time counted (s)
   realMinutes: number; // dive time of the immersions, rounded up
   majoration: { row: number; col: number; minutes: number } | null;
   minutes: number; // time entering the table
@@ -236,7 +250,7 @@ export function assessDive(d: Mn90Dive, seconds = d.seconds): Mn90Result {
   }
   // A successive dive without penalty time (previous dive out of the tables, or no GPS) has no line.
   if (issues.includes('prevOut') || issues.includes('noGps')) line = null;
-  return { depth, realMinutes, majoration, minutes, line, issues: [...new Set(issues)] };
+  return { depth, seconds, realMinutes, majoration, minutes, line, issues: [...new Set(issues)] };
 }
 
 /** The line reached, or null. */
@@ -270,10 +284,14 @@ export class Mn90Tracker {
   private holdDepth = 0;
   /** Deepest point since the count (re)started: the first stop is only "reached" coming from below. */
   private deepestSinceResume = 0;
+  /** Where the final ascent left the bottom (dive time s, depth m): unlike `rise`, a hold on the way
+   *  up does not clear it, only going down again. Used to explain a slow ascent. */
+  private leftBottom: { seconds: number; depth: number } | null = null;
 
   reset(): void {
     this.dives = [];
     this.wasInDive = false;
+    this.leftBottom = null;
     this.rise = null;
     this.holdSince = null;
     this.deepestSinceResume = 0;
@@ -327,6 +345,21 @@ export class Mn90Tracker {
 
   private depthNow = 0;
 
+  /** Final ascent in progress while the time still counts, or null (at the bottom, at the stop). */
+  ascentNow(): Mn90Ascent | null {
+    const d = this.last;
+    if (!d || !this.wasInDive || d.frozenAt !== null || !this.leftBottom) return null;
+    const climbed = this.leftBottom.depth - this.depthNow;
+    const min = (d.seconds - this.leftBottom.seconds) / 60;
+    if (climbed < 1 || min <= 0) return null;
+    return {
+      bottomSeconds: this.leftBottom.seconds,
+      fromDepth: this.leftBottom.depth,
+      speed: climbed / min,
+      slow: this.provisionalSeconds(d) === d.seconds,
+    };
+  }
+
   tick(s: DiveSession, dt: number): void {
     if (s.clock < this.lastClock) this.reset(); // the session was reset
     this.lastClock = s.clock;
@@ -350,8 +383,10 @@ export class Mn90Tracker {
     if (rate < -1) {
       this.rise = null;
       this.holdSince = null;
+      this.leftBottom = null;
     } else if (rate > 1) {
       this.rise ??= { seconds: d.seconds - dt, depth: s.depth + (rate * dt) / 60 };
+      this.leftBottom ??= { ...this.rise };
       this.holdSince = null;
     } else if (this.rise) {
       if (this.holdSince === null || Math.abs(s.depth - this.holdDepth) > 0.3) {
@@ -367,21 +402,35 @@ export class Mn90Tracker {
     const stop = line ? (lineStops(line)[0]?.[0] ?? 0) : 0;
     const arrived = stop > 0 ? s.depth <= stop + STOP_WINDOW : s.depth < DIVE_START_DEPTH;
     if (arrived && this.deepestSinceResume > Math.max(stop, DIVE_START_DEPTH) + 1) {
+      let takenBack = false;
       if (this.rise) {
         const min = (d.seconds - this.rise.seconds) / 60;
         const speed = min > 0 ? (this.rise.depth - s.depth) / min : Infinity;
-        if (speed >= ASCENT_MIN) d.seconds = this.rise.seconds;
+        if (speed >= ASCENT_MIN) {
+          d.seconds = this.rise.seconds;
+          takenBack = true;
+        }
         if (speed > ASCENT_MAX) d.rapid = Math.max(d.rapid ?? 0, speed);
+      }
+      // Slow ascent: the time ran from leaving the bottom to the stop; kept to explain the line.
+      const b = this.leftBottom;
+      if (!takenBack && b && b.depth - s.depth >= 1) {
+        const min = (d.seconds - b.seconds) / 60;
+        const speed = min > 0 ? (b.depth - s.depth) / min : Infinity;
+        if (speed < ASCENT_MIN) d.slowAscent = { bottomSeconds: b.seconds, speed };
       }
       d.frozenAt = stop;
       this.rise = null;
+      this.leftBottom = null;
       this.holdSince = null;
     }
   }
 
   private resume(d: Mn90Dive, depth: number): void {
     d.frozenAt = null;
+    d.slowAscent = null;
     this.rise = null;
+    this.leftBottom = null;
     this.holdSince = null;
     this.deepestSinceResume = depth;
   }
@@ -412,8 +461,10 @@ export class Mn90Tracker {
       divesBefore24h: this.dives.filter((x) => s.clock - x.start < 24 * 3600).length,
       rapid: null,
       frozenAt: null,
+      slowAscent: null,
     });
     this.rise = null;
+    this.leftBottom = null;
     this.holdSince = null;
     this.deepestSinceResume = s.depth;
   }

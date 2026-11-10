@@ -62,6 +62,15 @@ const L = {
   next: { fr: 'Page suivante', en: 'Next page' },
   none: { fr: 'Aucune plongée pour l’instant : la prochaine sera une plongée isolée.', en: 'No dive yet: the next one will be a single dive.' },
   nowDive: { fr: 'Plongée en cours : si vous quittiez le fond maintenant', en: 'Dive in progress: if you left the bottom now' },
+  nowDiveHint: { fr: 'Lecture valable pour une remontée à 15–17 m/min jusqu’au premier palier. Plus lente, la durée continue de courir jusqu’au palier (« remontée lente ») et la ligne peut changer.', en: 'Valid for an ascent at 15–17 m/min to the first stop. Slower, the time keeps running until the stop (“slow ascent”) and the line may change.' },
+  nowAscentSlow: { fr: 'Remontée en cours, plus lente que 15 m/min : la durée court jusqu’au premier palier', en: 'Ascent in progress, slower than 15 m/min: the time runs until the first stop' },
+  nowAscentFast: { fr: 'Remontée en cours à 15 m/min ou plus : durée arrêtée au départ du fond', en: 'Ascent in progress at 15 m/min or faster: time stopped when leaving the bottom' },
+  slowLive: { fr: 'Départ du fond à {b}, remontée depuis {from} à {v} (moins de 15 m/min) : « remontée lente », la durée continue de courir jusqu’à l’arrivée au premier palier.', en: 'Left the bottom at {b}, ascent from {from} at {v} (under 15 m/min): “slow ascent”, the time keeps running until reaching the first stop.' },
+  slowLiveTip: { fr: 'Pour rester sur la ligne du départ du fond ({l}), il fallait remonter à 15–17 m/min (▲ pour accélérer).', en: 'To stay on the line of the time you left the bottom ({l}), the ascent had to be at 15–17 m/min (▲ to speed up).' },
+  slowDone: { fr: 'Départ du fond à {b}, remontée à {v} (moins de 15 m/min) : « remontée lente », la durée a couru jusqu’à l’arrivée {at}.', en: 'Left the bottom at {b}, ascent at {v} (under 15 m/min): “slow ascent”, the time ran until reaching {at}.' },
+  slowAtStop: { fr: 'au premier palier ({s} m)', en: 'the first stop ({s} m)' },
+  slowAtSurf: { fr: 'en surface', en: 'the surface' },
+  firstStop: { fr: 'Premier palier des tables : {s} m. Les paliers annoncés par l’ordinateur suivent son propre algorithme et peuvent être différents.', en: 'First stop of the tables: {s} m. The stops shown by the computer follow its own algorithm and may differ.' },
   nowStop: { fr: 'Au premier palier : la durée de plongée est arrêtée', en: 'At the first stop: the dive time is stopped' },
   nowSurf: { fr: 'En surface pendant la plongée : une nouvelle immersion serait consécutive', en: 'At the surface during the dive: going down again would be a consecutive dive' },
   lastDive: { fr: 'Dernière plongée', en: 'Last dive' },
@@ -78,6 +87,7 @@ const L = {
   depthStep: { fr: 'Profondeur maximale {p}{pe} → table des {t}', en: 'Maximum depth {p}{pe} → {t} table' },
   depthNitrox: { fr: '{gas} : profondeur équivalente PE = (P + 10) × {x} / 0,79 − 10 = {pe}', en: '{gas}: equivalent depth PE = (P + 10) × {x} / 0.79 − 10 = {pe}' },
   timeStep: { fr: 'Durée de plongée {real}{maj} → ligne {line}', en: 'Dive time {real}{maj} → line {line}' },
+  timeStarted: { fr: '{raw} → {min} (toute minute entamée compte)', en: '{raw} → {min} (any minute started counts)' },
   timeMaj: { fr: ' + majoration {m} = {tot}', en: ' + penalty {m} = {tot}' },
   timeOut: { fr: 'Durée de plongée {real}{maj} → au-delà de la table', en: 'Dive time {real}{maj} → beyond the table' },
   nextLine: { fr: 'ligne suivante dans {t}', en: 'next line in {t}' },
@@ -134,6 +144,11 @@ function mmss(sec: number): string {
   const s = Math.max(0, Math.ceil(sec));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
+/** Elapsed stopwatch time (whole seconds, like the computer screen). */
+function clockMmss(sec: number): string {
+  const s = Math.max(0, Math.floor(sec + 1e-6));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
 
 /** Big result: stops, DTR, GPS of the line. */
 function resultCard(r: Mn90Result): string {
@@ -169,12 +184,28 @@ function steps(d: Mn90Dive, r: Mn90Result, live: boolean): string {
   if (d.nitrox) items.push(`<li>${tr('depthNitrox', { gas: gasLabel(d.gas), x: num(1 - d.gas.o2), pe: m(d.eqDepth) })}</li>`);
   items.push(`<li>${tr('depthStep', { p: m(d.maxDepth), pe: d.nitrox ? ` (PE ${m(d.eqDepth)})` : '', t: r.depth === null ? '—' : `${r.depth} m` })}</li>`);
   const line = resultLine(r);
+  const wholeSec = Math.floor(r.seconds + 1e-6);
+  const realLabel =
+    wholeSec > 0 && wholeSec % 60 !== 0
+      ? tr('timeStarted', { raw: clockMmss(r.seconds), min: `${r.realMinutes} min` })
+      : `${r.realMinutes} min`;
   const maj = r.majoration ? tr('timeMaj', { m: `${r.majoration.minutes} min`, tot: `${r.minutes} min` }) : '';
-  let time = tr(line ? 'timeStep' : 'timeOut', { real: `${r.realMinutes} min`, maj, line: line ? dur(line[0]) : '' });
-  // While the time counts, when it moves on to the next line.
-  if (live && line && d.frozenAt === null) {
-    const left = (line[0] - (r.minutes - r.realMinutes)) * 60 - d.seconds;
+  let time = tr(line ? 'timeStep' : 'timeOut', { real: realLabel, maj, line: line ? dur(line[0]) : '' });
+  const asc = live ? mn90.ascentNow() : null;
+  // While the time counts, when it moves on to the next line (not while a fast ascent holds it).
+  if (live && line && d.frozenAt === null && !(asc && !asc.slow)) {
+    const left = (line[0] - (r.minutes - r.realMinutes)) * 60 + 1 - wholeSec;
     if (left > 0) time += ` <span class="muted">(${tr('nextLine', { t: mmss(left) })})</span>`;
+  }
+  // « Remontée lente »: why the time is longer than the time at the bottom.
+  if (asc?.slow) {
+    time += `<br><span class="muted">${tr('slowLive', { b: clockMmss(asc.bottomSeconds), from: m(asc.fromDepth), v: `${Math.round(asc.speed)} m/min` })}`;
+    const atBottom = resultLine(assessDive(d, asc.bottomSeconds));
+    if (atBottom && atBottom !== line) time += ` ${tr('slowLiveTip', { l: dur(atBottom[0]) })}`;
+    time += '</span>';
+  } else if (d.slowAscent && d.frozenAt !== null) {
+    const at = d.frozenAt > 0 ? tr('slowAtStop', { s: d.frozenAt }) : tr('slowAtSurf');
+    time += `<br><span class="muted">${tr('slowDone', { b: clockMmss(d.slowAscent.bottomSeconds), v: `${Math.round(d.slowAscent.speed)} m/min`, at })}</span>`;
   }
   items.push(`<li>${time}</li>`);
   return `<ol class="mn-steps">${items.filter(Boolean).join('')}</ol>`;
@@ -332,8 +363,24 @@ function pages(): Page[] {
   if (!d) return [cover(`<section class="mn-card"><p>${tr('none')}</p></section>`)];
   const inDive = d.end === null;
   const r = inDive ? mn90.current()! : assessDive(d);
-  const title = !inDive ? tr('lastDive') : d.frozenAt === null ? tr('nowDive') : d.frozenAt > 0 ? tr('nowStop') : tr('nowSurf');
-  let html = `<section class="mn-card ${inDive ? 'live' : ''}"><h3>${title}</h3>${steps(d, r, inDive)}${resultCard(r)}${issues(d, r)}</section>`;
+  const asc = inDive ? mn90.ascentNow() : null;
+  const title = !inDive
+    ? tr('lastDive')
+    : d.frozenAt === null
+      ? asc
+        ? tr(asc.slow ? 'nowAscentSlow' : 'nowAscentFast')
+        : tr('nowDive')
+      : d.frozenAt > 0
+        ? tr('nowStop')
+        : tr('nowSurf');
+  let notes = '';
+  if (inDive && d.frozenAt === null) {
+    if (!asc) notes += `<p class="muted small">${tr('nowDiveHint')}</p>`;
+    const first = resultLine(r);
+    const stop = first ? lineStops(first)[0] : undefined;
+    if (stop) notes += `<p class="muted small">${tr('firstStop', { s: stop[0] })}</p>`;
+  }
+  let html = `<section class="mn-card ${inDive ? 'live' : ''}"><h3>${title}</h3>${steps(d, r, inDive)}${resultCard(r)}${notes}${issues(d, r)}</section>`;
   if (!inDive) html += nextDive(d);
   const list: (Page | null)[] = [cover(html)];
   const s = d.successive;
