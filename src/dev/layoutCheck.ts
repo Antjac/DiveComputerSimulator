@@ -15,7 +15,7 @@ export interface DevHook {
 type Box = { left: number; right: number; top: number; bottom: number };
 interface Item { t: string; el: Element; rc: Box }
 
-const SCREENS = '.pd-screen, .pt-screen, .tr-screen, .aq3-screen, .aq7-screen, .qc-screen, .qa-lcd, .q2-lcd, .gn-screen, .g2-screen, .g3-screen, .mr-lcd, .cg-lcd, .gm-screen, .su-screen, .ln-screen, .zn-lcd, .od-screen, .nt-screen, .ec-screen, .gx-screen, .sc-screen, .dv-screen';
+const SCREENS = '.pd-screen, .pt-screen, .tr-screen, .aq3-screen, .aq7-screen, .qc-screen, .qa-lcd, .q2-lcd, .gn-screen, .sr-screen, .g2-screen, .g3-screen, .mr-lcd, .cg-lcd, .gm-screen, .su-screen, .ln-screen, .zn-lcd, .od-screen, .nt-screen, .ec-screen, .gx-screen, .sc-screen, .dv-screen';
 const ctx = document.createElement('canvas').getContext('2d')!;
 
 /** Ink box of a text run: the line box shrunk to the glyphs actually drawn. */
@@ -55,6 +55,8 @@ export function checkLayout(): string[] {
   // Round screens (Garmin Mk3): a CSS radius of half the width; square SVG screens are not round.
   const rad0 = getComputedStyle(scr).borderTopLeftRadius;
   const round = scr.tagName.toLowerCase() === 'svg' && (rad0.endsWith('%') ? parseFloat(rad0) >= 40 : parseFloat(rad0) >= sr.width * 0.4);
+  // Round HTML screen (Mares Sirius): text beyond the circle is clipped, on top of the box checks.
+  const roundHtml = scr.classList.contains('sr-screen');
   const items: Item[] = [];
   const seen = new Set<Element>();
   const walker = document.createTreeWalker(scr, NodeFilter.SHOW_TEXT);
@@ -84,10 +86,10 @@ export function checkLayout(): string[] {
   const cy = sr.top + sr.height / 2;
   const rad = Math.min(sr.width, sr.height) / 2;
   for (const { t, el, rc } of items) {
-    if (round) {
+    if (round || roundHtml) {
       const corners = [[rc.left, rc.top], [rc.right, rc.top], [rc.left, rc.bottom], [rc.right, rc.bottom]];
       if (corners.some(([x, y]) => Math.hypot(x - cx, y - cy) > rad + 1)) issues.push(`outside round screen: "${t}"`);
-      continue;
+      if (round) continue;
     }
     if (rc.left < sr.left - 1 || rc.right > sr.right + 1 || rc.top < sr.top - 1 || rc.bottom > sr.bottom + 1) issues.push(`outside screen: "${t}"`);
     for (let a: Element | null = el; a && a !== scr; a = a.parentElement) {

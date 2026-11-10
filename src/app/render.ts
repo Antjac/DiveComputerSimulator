@@ -16,6 +16,7 @@ import { updateExercise } from './exercises';
 import { decorateButtons, fitDevice } from './device';
 import { replayRecord, updateReplayBar } from './replay';
 import { renderRescue } from './rescue';
+import { savePrefs } from './prefs';
 import { renderControls } from './settings';
 import { $, app, computers, session } from './state';
 import { paneShown } from './tabs';
@@ -60,6 +61,23 @@ function setHtml(el: Element, html: string): boolean {
 }
 
 /** `full`: also re-renders the controls (settings panel, buttons' state). */
+/** Settings of the active computer at the last refresh (see syncOwnSettings). */
+let shownSettings: { computer: unknown; json: string } | null = null;
+
+/**
+ * A computer may change one of its own settings without a button press (the Mares Quad Ci going back to its
+ * E-Z screen after 5 s on a graphic screen): the settings panel then shows it, and it is saved, as for a
+ * change made with its buttons (device.ts, act()).
+ */
+function syncOwnSettings(): void {
+  const json = JSON.stringify(app.active.settings);
+  const changed = shownSettings !== null && shownSettings.computer === app.active && shownSettings.json !== json;
+  shownSettings = { computer: app.active, json };
+  if (!changed) return;
+  savePrefs();
+  renderControls();
+}
+
 export function refresh(full = false): void {
   const v = app.active.compute(session);
   session.reportedCeiling = v.ceiling;
@@ -69,6 +87,7 @@ export function refresh(full = false): void {
   const device = $('device');
   if (full) written.delete(device);
   if (setHtml(device, out.innerHTML)) fitDevice();
+  syncOwnSettings();
   decorateButtons();
   updateAlertSounds(v);
   renderSpg(v);
