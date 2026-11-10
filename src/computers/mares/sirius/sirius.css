@@ -1,0 +1,190 @@
+/* Mares Sirius: round watch, four buttons (TL and BL on the left, TR and BR on the right, §1.5), round colour
+   screen as in the manual's figures: black background, white figures, cyan captions, magenta / green N2
+   divider, tank pressure divider in the pressure range colour, red alarm segment at the bottom. */
+.sr-case {
+  position: relative; width: 352px; height: 352px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #4a4f57, #1b1d21 62%, #0d0e10);
+  box-shadow: 0 16px 30px rgba(0,0,0,0.55), inset 0 0 0 3px #5d636b;
+  display: grid; place-items: center;
+}
+.sr-btn { position: absolute; width: 16px; height: 40px; border-radius: 5px; background: linear-gradient(90deg, #2a2d31, #9aa1a8, #2a2d31); }
+.sr-btn.tl { left: 33px; top: 43px; transform: rotate(40deg); }
+.sr-btn.tr { left: 303px; top: 43px; transform: rotate(-40deg); }
+.sr-btn.bl { left: 33px; top: 269px; transform: rotate(-40deg); }
+.sr-btn.br { left: 303px; top: 269px; transform: rotate(40deg); }
+.sr-bezel { width: 318px; height: 318px; border-radius: 50%; background: #0b0c0e; display: grid; place-items: center; box-shadow: inset 0 0 0 5px #2a2d31; }
+.sr-screen {
+  --sr-cy: #3fd0f5; --sr-mag: #e03ae0; --sr-green: #2fd35a; --sr-yel: #ffe600; --sr-red: #f02a1e; --sr-blue: #1c3cff;
+  position: relative; width: 300px; height: 300px; border-radius: 50%; overflow: hidden; background: #000; color: #fff;
+  display: flex; flex-direction: column; box-sizing: border-box;
+  font-family: Roboto, sans-serif; font-weight: 700; line-height: 1;
+}
+.sr-screen.backlit { filter: brightness(1.25); }
+.sr-screen u { text-decoration: none; font-size: 0.36em; font-weight: 500; margin-left: 2px; }
+.sr-screen em { font-style: normal; font-size: 13px; font-weight: 500; color: var(--sr-cy); display: block; white-space: nowrap; }
+.sr-screen em.y { color: var(--sr-yel); }
+.sr-screen b { font-weight: 700; white-space: nowrap; }
+.sr-screen .redt { color: var(--sr-red); }
+.sr-screen .yel { color: var(--sr-yel); } .sr-screen .blu { color: #4d7bff; }
+
+/* Top row: temperature on top, DEPTH on the left, the TR field on the right (COMPLICATIONS); big depth (E-Z). */
+.sr-top { flex: 0 0 100px; position: relative; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 30px 3px 34px; box-sizing: border-box; }
+.sr-top.red { background: var(--sr-red); }
+.sr-top.red em { color: #fff; }
+/* Figures of §8.3.2 / §9.2: on the red top row, depth and field stay white. */
+.sr-top.red .sr-f.redv b { color: #fff; }
+.sr-temp { position: absolute; top: 14px; left: 0; right: 0; text-align: center; font-size: 24px; }
+.sr-c.dp em { margin-left: 30px; }
+.sr-c.dp b { font-size: 46px; letter-spacing: -1px; }
+.sr-top .sr-f { display: flex; flex-direction: column; align-items: flex-end; }
+.sr-top .sr-f em { margin-right: 8px; }
+.sr-top .sr-f b { font-size: 32px; }
+.sr-top.ez { flex-direction: column; align-items: center; justify-content: flex-end; padding: 0 0 2px; }
+.sr-top.ez b { font-size: 66px; letter-spacing: -1px; }
+.sr-top.ez em { font-size: 15px; }
+
+/* Dividers: N2 bar graph (magenta from the left, green beyond), tank pressure graph, ascent speed. */
+.sr-bar { position: relative; flex: 0 0 9px; background: #000; }
+.sr-bar i { position: absolute; left: 0; top: 0; bottom: 0; }
+.sr-bar.n2 { background: var(--sr-green); }
+.sr-bar.n2 i { background: var(--sr-mag); }
+.sr-bar.n2 em { position: absolute; right: 18px; top: 0; height: 9px; font-size: 8px; line-height: 9px; color: #000; font-weight: 700; padding: 0 2px; background: var(--sr-green); }
+.sr-bar.tank { box-shadow: inset 0 0 0 1.5px #fff; }
+.sr-bar.tank i { background: var(--sr-green); }
+.sr-bar.tank.blue i { background: var(--sr-blue); } .sr-bar.tank.yellow i { background: var(--sr-yel); } .sr-bar.tank.red i { background: var(--sr-red); }
+.sr-batt { position: absolute; right: 20px; top: 0; width: 16px; height: 9px; border-radius: 3px; background: #fff; box-shadow: inset 0 0 0 2px #000; }
+.sr-bar.speed i { background: var(--sr-green); }
+.sr-bar.speed.yellow i { background: var(--sr-yel); }
+.sr-bar.speed.red { background: var(--sr-red); }
+.sr-bar.speed.red i { background: var(--sr-red); }
+.sr-bar.cyan { background: var(--sr-cy); flex-basis: 3px; }
+
+/* Middle row: dive time | no deco, deco, safety stop. */
+.sr-mid { flex: 0 0 88px; display: flex; border-top: 2px solid #fff; border-bottom: 2px solid #fff; box-sizing: border-box; min-width: 0; }
+.sr-c { display: flex; flex-direction: column; min-width: 0; }
+.sr-c.dt { flex: 0 0 44%; padding: 4px 4px 0 14px; box-sizing: border-box; }
+.sr-c.dt em { display: flex; justify-content: space-between; align-items: flex-start; }
+.sr-c.dt .sr-sec { color: #fff; font-size: 28px; font-weight: 700; margin-top: -2px; }
+.sr-c.dt b { font-size: 60px; letter-spacing: -2px; margin-top: -4px; }
+.sr-c.dt.sm { flex-basis: 37%; }
+.sr-c.dt.sm .sr-sec { font-size: 24px; }
+.sr-c.dt.sm b { font-size: 44px; }
+.sr-right { flex: 1; display: flex; border-left: 2px solid #fff; min-width: 0; }
+.sr-c.r { flex: 1; align-items: center; padding: 4px 6px 0 2px; }
+.sr-c.r b { font-size: 56px; letter-spacing: -1px; margin-top: 2px; }
+.sr-c.dt.sm ~ .sr-right .sr-c.r b, .sr-right .sr-c.r:has(+ .sr-c.spd) b { font-size: 46px; }
+.sr-ok { color: var(--sr-green); font-size: 16px; }
+.sr-c.spd { flex: 0 0 70px; align-items: center; padding-top: 4px; border-left: 2px solid #fff; }
+.sr-c.spd b { font-size: 44px; margin-top: 4px; }
+.sr-c.spd.red { background: var(--sr-red); }
+.sr-c.spd.red em { color: #fff; }
+.sr-c.wide { flex: 1; flex-direction: row; align-items: center; justify-content: center; gap: 14px; }
+.sr-c.wide b { font-size: 62px; }
+.sr-c.deep { flex: 1; flex-direction: row; align-items: center; justify-content: center; gap: 16px; }
+.sr-c.deep em { font-size: 20px; line-height: 1.1; }
+.sr-c.deep b { font-size: 62px; }
+/* Deco: TTS (yellow caption) top right, DECO STOP and its depth, stop time bottom right (figures of §8.3.4). */
+.sr-c.deco { flex: 1; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr; padding: 3px 10px 0 4px; column-gap: 4px; }
+.sr-ttsv { grid-column: 1 / 3; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+.sr-ttsv b { font-size: 34px; }
+.sr-dsl { display: flex; flex-direction: column; align-items: center; }
+.sr-dsl em { font-size: 12px; }
+.sr-dsl b { font-size: 36px; }
+.sr-dst { align-self: end; }
+.sr-dst b { font-size: 34px; }
+
+/* Bottom row: tank pressure (or dive time) | bottom-right field; stopwatch at the bottom. */
+.sr-low { flex: 1; position: relative; display: flex; justify-content: space-between; align-items: flex-start; padding: 4px 52px 0 50px; box-sizing: border-box; min-height: 0; }
+.sr-c.pr b { font-size: 46px; letter-spacing: -1px; }
+.sr-c.pr em { margin: -2px 0 0 12px; }
+.sr-c.pr.dtf b { font-size: 40px; }
+.sr-c.pr.dtf b small, .sr-low.dtl b small { font-size: 0.6em; }
+.sr-low .sr-f { display: flex; flex-direction: column; align-items: flex-end; padding-top: 4px; }
+.sr-low .sr-f b { font-size: 27px; }
+.sr-f.redv b { color: var(--sr-red); }
+.sr-sw { position: absolute; bottom: 6px; left: 0; right: 0; display: flex; justify-content: center; align-items: baseline; gap: 4px; font-size: 26px; padding-left: 20px; }
+.sr-sw em { font-size: 12px; }
+.sr-low.ez { flex-direction: column; align-items: center; justify-content: flex-start; padding: 6px 0 0; }
+.sr-low.ez b { font-size: 60px; letter-spacing: -1px; }
+.sr-low.ez em { font-size: 14px; }
+.sr-low.ez.dtl { flex-direction: row; justify-content: center; align-items: center; gap: 10px; padding: 0 0 18px; }
+.sr-low.ez.dtl b { font-size: 54px; }
+
+/* Alarm and warning messages: red bottom segment (figures of §8.3); gas switch messages (§11.2, colour assumed). */
+.sr-alarm { flex: 1; background: var(--sr-red); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 10px; font-size: 32px; line-height: 1.02; text-align: center; }
+.sr-alarm.cyan { background: var(--sr-cy); color: #000; font-size: 22px; padding-top: 18px; }
+
+/* §11.2: gas switch prompt and gas summary table. */
+.sr-prompt { flex: 1; position: relative; background: var(--sr-cy); color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; font-size: 28px; padding-bottom: 20px; }
+.sr-prompt i { position: absolute; font-style: normal; font-size: 16px; }
+.sr-prompt i.no { color: var(--sr-red); left: 30px; } .sr-prompt i.ok { color: #1c3cff; right: 34px; }
+.sr-prompt i.t { top: 8px; } .sr-prompt i.b { bottom: 52px; }
+.sr-prompt i.no.b { left: 46px; } .sr-prompt i.ok.b { right: 48px; }
+.sr-gtab { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; padding: 8px 34px 0; border-top: 1px solid #fff; }
+.sr-gt { display: flex; justify-content: space-between; align-items: center; padding: 2px 8px; border-bottom: 1px solid #fff; }
+.sr-gt span { font-size: 15px; text-align: center; line-height: 1.15; }
+.sr-gt b { font-size: 26px; }
+.sr-gt.sel { background: var(--sr-cy); color: #000; }
+
+/* Graphic screens (§9.3, §9.4). */
+.sr-tissue { position: relative; flex: 1; display: flex; align-items: flex-end; gap: 2px; padding: 6px 44px 6px 26px; border-top: 1px solid #fff; border-bottom: 1px solid #fff; }
+.sr-tissue i { flex: 1; }
+.sr-tissue i.blue { background: #2244ff; } .sr-tissue i.yellow { background: var(--sr-yel); }
+.sr-tissue b { position: absolute; left: 26px; right: 40px; height: 2px; background: var(--sr-yel); }
+.sr-tissue em { position: absolute; right: 14px; font-size: 14px; transform: translateY(50%); color: var(--sr-yel); }
+.sr-prof { flex: 1; width: 240px; align-self: center; border-top: 1px solid #fff; border-bottom: 1px solid #fff; }
+.sr-prof line { stroke: #2233aa; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.sr-prof polyline { fill: none; stroke: var(--sr-cy); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.sr-stops { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 4px 70px; border-top: 1px solid #fff; border-bottom: 1px solid #fff; }
+.sr-stops div { display: flex; justify-content: space-between; }
+
+/* Bottom timer (§12) and lock message (§12.1). */
+.sr-bt .sr-mid { justify-content: space-around; align-items: center; border: 0; }
+.sr-bt .sr-mid .sr-f { display: flex; flex-direction: column; align-items: center; }
+.sr-bt .sr-mid .sr-f b { font-size: 40px; }
+.sr-lock { flex: none; align-self: center; margin-bottom: 26px; background: var(--sr-red); color: #fff; font-size: 11px; padding: 2px 6px; white-space: nowrap; }
+.sr-screen:has(> .sr-lock) .sr-low.ez b { font-size: 40px; }
+.sr-screen:has(> .sr-lock) .sr-detail { padding-top: 34px; padding-bottom: 4px; }
+.sr-screen:has(> .sr-lock) .sr-detail b { font-size: 64px; }
+.sr-screen:has(> .sr-lock) .sr-big b { font-size: 76px; }
+.sr-screen:has(> .sr-lock) .sr-post { gap: 1px; padding-top: 2px; font-size: 15px; }
+
+/* Surface: watch faces (§1.5.1), PRE-DIVE (§9), GF TABLE (§2.2), POST DIVE (§10). */
+.sr-big { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 10px; }
+.sr-big em { font-size: 20px; margin-bottom: 4px; }
+.sr-big b { font-size: 96px; line-height: 0.92; letter-spacing: -2px; }
+.sr-big b.c { color: var(--sr-cy); }
+.sr-detail { flex: 1; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto auto; align-items: center; justify-items: center; padding: 50px 36px 26px; }
+.sr-detail em { grid-column: 1 / 3; font-size: 30px; border-bottom: 2px solid var(--sr-cy); padding: 0 30px 8px; }
+.sr-detail b { grid-column: 1 / 3; font-size: 80px; letter-spacing: -2px; padding: 4px 0; border-bottom: 2px solid var(--sr-cy); }
+.sr-detail i { grid-column: 2; grid-row: 3; font-style: normal; font-size: 32px; color: var(--sr-cy); }
+.sr-detail span { grid-column: 1 / 3; font-size: 18px; display: flex; align-items: center; gap: 6px; }
+.sr-battico { display: inline-block; width: 26px; height: 13px; border: 2px solid #fff; border-radius: 2px; background: linear-gradient(to right, var(--sr-green) 75%, transparent 75%); box-sizing: border-box; }
+.sr-top.pd { flex-direction: column; align-items: center; justify-content: flex-end; }
+.sr-top.pd em { font-size: 14px; color: #fff; }
+.sr-top.pd b { font-size: 44px; }
+.sr-top.pd i { position: absolute; bottom: 10px; font-style: normal; font-size: 12px; color: var(--sr-yel); }
+.sr-top.pd i.l { left: 42px; } .sr-top.pd i.r { right: 46px; }
+.sr-mid.pdg { flex-direction: column; align-items: center; justify-content: center; border: 0; font-size: 30px; gap: 2px; }
+.sr-mid.pdg.multi { font-size: 19px; }
+.sr-low.ez.pd b { font-size: 48px; }
+.sr-low.pd i { position: absolute; right: 74px; top: 22px; font-style: normal; font-size: 12px; color: var(--sr-yel); }
+.sr-gft { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 60px 20px; font-size: 18px; }
+.sr-gft h4 { margin: 0 0 8px; font-size: 28px; text-align: center; padding-bottom: 6px; border-bottom: 1px solid #fff; }
+.sr-gft div { display: flex; justify-content: space-between; padding: 1px 4px; }
+.sr-gft div.sel { background: var(--sr-red); }
+.sr-top.post { flex-direction: row; justify-content: space-around; align-items: flex-end; padding: 0 30px 4px; }
+.sr-top.post .sr-f { display: flex; flex-direction: column; align-items: center; }
+.sr-top.post .sr-f b { font-size: 34px; }
+.sr-mid.post { justify-content: space-around; align-items: center; }
+.sr-mid.post .sr-f { display: flex; flex-direction: column; align-items: center; }
+.sr-mid.post .sr-f b { font-size: 46px; }
+.sr-post { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px; font-size: 18px; }
+.sr-post div { display: flex; align-items: baseline; gap: 8px; }
+.sr-post em { font-size: 13px; }
+.sr-nofly { font-style: normal; color: var(--sr-red); font-size: 16px; }
+/* Graphic screens: smaller bottom row (pressure and its gas). */
+.sr-low.ez.gb b { font-size: 46px; }
+.sr-low.ez.gb { padding-top: 2px; flex: 0 0 74px; }
+.sr-screen:has(> .sr-lock) .sr-low.ez.pd { padding-top: 0; }
+.sr-screen:has(> .sr-lock) .sr-low.ez.pd b { font-size: 30px; }

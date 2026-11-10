@@ -11,6 +11,11 @@ To report an error: a GitHub issue or antoalex@free.fr. Details are in the Git h
 
 Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or change (EN).
 
+## 2026-11-10
+
+- Mares Sirius · Nouveau modèle (modes AIR et NITROX), d'après son manuel (06/2026, firmware 1.05 et suivants) : Bühlmann ZH-L16C + GF avec personnalisation PHYSIO / DIVE / I TODAY, successives et multi-jours, GF de secours 95/95 après un palier manqué puis VIOLATION DECO! et verrouillage 48 h, CEIL-CON, SAFETY STOP +, RUNAWAY DECO ; écran rond des figures (E-Z et COMPLICATIONS, tissus, profil, liste des paliers, alarmes en bas sur fond rouge), 3 gaz avec SWITCH TO G2 et tableau des gaz, émetteur (TTR, HALF TANK, TANK RESERVE) / New model (AIR and NITROX modes), after its manual (06/2026, firmware 1.05 and later): Bühlmann ZH-L16C + GF with PHYSIO / DIVE / I TODAY personalization, repetitive and multiday conservatism, EMERGENCY GF 95/95 after a missed stop then VIOLATION DECO! and a 48 h lock, CEIL-CON, SAFETY STOP +, RUNAWAY DECO; round display of the figures (E-Z and COMPLICATIONS, tissue graph, profile, list of stops, alarms at the bottom on red), 3 gases with SWITCH TO G2 and the gas table, transmitter (TTR, HALF TANK, TANK RESERVE).
+- Outil de mise en page (dev) · Écran rond HTML du Sirius : le texte qui sort du cercle est signalé, en plus des contrôles habituels / Layout tool (dev): the Sirius's round HTML screen: text outside the circle is reported, on top of the usual checks.
+
 ## 2026-10-16
 
 - Tous / All · Nouveau : volets redimensionnables sur grand écran (largeur de la colonne d'eau et des onglets, hauteur de la courbe de profil) en faisant glisser leurs bords ; double-clic pour revenir à la taille par défaut ; tailles mémorisées / New: resizable panes on wide screens (width of the water column and of the side panel, height of the profile chart) by dragging their edges; double-click for the default size; sizes remembered.
