@@ -93,6 +93,7 @@ export class MaresQuadCi extends QuadCiRules {
       let next = (this.screen + 1) % SCREENS.length;
       if (SCREENS[next] === 'stops' && !(this.lastView && this.lastView.stopDepth > 3)) next = 0;
       this.setScreen(next);
+      this.keepLayout();
     } else if (button === 'tl') {
       this.stopwatchFrom = s.diveTime;
     } else if (button === 'tr') {
@@ -105,6 +106,17 @@ export class MaresQuadCi extends QuadCiRules {
       return false;
     }
     return true;
+  }
+
+  /**
+   * The dive screen setting follows the layout reached with BL (E-Z or FULL): the settings panel shows it,
+   * and the next dive starts with it (assumed). The graphic screens (tissues, profile, stops) are momentary
+   * and leave it as it is.
+   */
+  private keepLayout(): void {
+    const screen = SCREENS[this.screen];
+    if (screen !== 'ez' && screen !== 'full') return;
+    this.settings.display = this.appliedDisplay = screen;
   }
 
   /** Next momentary field; back to normal 2 s after the last press. */
@@ -238,7 +250,10 @@ export class MaresQuadCi extends QuadCiRules {
       // Graphic screens time out back to E-Z (profile, stops); alarms kick out of them.
       let screen = SCREENS[this.screen] ?? 'ez';
       const now = performance.now();
-      if ((screen === 'profile' || screen === 'stops') && now - this.screenChangedAt > 5000) this.setScreen((screen = 'ez', 0));
+      if ((screen === 'profile' || screen === 'stops') && now - this.screenChangedAt > 5000) {
+        this.setScreen((screen = 'ez', 0));
+        this.keepLayout();
+      }
       const alarm = this.alarm(v, s);
       // Alert bubble (app/alertHelp.ts): the messages on display.
       this.screenAlerts = [alarm?.text, this.gasMsgs.current, this.deep.shown ? 'DEEP STOP' : null, this.gfSurfBlink ? 'GF @SURF' : null].filter((m): m is string => !!m);

@@ -11,6 +11,11 @@ To report an error: a GitHub issue or antoalex@free.fr. Details are in the Git h
 
 Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or change (EN).
 
+## 2026-11-10
+
+- Tous / All · Un réglage que l'ordinateur change de lui-même (sans appui sur un bouton) s'affiche dans le panneau des réglages et est enregistré, comme ceux changés avec ses boutons / A setting the computer changes by itself (without a button press) shows in the settings panel and is saved, as those changed with its buttons.
+- Mares Quad Ci · Le réglage « Écran de plongée » suit le bouton BL : la mise en page atteinte (E-Z ou FULL) s'affiche dans le panneau et sert à la plongée suivante ; le retour à E-Z au bout de 5 s depuis le profil ou les paliers le met à E-Z. Jusqu'ici, BL changeait l'écran sans changer le réglage / The “Dive screen” setting follows the BL button: the layout reached (E-Z or FULL) shows in the panel and is used for the next dive; going back to E-Z after 5 s from the profile or the stops sets it to E-Z. Until now, BL changed the screen without changing the setting.
+
 ## 2026-10-16
 
 - Tous / All · Nouveau : volets redimensionnables sur grand écran (largeur de la colonne d'eau et des onglets, hauteur de la courbe de profil) en faisant glisser leurs bords ; double-clic pour revenir à la taille par défaut ; tailles mémorisées / New: resizable panes on wide screens (width of the water column and of the side panel, height of the profile chart) by dragging their edges; double-click for the default size; sizes remembered.
