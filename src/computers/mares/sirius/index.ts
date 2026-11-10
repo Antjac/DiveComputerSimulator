@@ -107,6 +107,7 @@ export class MaresSirius extends SiriusRules {
       if (SCREENS[next] === 'stops' && !(this.lastView && this.lastView.stopDepth > 3)) next = 0;
       if (SCREENS[next] === 'ez' && !this.ezAvailable(this.lastView)) next = SCREENS.indexOf('full');
       this.setScreen(next);
+      this.keepLayout();
     } else if (button === 'tl') {
       this.stopwatchFrom = s.diveTime;
     } else if (button === 'tr') {
@@ -119,6 +120,18 @@ export class MaresSirius extends SiriusRules {
       return false;
     }
     return true;
+  }
+
+  /**
+   * The dive screen setting follows the layout reached with the buttons (E-Z or COMPLICATIONS): the settings
+   * panel shows it, and the next dive starts with it (the manual has no menu entry for the layout, §2: it is
+   * chosen with BL-SP during the dive; kept for the next dive: assumed). The graphic screens (tissues, profile,
+   * stops) are momentary and leave it as it is.
+   */
+  private keepLayout(): void {
+    const screen = SCREENS[this.screen];
+    if (screen !== 'ez' && screen !== 'full') return;
+    this.settings.display = this.appliedDisplay = screen;
   }
 
   /** Surface (§1.5 TOD, §1.5.5 PRE-DIVE, §2.2 GF TABLE, §10 POST DIVE in the BL-SP loop). */
@@ -293,6 +306,7 @@ export class MaresSirius extends SiriusRules {
       // §9.3 / §9.4: the graphic screens revert to E-Z after 5 s (quick guide: "TIME-OUT 5 S", "BACK TO E-Z DISPLAY").
       if ((screen === 'tissue' || screen === 'profile' || screen === 'stops') && performance.now() - this.screenChangedAt > 5000) {
         this.setScreen(0);
+        this.keepLayout();
         screen = 'ez';
       }
       if (screen === 'ez' && !this.ezAvailable(v)) screen = 'full';
