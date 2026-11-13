@@ -13,7 +13,6 @@
 .lit .sc-bg { fill: #ddf0ff; } .lit .sc-band { fill: #f2f6f8; }
 .sc-t { font-family: 'Barlow Condensed', 'Roboto Condensed', sans-serif; font-weight: 600; fill: #111; }
 .sc-t.sc-inv { fill: #c9e2f3; }
-.sc-t.sc-red { fill: #e0261b; }
 .sc-tag { font: 700 10px 'Roboto Condensed', sans-serif; fill: #c9e2f3; }
 .sc-on { fill: #111; } .sc-off { fill: none; stroke: #9db4c4; stroke-width: 1.5; }
 .sc-btns { display: flex; justify-content: space-between; width: 70%; margin-top: 12px; }
