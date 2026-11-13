@@ -68,12 +68,12 @@ export abstract class SeacRules extends DiveComputer {
     fr: [
       'Sources : GF des niveaux de protection non publiés ; GF haut mesuré sur un SEAC Screen réel avec son planificateur (§Planner : NDL à 18–45 m, chaque niveau, air et nitrox 30 %, eau salée ; ticket n° 53, novembre 2026 ; relevés rejoués par npm run dsl).',
       'Modèle retenu : Bühlmann ZHL-16C, GF 85/85, 80/80, 75/75, 70/70, 65/65, 60/60 pour les niveaux 0 à 5. Les 60 relevés à l’air sont retrouvés à 1 min près (écart moyen 0,3 min), les 30 au nitrox 30 % à 2 min près (écart moyen 0,5 min, le simulateur un peu plus prudent).',
-      'Non vérifié : le GF bas (une NDL n’en dépend pas), supposé égal au GF haut (quelques plongées avec paliers du carnet du testeur, tous à 3 m : hypothèse) ; le Tablet, non mesuré (même échelle supposée, manuel identique) ; paliers non calés sur des mesures ; firmware de l’appareil mesuré inconnu.',
+      'GF bas égal au GF haut (85/85 au niveau 0), d’après les paliers de 8 plongées avec déco d’un export Subsurface du même testeur (ticket n° 53, novembre 2026) : sur 1 210 relevés de palier, la profondeur du palier est retrouvée dans 97 % des cas et sa durée à 0,3 min près (GF bas 70 : 92 %, 50 : 68 %, 30 : 56 %) ; le début de la déco tombe à 0,1 min près. Vérifié au niveau 0 seulement. Non vérifié : le GF bas des niveaux 1 à 5 ; le Tablet, non mesuré (même échelle supposée, manuel identique) ; paliers non calés sur des mesures ; firmware de l’appareil mesuré inconnu.',
     ],
     en: [
       'Sources: GF of the protection levels not published; GF high measured on a real SEAC Screen with its planner (§Planner: NDL at 18–45 m, every level, air and nitrox 30 %, salt water; issue #53, November 2026; readings replayed by npm run dsl).',
       'Model used: Bühlmann ZHL-16C, GF 85/85, 80/80, 75/75, 70/70, 65/65, 60/60 for levels 0 to 5. The 60 air readings are found again within 1 min (mean gap 0.3 min), the 30 nitrox 30 % ones within 2 min (mean gap 0.5 min, the simulator slightly more conservative).',
-      'Not verified: the GF low (an NDL does not depend on it), assumed equal to the GF high (a few deco dives in the tester’s logbook, all stops at 3 m: hypothesis); the Tablet, not measured (same ladder assumed, identical manual); stops not matched to measurements; firmware of the measured device unknown.',
+      'GF low equal to the GF high (85/85 at level 0), from the stops of 8 deco dives in a Subsurface export from the same tester (issue #53, November 2026): over 1,210 stop readings the stop depth is found again 97 % of the time and its duration within 0.3 min (GF low 70: 92 %, 50: 68 %, 30: 56 %); the start of deco falls within 0.1 min. Verified at level 0 only. Not verified: the GF low of levels 1 to 5; the Tablet, not measured (same ladder assumed, identical manual); stops not matched to measurements; firmware of the measured device unknown.',
     ],
   };
   // The algorithm is public and "unmodified", but the GF of each level is not published (GF high
@@ -456,7 +456,7 @@ export abstract class SeacDevice extends SeacRules {
         ${this.txt(80, 200, 34, 'NO', 'middle')}${this.txt(220, 200, 34, 'YES', 'middle')}`;
     }
     const offer = this.prompt.offer !== null;
-    const mix = `${this.txt(10, 166, 11, 'MIX')}${this.txt(18, 210, 42, Math.round(s.gas.o2 * 100), 'start', offer ? 'sc-red blink' : '')}${this.txt(62, 222, 12, '%')}`;
+    const mix = `${this.txt(10, 166, 11, 'MIX')}${this.txt(18, 210, 42, Math.round(s.gas.o2 * 100), 'start', offer ? 'blink' : '')}${this.txt(62, 222, 12, '%')}`;
     let bottom = '';
     if (field === 'max') bottom = `${mix}${this.txt(170, 166, 11, 'MAX')}${this.txt(266, 210, 42, du === 'ft' ? depthInt(v.maxDepth) : depthText(v.maxDepth), 'end')}${this.txt(270, 210, 16, du)}`;
     else if (field === 'po2') bottom = `${mix}${this.txt(200, 226, 11, 'PO2', 'end')}${this.txt(290, 210, 42, v.ppO2.toFixed(2), 'end')}`;
