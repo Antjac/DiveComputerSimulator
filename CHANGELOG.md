@@ -11,6 +11,11 @@ To report an error: a GitHub issue or antoalex@free.fr. Details are in the Git h
 
 Format : `AAAA-MM-JJ` · modèle(s) · correction ou changement (FR) / fix or change (EN).
 
+## 2026-11-13
+
+- SEAC Screen, Tablet · Le GF bas égal au GF haut (85/85 au niveau 0) est confirmé par les paliers de 8 plongées avec déco d'un export Subsurface (ticket n° 53) : profondeur du palier retrouvée dans 97 % des 1 210 relevés, durée à 0,3 min près, début de déco à 0,1 min près ; un GF bas plus faible (70, 50, 30) donne des paliers à 6 m ou 9 m trop tôt. Vérifié au niveau 0 seulement / The GF low equal to the GF high (85/85 at level 0) is confirmed by the stops of 8 deco dives in a Subsurface export (issue #53): stop depth found again in 97 % of 1,210 readings, duration within 0.3 min, start of deco within 0.1 min; a lower GF low (70, 50, 30) gives 6 m or 9 m stops too early. Verified at level 0 only.
+- SEAC Screen, Tablet · Changement de mélange : le % d'O2 clignote en noir sans passer au rouge, comme sur l'appareil réel (ticket n° 53) / Mix change: the O2 % flashes in black without turning red, as on the real device (issue #53).
+
 ## 2026-11-10
 
 - Tous / All · Un réglage que l'ordinateur change de lui-même (sans appui sur un bouton) s'affiche dans le panneau des réglages et est enregistré, comme ceux changés avec ses boutons / A setting the computer changes by itself (without a button press) shows in the settings panel and is saved, as those changed with its buttons.
