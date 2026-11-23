@@ -75,14 +75,15 @@ for (const name of Object.keys(STATES)) {
         s.descentSpeed = 20;
         s.ascentSpeed = 9;
         s.rmv = 12;
-        const cs = createComputers();
-        const c = cs.find((x) => x.id === proto.id)!;
+        // Only the computer photographed runs: the others only read the session (the gas switch made
+        // with its buttons is the computer's own), and running all of them made the script ~8× slower.
+        const c = createComputers().find((x) => x.id === proto.id)!;
         if (ess) c.settings[ess.key] = layout;
-        s.on((e) => cs.forEach((x) => (e === 'start' ? x.onDiveStart(s) : x.onDiveEnd(s))));
+        s.on((e) => (e === 'start' ? c.onDiveStart(s) : c.onDiveEnd(s)));
         const run = (sec: number) => {
           for (let i = 0; i < sec; i++) {
             s.step(1);
-            cs.forEach((x) => x.tick(s, 1));
+            c.tick(s, 1);
           }
         };
         STATES[name](s, c, run);
