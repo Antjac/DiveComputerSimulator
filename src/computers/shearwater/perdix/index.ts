@@ -456,7 +456,7 @@ export class ShearwaterPerdix extends PerdixRules {
   private at5(v: ComputerView, s: DiveSession): number {
     const t = s.tissues.clone();
     t.expose(depthToPressure(v.depth), s.gas, 5);
-    return planAscent(t, v.depth, s.gas, this.decoParams(s), this.anchor).tts;
+    return this.ttsWithSafety(planAscent(t, v.depth, s.gas, this.decoParams(s), this.anchor), s);
   }
 
   /** §10.3 low pressure warnings: yellow below the reserve pressure, red below the critical pressure (§12.3). */
@@ -540,7 +540,7 @@ export class ShearwaterPerdix extends PerdixRules {
         // DET: time of day at the surface if leaving now. @+5: TTS after 5 more minutes here; Δ+5 = @+5 − TTS.
         const t = s.tissues.clone();
         t.expose(depthToPressure(v.depth), s.gas, 5);
-        const at5 = planAscent(t, v.depth, s.gas, this.decoParams(s), this.anchor).tts;
+        const at5 = this.ttsWithSafety(planAscent(t, v.depth, s.gas, this.decoParams(s), this.anchor), s);
         const end = (s.clock + v.tts * 60 + 9 * 3600) % 86400;
         const det = `${((Math.floor(end / 3600) + 11) % 12) + 1}:${String(Math.floor((end % 3600) / 60)).padStart(2, '0')}`;
         return cell('DET', det) + cell('Δ+5', String(at5 - v.tts)) + cell('@+5/TTS', `${at5}/ ${v.tts}`);

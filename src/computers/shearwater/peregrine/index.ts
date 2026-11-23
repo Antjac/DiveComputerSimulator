@@ -366,7 +366,7 @@ export class ShearwaterPeregrine extends PeregrineRules {
   private at5(v: ComputerView, s: DiveSession): number {
     const t = s.tissues.clone();
     t.expose(depthToPressure(v.depth), s.gas, 5);
-    return planAscent(t, v.depth, s.gas, this.decoParams(s), this.anchor).tts;
+    return this.ttsWithSafety(planAscent(t, v.depth, s.gas, this.decoParams(s), this.anchor), s);
   }
 
   /** §4.7 PPO2 in flashing red outside the limits (0.18 to the MOD PPO2 in Air and Nitrox modes). */
