@@ -1,0 +1,127 @@
+/* Shearwater Perdix 3: 2.4" AMOLED (320×240) in a titanium bezel, MENU on the left and SELECT on the right
+   (§2.3 figure); white values, cyan labels and units, blue rules between the areas (figures of §4). */
+.p3-case {
+  position: relative; padding: 30px 32px 34px;
+  clip-path: polygon(7% 0, 93% 0, 100% 9%, 100% 91%, 93% 100%, 7% 100%, 0 91%, 0 9%);
+  background: linear-gradient(160deg, #c9ccd0, #8e9399 35%, #b8bcc1 60%, #6f747a);
+  box-shadow: inset 0 0 0 3px #a9adb2;
+}
+.p3-btn { position: absolute; top: 116px; width: 14px; height: 40px; border-radius: 6px; background: linear-gradient(90deg, #7d8288, #e2e4e7 45%, #73787e); box-shadow: inset 0 0 0 1px #50555b; z-index: 1; }
+.p3-btn.l { left: 2px; } .p3-btn.r { right: 2px; }
+.p3-btn.l.pressed { translate: 3px 0; } .p3-btn.r.pressed { translate: -3px 0; }
+.p3-screen {
+  position: relative; width: 320px; height: 240px; overflow: hidden; background: #000; color: #fff;
+  font-family: 'Roboto Condensed', 'Arial Narrow', sans-serif; font-weight: 400; line-height: 1;
+  box-shadow: 0 0 0 4px #0a0a0a; filter: brightness(0.93);
+}
+.p3-screen.bright { filter: none; }
+.p3-cy { color: #2fb4ff; font-size: 0.45em; margin-left: 1px; }
+.p3-body { position: absolute; inset: 0; }
+.p3-screen .yellow:not(.p3-cell) { color: #ffe600; }
+.p3-screen .red:not(.p3-cell):not(.p3-tag) { color: #ff2a2a; }
+.p3-screen .green:not(.p3-cell):not(.p3-tag) { color: #2cff2c; }
+.p3-inv-yellow { background: #ffe600; color: #000 !important; padding: 0 2px; }
+.p3-inv-red { background: #ff2a2a; color: #000 !important; padding: 0 2px; }
+.p3-inv-green { background: #2cff2c; color: #000 !important; padding: 0 2px; }
+.p3-inv-yellow .p3-cy, .p3-inv-red .p3-cy { color: #000; }
+
+/* Big and Standard: basic dive info (left), deco info and configurable slot (right), Info row (§4.3). */
+.p3-left { position: absolute; left: 0; top: 0; width: 158px; height: 164px; border-right: 2px solid #1f6fff; }
+.p3-right { position: absolute; left: 160px; top: 0; right: 0; height: 164px; }
+.p3-info { position: absolute; left: 0; right: 0; top: 166px; bottom: 0; border-top: 2px solid #1f6fff; display: flex; }
+.p3-depth { position: absolute; left: 4px; top: 4px; display: flex; align-items: flex-start; }
+.p3-depth .i { font-size: 76px; font-weight: 500; letter-spacing: -2px; }
+.p3-depth .d { display: flex; flex-direction: column; font-size: 30px; margin-top: 4px; }
+.p3-depth .d em { font-style: normal; font-size: 20px; color: #2fb4ff; margin-top: 2px; }
+.p3-body.std .p3-depth .i { font-size: 64px; }
+.p3-rate { position: absolute; left: 136px; top: 6px; display: flex; flex-direction: column-reverse; gap: 1px; }
+.p3-rate i { display: block; width: 13px; height: 10px; background: #e6e6e6; clip-path: polygon(50% 0, 100% 55%, 100% 100%, 50% 45%, 0 100%, 0 55%); }
+.p3-rate.yellow i { background: #ffe600; } .p3-rate.red i { background: #ff2a2a; }
+.p3-tag { display: inline-block; font-size: 20px; padding: 0 3px; }
+.p3-tag.sm { font-size: 15px; }
+.p3-tag.cyan { color: #2fb4ff; }
+.p3-tag.red { background: #ff2a2a; color: #fff; }
+.p3-tag.green { background: #2cff2c; color: #000; }
+.p3-tag.yellow { background: #ffe600; color: #000; }
+.p3-left .p3-tag { position: absolute; left: 6px; top: 86px; }
+.p3-time { position: absolute; left: 4px; top: 92px; font-size: 58px; display: flex; align-items: flex-start; }
+.p3-time small { font-size: 28px; margin-top: 4px; }
+.p3-body.std .p3-time { top: 104px; font-size: 52px; }
+.p3-time.surf { top: 108px; font-size: 36px; align-items: center; gap: 2px; width: 150px; }
+.p3-batt { position: relative; display: inline-block; width: 11px; height: 30px; border: 2px solid #fff; margin-left: auto; }
+.p3-batt i { position: absolute; left: 1px; right: 1px; bottom: 1px; background: #fff; }
+.p3-tri { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 21px; background: #ffe600; color: #000; font-weight: 700; font-size: 14px; clip-path: polygon(50% 0, 100% 100%, 0 100%); padding-top: 4px; }
+.p3-left > .p3-tri { position: absolute; right: 6px; bottom: 4px; }
+.p3-deco { position: absolute; left: 4px; right: 22px; top: 2px; height: 96px; display: flex; flex-direction: column; align-items: center; }
+.p3-deco.big { flex-direction: row; justify-content: center; gap: 4px; }
+.p3-vlbl { color: #2fb4ff; font-size: 19px; line-height: 0.95; text-align: center; }
+.p3-dv { font-size: 54px; white-space: nowrap; margin-top: 4px; }
+.p3-dv.ndl { font-size: 84px; font-weight: 500; margin-top: 0; letter-spacing: -2px; }
+.p3-dv.stop { font-size: 46px; }
+.p3-n2 { position: absolute; right: 4px; top: 6px; width: 12px; height: 82px; border: 1.5px solid #2f7bff; display: flex; flex-direction: column; justify-content: flex-end; }
+.p3-n2 i { display: block; width: 100%; background: linear-gradient(0deg, #2cff2c, #ffe600); }
+.p3-n2 span { position: absolute; top: 2px; left: 0; right: 0; text-align: center; font-size: 6px; color: #2fb4ff; }
+.p3-slot { position: absolute; left: 0; right: 0; top: 98px; bottom: 0; display: flex; }
+
+/* Cells: cyan label over the value. */
+.p3-cell { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.p3-lbl { color: #2fb4ff; font-size: 17px; white-space: nowrap; position: relative; }
+.p3-val { font-size: 36px; white-space: nowrap; }
+.p3-slot .p3-val { font-size: 38px; }
+.p3-info .p3-val { font-size: 34px; }
+.p3-cell.yellow .p3-val { color: #ffe600; } .p3-cell.red .p3-val { color: #ff2a2a; } .p3-cell.green .p3-val { color: #2cff2c; }
+.p3-vu { display: inline-block; writing-mode: vertical-lr; text-orientation: upright; font-size: 8px; line-height: 1; letter-spacing: -1px; vertical-align: middle; margin-left: 2px; }
+.p3-row { flex: 1; display: flex; align-items: stretch; min-width: 0; }
+.p3-gascell { width: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.p3-gas { font-size: 24px; }
+.p3-badge { background: #19a7e6; color: #000; border-radius: 9px; padding: 1px 6px; font-size: 14px; font-weight: 700; }
+.p3-badge.air { background: #7b5ea7; color: #fff; }
+
+/* Tec layout: top row, centre row and bottom row (§4.5). */
+.p3-trow { position: absolute; left: 0; right: 0; display: flex; }
+.p3-trow.top { top: 0; height: 80px; }
+.p3-trow.mid { top: 80px; height: 80px; }
+.p3-trow.bot { top: 160px; height: 80px; }
+.p3-body.tec .p3-val { font-size: 46px; }
+.p3-body.tec .p3-trow.top .p3-cell.l { align-items: flex-start; padding-left: 4px; }
+.p3-body.tec .p3-trow.top .p3-cell.r .p3-val { font-size: 44px; }
+.p3-body.tec .p3-trow.top .p3-cell.r .p3-val.sm { font-size: 34px; }
+.p3-body.tec .p3-rate { position: absolute; left: 96px; top: 34px; }
+.p3-lbl.tm { overflow: hidden; }
+.p3-secbar { position: absolute; left: 0; bottom: -1px; height: 2px; background: #2fb4ff; }
+.p3-modecell { width: 56px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; padding-bottom: 14px; }
+
+/* §4.9 banners: WARNING (yellow), INFO (cyan), with a coloured frame. */
+.p3-banner { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 6px; font-family: 'Share Tech Mono', 'Consolas', monospace; border: 2px solid; }
+.p3-banner .k { font-size: 16px; }
+.p3-banner .t { font-size: 30px; white-space: nowrap; }
+.p3-banner.warn { color: #ffe600; border-color: #ffe600; }
+.p3-banner.info { color: #2fb4ff; border-color: #19a7e6; }
+/* §4.9 warnings overlay. */
+.p3-overlay { position: absolute; left: 28px; right: 28px; top: 30px; height: 130px; background: #4a4a4a; border: 3px solid #ffe600; display: flex; flex-direction: column; justify-content: center; padding-left: 20px; color: #ffe600; font-size: 20px; line-height: 1.3; z-index: 2; }
+.p3-overlay > div:first-child { font-size: 26px; }
+/* §12 menu in the bottom row; button hints (§2.4). */
+.p3-menu { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-left: 12px; font-size: 26px; gap: 4px; background: #000; }
+.p3-menu .sel { color: #fff; outline: 2px solid #ffe600; outline-offset: 1px; width: fit-content; padding: 0 4px; }
+.p3-menu .sel.off { color: #ff3bd4; }
+.p3-menu .sel small { font-size: 0.55em; }
+.p3-menu .dim { color: #707070; font-size: 16px; }
+.p3-menu-title { color: #2fb4ff; font-size: 14px; }
+.p3-hint { position: absolute; bottom: 1px; font-size: 11px; color: #ccc; z-index: 3; }
+.p3-hint.l { left: 4px; } .p3-hint.r { right: 4px; }
+/* §4.7 tissues graph. */
+.p3-tissues { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 2px 0; }
+.p3-tissues .p3-lbl { font-size: 12px; }
+.p3-tbars { position: relative; width: 220px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 2px 0; }
+.p3-tbars i { display: block; height: 2px; background: #2cff2c; }
+.p3-tbars i.yellow { background: #ffe600; } .p3-tbars i.red { background: #ff2a2a; }
+.p3-tbars b { position: absolute; top: 0; bottom: 0; width: 1.5px; }
+.p3-tbars b.cy { background: #2fb4ff; } .p3-tbars b.ye { background: #ffe600; } .p3-tbars b.re { background: #ff2a2a; }
+/* Info screens in the bottom row: smaller values (the Tec bottom row is narrower, the mode on its left). */
+.p3-screen .p3-row.page .p3-val { font-size: 30px; }
+.p3-body.tec .p3-row.page .p3-val { font-size: 26px; }
+.p3-body.tec .p3-row.page .p3-lbl { font-size: 15px; }
+.p3-screen .p3-row.page .p3-val.mbar { font-size: 24px; }
+.p3-menu { padding-bottom: 12px; }
+.p3-val.mbar .p3-cy { margin-right: 3px; }
+.p3-dv.word { font-size: 38px; margin-top: 14px; }
