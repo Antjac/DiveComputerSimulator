@@ -210,6 +210,7 @@ export interface DecoStop {
 export interface DecoPlan {
   stops: DecoStop[];
   tts: number; // minutes, including ascent time
+  time: number; // same, not rounded (models adding a countdown to the TTS round the sum)
   firstStop: number; // m, 0 when no deco
 }
 
@@ -368,7 +369,7 @@ export function planAscent(tissues: Tissues, depth: number, gas: Gas, p: DecoPar
     time += resolution;
   }
 
-  return { stops, tts: Math.ceil(time - 1e-6), firstStop: stops.length ? stops[0].depth : initialStop > 0 ? initialStop : 0 };
+  return { stops, tts: Math.ceil(time - 1e-6), time, firstStop: stops.length ? stops[0].depth : initialStop > 0 ? initialStop : 0 };
 }
 
 /** Time (minutes) until the tissues tolerate a given ambient pressure while resting at the surface. */

@@ -495,11 +495,11 @@ export class ShearwaterTeric extends TericRules {
     return `<div class="tr-menu"><div class="sel">${items[i]}</div><div class="dim">${items[(i + 1) % items.length]}</div></div>`;
   }
 
-  /** @+5: TTS after 5 more minutes at the current depth (§3.6). */
+  /** @+5: TTS after 5 more minutes at the current depth (§3.6), safety stop included like the TTS (§3.4). */
   private at5(v: ComputerView, s: DiveSession): number {
     const t = s.tissues.clone();
     t.expose(depthToPressure(v.depth), s.gas, 5);
-    return planAscent(t, v.depth, s.gas, this.decoParams(s), this.anchor).tts;
+    return this.ttsWithSafety(planAscent(t, v.depth, s.gas, this.decoParams(s), this.anchor), s);
   }
 
   /** §3.6 info screen descriptions (figures of §3.5). */
